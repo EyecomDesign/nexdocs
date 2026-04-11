@@ -22,9 +22,12 @@ export async function GET() {
     db.sectionVisibility.findMany({ orderBy: { path: "asc" } }),
   ])
 
+  type PageRow = (typeof pages)[number]
+  type SectionRow = (typeof sections)[number]
+
   const data = [
-    ...pages.map((p) => ({ ...p, type: "page" as const })),
-    ...sections.map((s) => ({ ...s, type: "section" as const })),
+    ...pages.map((p: PageRow) => ({ ...p, type: "page" as const })),
+    ...sections.map((s: SectionRow) => ({ ...s, type: "section" as const })),
   ].sort((a, b) => a.path.localeCompare(b.path))
 
   return NextResponse.json({ data })
