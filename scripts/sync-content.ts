@@ -11,8 +11,15 @@
 import { readdir } from "node:fs/promises"
 import { join, relative, extname } from "node:path"
 import { PrismaClient } from "@prisma/client"
+import { PrismaPg } from "@prisma/adapter-pg"
 
-const prisma = new PrismaClient()
+const url = process.env.DATABASE_URL
+if (!url) {
+  console.error("[sync] ERROR: DATABASE_URL is not set — aborting deploy")
+  process.exit(1)
+}
+const adapter = new PrismaPg({ connectionString: url })
+const prisma = new PrismaClient({ adapter })
 
 async function walkContent(dir: string): Promise<string[]> {
   const entries = await readdir(dir, { withFileTypes: true })
