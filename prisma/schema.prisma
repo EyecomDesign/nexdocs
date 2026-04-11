@@ -1,0 +1,27 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model PageVisibility {
+  id        String   @id @default(cuid())
+  path      String   @unique
+  tier      Tier     @default(PUBLIC)
+  updatedAt DateTime @updatedAt
+}
+
+model SectionVisibility {
+  id        String   @id @default(cuid())
+  path      String   @unique
+  tier      Tier     @default(ADMIN)
+  updatedAt DateTime @updatedAt
+}
+
+enum Tier {
+  PUBLIC
+  PARTNER
+  ADMIN
+}

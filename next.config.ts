@@ -1,7 +1,27 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from "next"
+import nextra from "nextra"
+
+const withNextra = nextra({
+  defaultShowCopyCode: true,
+  search: {
+    codeblocks: false,
+  },
+})
 
 const nextConfig: NextConfig = {
-  /* config options here */
-};
+  async headers() {
+    return [
+      {
+        source: "/(.*)",
+        headers: [
+          {
+            key: "X-Robots-Tag",
+            value: "noindex, nofollow",
+          },
+        ],
+      },
+    ]
+  },
+}
 
-export default nextConfig;
+export default withNextra(nextConfig)
