@@ -2,6 +2,9 @@ import { Footer, Layout, Navbar } from "nextra-theme-docs"
 import { getPageMap } from "nextra/page-map"
 import type { PageMapItem } from "nextra"
 import "nextra-theme-docs/style.css"
+import { NavbarAuthButton } from "@/components/docs/NavbarAuthButton"
+import { UnauthorizedBanner } from "@/components/docs/UnauthorizedBanner"
+import { Suspense } from "react"
 
 // Routes that exist as Next.js app pages but should NOT appear in the docs sidebar
 const EXCLUDED_ROUTES = new Set(["/admin", "/login", "/invite"])
@@ -28,9 +31,9 @@ export default async function DocsLayout({
       pageMap={pageMap}
       docsRepositoryBase="https://github.com/your-org/nexdocs/tree/main/content"
       navbar={
-        <Navbar
-          logo={<span className="font-semibold">NexDocs</span>}
-        />
+        <Navbar logo={<span className="font-semibold">NexDocs</span>}>
+          <NavbarAuthButton />
+        </Navbar>
       }
       footer={
         <Footer>
@@ -42,6 +45,9 @@ export default async function DocsLayout({
       darkMode
     >
       {children}
+      <Suspense>
+        <UnauthorizedBanner />
+      </Suspense>
     </Layout>
   )
 }

@@ -1,7 +1,8 @@
-import { auth, clerkClient } from "@clerk/nextjs/server"
+import { currentUser, clerkClient } from "@clerk/nextjs/server"
 import { NextResponse } from "next/server"
 import { z } from "zod"
-import { isAdmin, extractMetadata } from "@/lib/auth"
+import { isAdmin } from "@/lib/auth"
+import type { NexDocsMetadata } from "@/lib/auth"
 
 const CreateUserSchema = z.object({
   email: z.string().email(),
@@ -20,10 +21,15 @@ const UpdateUserSchema = z.object({
 })
 
 async function requireAdmin() {
-  const { userId, sessionClaims } = await auth()
-  if (!userId) return null
-  const metadata = extractMetadata(sessionClaims as Record<string, unknown>)
-  return isAdmin(metadata) ? userId : null
+  const user = await currentUser()
+  if (!user) return null
+  const metadata: NexDocsMetadata = {
+    role: (user.publicMetadata?.role as NexDocsMetadata["role"]) ?? undefined,
+    canEdit: typeof user.publicMetadata?.canEdit === "boolean"
+      ? user.publicMetadata.canEdit
+      : undefined,
+  }
+  return isAdmin(metadata) ? user.id : null
 }
 
 export async function POST(request: Request) {

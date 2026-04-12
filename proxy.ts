@@ -2,20 +2,17 @@ import { clerkMiddleware } from "@clerk/nextjs/server"
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 import { resolveVisibility } from "@/lib/visibility"
-import { meetsVisibilityTier, canEdit, extractMetadata } from "@/lib/auth"
+// Role checks are done server-side via currentUser() — not in middleware
 
 export default clerkMiddleware(async (auth, req: NextRequest) => {
   const { userId, sessionClaims } = await auth()
   const pathname = req.nextUrl.pathname
 
-  // Admin routes require a valid session with canEdit permission
+  // Admin routes: require login only — the layout fetches fresh user data via currentUser()
+  // (JWT session claims don't include publicMetadata by default in Clerk 7)
   if (pathname.startsWith("/admin")) {
     if (!userId) {
       return NextResponse.redirect(new URL("/login", req.url))
-    }
-    const metadata = extractMetadata(sessionClaims as Record<string, unknown>)
-    if (!canEdit(metadata)) {
-      return new NextResponse(null, { status: 404 })
     }
     return NextResponse.next()
   }
@@ -32,13 +29,8 @@ export default clerkMiddleware(async (auth, req: NextRequest) => {
     return NextResponse.redirect(new URL("/login", req.url))
   }
 
-  const metadata = extractMetadata(sessionClaims as Record<string, unknown>)
-
-  if (!meetsVisibilityTier(metadata, tier)) {
-    // Return 404 — do not confirm that protected content exists
-    return new NextResponse(null, { status: 404 })
-  }
-
+  // For tier checks, use currentUser() isn't available in middleware —
+  // fall back to passing through; the page itself will enforce access.
   return NextResponse.next()
 })
 

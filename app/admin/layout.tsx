@@ -1,21 +1,29 @@
-import { auth } from "@clerk/nextjs/server"
+import { currentUser } from "@clerk/nextjs/server"
 import { redirect } from "next/navigation"
-import { canEdit, extractMetadata } from "@/lib/auth"
+import { canEdit } from "@/lib/auth"
+import type { NexDocsMetadata } from "@/lib/auth"
 
 export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const { userId, sessionClaims } = await auth()
+  // currentUser() always fetches fresh data — not cached in JWT
+  const user = await currentUser()
 
-  if (!userId) {
+  if (!user) {
     redirect("/login")
   }
 
-  const metadata = extractMetadata(sessionClaims as Record<string, unknown>)
+  const metadata: NexDocsMetadata = {
+    role: (user.publicMetadata?.role as NexDocsMetadata["role"]) ?? undefined,
+    canEdit: typeof user.publicMetadata?.canEdit === "boolean"
+      ? user.publicMetadata.canEdit
+      : undefined,
+  }
+
   if (!canEdit(metadata)) {
-    redirect("/")
+    redirect("/?unauthorized=1")
   }
 
   return (
@@ -30,6 +38,9 @@ export default async function AdminLayout({
           </a>
           <a href="/admin/visibility" className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white">
             Visibility
+          </a>
+          <a href="/admin/prs" className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white">
+            Pull Requests
           </a>
           <a href="/" className="ml-auto text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white">
             ← Back to Docs
