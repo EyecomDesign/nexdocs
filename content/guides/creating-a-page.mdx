@@ -1,0 +1,190 @@
+---
+title: Creating a New Page or Article
+description: Step-by-step guide for adding a new documentation page to NexDocs.
+---
+
+import { Steps, Callout } from 'nextra/components'
+import { Callout as NexCallout } from '@/components/docs/callout'
+
+# Creating a New Page or Article
+
+This guide walks you through adding a brand-new page to NexDocs. All content changes go through a GitHub Pull Request so an admin can review and approve them before they go live.
+
+<Callout type="info">
+  **No Git installed?** You can do everything in steps 1–5 directly on GitHub.com using the web editor. Steps are marked where a web alternative exists.
+</Callout>
+
+---
+
+## Before you start
+
+You will need:
+
+- A **GitHub account**
+- Access to the [EyecomDesign/nexdocs](https://github.com/EyecomDesign/nexdocs) repository (ask an admin if you don't have it)
+- A basic text or code editor (e.g. VS Code, Notepad++, or GitHub's built-in editor)
+
+---
+
+## Step-by-step
+
+<Steps>
+
+### Create a new branch
+
+Never write directly to `main`. Always work on a separate branch so your changes can be reviewed.
+
+**In the terminal:**
+```bash
+git checkout main
+git pull
+git checkout -b docs/your-page-name
+```
+
+**On GitHub.com:**
+Go to the repository, click the branch dropdown (shows `main`), type a new branch name like `docs/your-page-name`, and click **Create branch**.
+
+---
+
+### Decide where your page lives
+
+The `content/` folder is organised into sections:
+
+| Folder | Purpose |
+|---|---|
+| `content/guides/` | How-to guides and tutorials |
+| `content/api-reference/` | Command and API reference pages |
+| `content/internal/` | Internal / staff-only documentation |
+
+Pick the folder that best fits your page. If you're unsure, use `content/guides/`.
+
+<Callout type="warning">
+  New top-level sections (e.g. a whole new folder) also need an entry in `content/_meta.ts`. If you're just adding a page inside an existing section, you only need to update that section's `_meta.ts`.
+</Callout>
+
+---
+
+### Create the MDX file
+
+Inside the correct folder, create a file named in **kebab-case** ending in `.mdx`:
+
+```
+content/guides/my-new-topic.mdx
+```
+
+Start the file with a **frontmatter block** at the very top:
+
+```mdx
+---
+title: My New Topic
+description: A short sentence describing this page (used in search and meta tags).
+---
+
+# My New Topic
+
+Write your content here using standard Markdown.
+```
+
+<Callout type="tip">
+  Use `#` for the page title, `##` for main sections, and `###` for sub-sections. Keep the `title` in the frontmatter and the `#` heading consistent.
+</Callout>
+
+---
+
+### Register the page in `_meta.ts`
+
+Every section has a `_meta.ts` file that controls the sidebar order and labels. Open the one in the same folder as your new file and add an entry.
+
+**Example — `content/guides/_meta.ts`:**
+
+```ts
+export default {
+  "getting-started": "Getting Started",
+  "my-new-topic": "My New Topic",   // ← add this line
+  "faq": "FAQ",
+}
+```
+
+The key is the filename without `.mdx`. The value is the label shown in the sidebar.
+
+<Callout type="warning">
+  If you skip this step, the page will still be accessible by URL but **won't appear in the sidebar**.
+</Callout>
+
+---
+
+### Write your content
+
+A few tips for clear, consistent documentation:
+
+- Use **code blocks** (triple backticks) for any commands, code, or file paths
+- Use **bold** for UI labels and button names (e.g. **Save**, **Invite**)
+- Use `inline code` for file names, paths, and values
+- Break long sections into `##` sub-headings
+
+You can use these built-in components anywhere in an MDX file:
+
+```mdx
+import { Callout } from 'nextra/components'
+
+<Callout type="info">This is an info note.</Callout>
+<Callout type="warning">This is a warning.</Callout>
+<Callout type="error">This is an error alert.</Callout>
+```
+
+| Type | When to use |
+|---|---|
+| `info` | Helpful context or background info |
+| `warning` | Something the reader should be careful about |
+| `error` | A common mistake or thing that will break |
+| `tip` (custom) | A shortcut or best practice |
+
+---
+
+### Commit and push your changes
+
+**In the terminal:**
+```bash
+git add content/guides/my-new-topic.mdx content/guides/_meta.ts
+git commit -m "docs: add my new topic page"
+git push -u origin docs/your-page-name
+```
+
+**On GitHub.com:**
+After editing in the web editor, scroll down to **Commit changes**, write a short description, choose **Create a new branch**, and click **Propose changes**.
+
+---
+
+### Open a Pull Request
+
+Go to the repository on GitHub. You'll see a banner saying your branch had recent pushes — click **Compare & pull request**.
+
+Fill in:
+- **Title** — short description, e.g. `docs: add my new topic page`
+- **Description** — what you added and why
+
+Then click **Create pull request**.
+
+<Callout type="info">
+  An admin will review your PR at [/admin/prs](/admin/prs). Once approved and merged, your page goes live automatically.
+</Callout>
+
+</Steps>
+
+---
+
+## Checklist before submitting
+
+- [ ] Frontmatter has `title` and `description`
+- [ ] Page uses `#` for the main heading
+- [ ] Page is registered in the correct `_meta.ts`
+- [ ] Code examples use proper code blocks with a language hint (e.g. ` ```bash `)
+- [ ] Spelling and formatting checked
+
+---
+
+## Next steps
+
+Once your PR is merged, your page will appear in the sidebar immediately on the next page load. No rebuild or deployment needed in local dev.
+
+Looking to update an existing page instead? See [Updating an Existing Article](/guides/editing-a-page).
