@@ -42,7 +42,8 @@ export default async function DocsLayout({
       }
       sidebar={{ defaultMenuCollapseLevel: 1, toggleButton: true }}
       navigation={{ prev: true, next: true }}
-      darkMode
+      darkMode={false}
+      nextThemes={{ forcedTheme: "dark" }}
     >
       {children}
       <Suspense>

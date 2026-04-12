@@ -6,7 +6,7 @@ export function NavbarAuthButton() {
   const { isLoaded, isSignedIn, user } = useUser()
 
   if (!isLoaded) {
-    return <div className="h-8 w-8" />
+    return <div className="size-8" />
   }
 
   if (isSignedIn) {
@@ -21,7 +21,7 @@ export function NavbarAuthButton() {
         {canEdit && (
           <a
             href="/admin"
-            className="rounded-md px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+            className="rounded px-3 py-1.5 text-xs font-medium font-[family-name:var(--font-syne)] tracking-wide text-muted-foreground border border-border hover:border-primary/40 hover:text-primary transition-colors duration-150"
           >
             Admin
           </a>
@@ -34,9 +34,9 @@ export function NavbarAuthButton() {
   return (
     <a
       href="/login"
-      className="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
+      className="rounded px-3 py-1.5 text-xs font-medium font-[family-name:var(--font-syne)] tracking-wide bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
     >
-      Login
+      Sign in
     </a>
   )
 }

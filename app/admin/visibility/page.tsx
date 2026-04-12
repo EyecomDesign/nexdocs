@@ -1,6 +1,25 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 
 type Tier = "PUBLIC" | "PARTNER" | "ADMIN"
 type RuleType = "page" | "section"
@@ -19,7 +38,6 @@ export default function VisibilityPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState<string | null>(null)
 
-  // New-rule form state
   const [newPath, setNewPath] = useState("")
   const [newType, setNewType] = useState<RuleType>("page")
   const [newTier, setNewTier] = useState<Tier>("PUBLIC")
@@ -97,155 +115,152 @@ export default function VisibilityPage() {
   }
 
   if (loading) {
-    return <p className="text-gray-500 dark:text-gray-400">Loading…</p>
+    return <p className="text-muted-foreground">Loading…</p>
   }
 
   return (
-    <div>
-      <h1 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">
-        Visibility Settings
-      </h1>
+    <div className="flex flex-col gap-8">
+      <h1 className="text-2xl font-semibold">Visibility Settings</h1>
 
       {/* Add rule form */}
-      <form
-        onSubmit={addRule}
-        className="mb-8 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4"
-      >
-        <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-          Add a visibility rule
-        </h2>
-        <div className="flex flex-wrap gap-3 items-end">
-          <div className="flex-1 min-w-48">
-            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-              Path (e.g. /guides/internal)
-            </label>
-            <input
-              type="text"
-              value={newPath}
-              onChange={(e) => setNewPath(e.target.value)}
-              placeholder="/path/to/page"
-              required
-              className="w-full rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-1.5 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400"
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-              Type
-            </label>
-            <select
-              value={newType}
-              onChange={(e) => setNewType(e.target.value as RuleType)}
-              className="rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-2 py-1.5 text-sm text-gray-900 dark:text-gray-100"
-            >
-              {TYPES.map((t) => (
-                <option key={t} value={t}>
-                  {t.charAt(0).toUpperCase() + t.slice(1)}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-              Tier
-            </label>
-            <select
-              value={newTier}
-              onChange={(e) => setNewTier(e.target.value as Tier)}
-              className="rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-2 py-1.5 text-sm text-gray-900 dark:text-gray-100"
-            >
-              {TIERS.map((t) => (
-                <option key={t} value={t}>
-                  {t.charAt(0) + t.slice(1).toLowerCase()}
-                </option>
-              ))}
-            </select>
-          </div>
-          <button
-            type="submit"
-            disabled={adding}
-            className="rounded-md bg-blue-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-          >
-            {adding ? "Adding…" : "Add Rule"}
-          </button>
-        </div>
-        {addError && (
-          <p className="mt-2 text-xs text-red-600 dark:text-red-400">{addError}</p>
-        )}
-        <p className="mt-2 text-xs text-gray-400">
-          <strong>Page</strong> — exact path match.&ensp;
-          <strong>Section</strong> — applies to the path and all descendants.
-        </p>
-      </form>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Add a visibility rule</CardTitle>
+          <CardDescription>
+            <strong>Page</strong> — exact path match.{" "}
+            <strong>Section</strong> — applies to the path and all descendants.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={addRule} className="flex flex-col gap-4">
+            <div className="flex flex-wrap gap-4 items-end">
+              <div className="flex-1 min-w-48 flex flex-col gap-1.5">
+                <Label htmlFor="newPath">Path (e.g. /guides/internal)</Label>
+                <Input
+                  id="newPath"
+                  value={newPath}
+                  onChange={(e) => setNewPath(e.target.value)}
+                  placeholder="/path/to/page"
+                  required
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <Label>Type</Label>
+                <Select
+                  value={newType}
+                  onValueChange={(v) => setNewType(v as RuleType)}
+                >
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TYPES.map((t) => (
+                      <SelectItem key={t} value={t}>
+                        {t.charAt(0).toUpperCase() + t.slice(1)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <Label>Tier</Label>
+                <Select
+                  value={newTier}
+                  onValueChange={(v) => setNewTier(v as Tier)}
+                >
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TIERS.map((t) => (
+                      <SelectItem key={t} value={t}>
+                        {t.charAt(0) + t.slice(1).toLowerCase()}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <Button type="submit" disabled={adding}>
+                {adding ? "Adding…" : "Add Rule"}
+              </Button>
+            </div>
+
+            {addError && (
+              <p className="text-xs text-destructive">{addError}</p>
+            )}
+          </form>
+        </CardContent>
+      </Card>
 
       {/* Existing rules table */}
-      <div className="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
-        <table className="w-full text-sm">
-          <thead className="border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
-            <tr>
-              <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">
-                Path
-              </th>
-              <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">
-                Type
-              </th>
-              <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">
-                Tier
-              </th>
-              <th className="px-4 py-3" />
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-            {records.map((record) => (
-              <tr
-                key={record.path}
-                className="hover:bg-gray-50 dark:hover:bg-gray-800/40"
-              >
-                <td className="px-4 py-3 font-mono text-gray-800 dark:text-gray-200">
-                  {record.path}
-                </td>
-                <td className="px-4 py-3 capitalize text-gray-600 dark:text-gray-400">
-                  {record.type}
-                </td>
-                <td className="px-4 py-3">
-                  <select
-                    value={record.tier}
-                    disabled={saving === record.path}
-                    onChange={(e) =>
-                      updateTier(record.path, record.type, e.target.value)
-                    }
-                    className="rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-2 py-1 text-sm text-gray-900 dark:text-gray-100 disabled:opacity-50"
+      <Card>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Path</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Tier</TableHead>
+                <TableHead />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {records.map((record) => (
+                <TableRow key={record.path}>
+                  <TableCell className="font-mono text-sm">
+                    {record.path}
+                  </TableCell>
+                  <TableCell className="capitalize text-muted-foreground">
+                    {record.type}
+                  </TableCell>
+                  <TableCell>
+                    <Select
+                      value={record.tier}
+                      disabled={saving === record.path}
+                      onValueChange={(v) =>
+                        v && updateTier(record.path, record.type, v)
+                      }
+                    >
+                      <SelectTrigger className="w-28 h-7 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {TIERS.map((t) => (
+                          <SelectItem key={t} value={t}>
+                            {t.charAt(0) + t.slice(1).toLowerCase()}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <button
+                      onClick={() => deleteRule(record.path, record.type)}
+                      disabled={saving === record.path}
+                      className="text-xs text-destructive hover:underline disabled:opacity-50"
+                    >
+                      Remove
+                    </button>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {records.length === 0 && (
+                <TableRow>
+                  <TableCell
+                    colSpan={4}
+                    className="py-8 text-center text-muted-foreground"
                   >
-                    {TIERS.map((t) => (
-                      <option key={t} value={t}>
-                        {t.charAt(0) + t.slice(1).toLowerCase()}
-                      </option>
-                    ))}
-                  </select>
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <button
-                    onClick={() => deleteRule(record.path, record.type)}
-                    disabled={saving === record.path}
-                    className="text-xs text-red-500 hover:underline disabled:opacity-50 dark:text-red-400"
-                  >
-                    Remove
-                  </button>
-                </td>
-              </tr>
-            ))}
-            {records.length === 0 && (
-              <tr>
-                <td
-                  colSpan={4}
-                  className="px-4 py-8 text-center text-gray-400"
-                >
-                  No visibility rules set yet. All pages default to Public.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+                    No visibility rules set yet. All pages default to Public.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   )
 }

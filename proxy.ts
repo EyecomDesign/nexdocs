@@ -1,15 +1,14 @@
 import { clerkMiddleware } from "@clerk/nextjs/server"
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
-import { resolveVisibility } from "@/lib/visibility"
-// Role checks are done server-side via currentUser() — not in middleware
 
+// Note: Prisma (and Node crypto) cannot run in Edge Runtime.
+// Visibility tier enforcement is handled by individual pages/layouts.
 export default clerkMiddleware(async (auth, req: NextRequest) => {
-  const { userId, sessionClaims } = await auth()
+  const { userId } = await auth()
   const pathname = req.nextUrl.pathname
 
-  // Admin routes: require login only — the layout fetches fresh user data via currentUser()
-  // (JWT session claims don't include publicMetadata by default in Clerk 7)
+  // Admin UI: require login — layout enforces role checks via currentUser()
   if (pathname.startsWith("/admin")) {
     if (!userId) {
       return NextResponse.redirect(new URL("/login", req.url))
@@ -17,20 +16,15 @@ export default clerkMiddleware(async (auth, req: NextRequest) => {
     return NextResponse.next()
   }
 
-  // Resolve visibility tier for docs and other content paths
-  const tier = await resolveVisibility(pathname)
-
-  if (tier === "PUBLIC") {
+  // Admin API: require login — route handlers enforce role checks
+  if (pathname.startsWith("/api/admin")) {
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
     return NextResponse.next()
   }
 
-  // Require authentication for PARTNER and ADMIN tiers
-  if (!userId) {
-    return NextResponse.redirect(new URL("/login", req.url))
-  }
-
-  // For tier checks, use currentUser() isn't available in middleware —
-  // fall back to passing through; the page itself will enforce access.
+  // All other routes pass through — pages enforce visibility tier access
   return NextResponse.next()
 })
 
