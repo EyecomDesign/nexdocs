@@ -32,17 +32,17 @@ You will need:
 
 ### Create a new branch
 
-Never write directly to `main`. Always work on a separate branch so your changes can be reviewed.
+Never write directly to `master`. Always work on a separate branch so your changes can be reviewed.
 
 **In the terminal:**
 ```bash
-git checkout main
+git checkout master
 git pull
 git checkout -b docs/your-page-name
 ```
 
 **On GitHub.com:**
-Go to the repository, click the branch dropdown (shows `main`), type a new branch name like `docs/your-page-name`, and click **Create branch**.
+Go to the repository, click the branch dropdown (shows `master`), type a new branch name like `docs/your-page-name`, and click **Create branch**.
 
 ---
 
@@ -54,7 +54,6 @@ The `content/` folder is organised into sections:
 |---|---|
 | `content/guides/` | How-to guides and tutorials |
 | `content/api-reference/` | Command and API reference pages |
-| `content/internal/` | Internal / staff-only documentation |
 
 Pick the folder that best fits your page. If you're unsure, use `content/guides/`.
 
@@ -166,7 +165,7 @@ Fill in:
 Then click **Create pull request**.
 
 <Callout type="info">
-  An admin will review your PR at [/admin/prs](/admin/prs). Once approved and merged, your page goes live automatically.
+  An admin will review your PR on GitHub. Once approved and merged into `master`, your page goes live automatically on the next deploy.
 </Callout>
 
 </Steps>

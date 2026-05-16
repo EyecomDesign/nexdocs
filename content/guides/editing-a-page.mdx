@@ -32,7 +32,7 @@ Best for: typos, wording, broken links, or any change that touches one file.
 
 ### Find the page on the live docs
 
-Navigate to the page you want to fix at `localhost:3000` (dev) or the live site.
+Navigate to the page you want to fix at `localhost:3000` (dev) or the live site at `docs.nexor.app`.
 
 ### Click "Edit this page"
 
@@ -85,18 +85,17 @@ All content lives in the `content/` folder of the repository. The URL maps direc
 |---|---|
 | `/guides/getting-started` | `content/guides/getting-started.mdx` |
 | `/api-reference/overview` | `content/api-reference/overview.mdx` |
-| `/internal/overview` | `content/internal/overview.mdx` |
 
 ### Create a new branch
 
 ```bash
-git checkout main
+git checkout master
 git pull
 git checkout -b fix/short-description-of-fix
 ```
 
 <Callout type="warning">
-  Never commit directly to `main`. Your branch name should briefly describe what you're fixing, e.g. `fix/broken-rsync-command` or `docs/update-prerequisites`.
+  Never commit directly to `master`. Your branch name should briefly describe what you're fixing, e.g. `fix/broken-rsync-command` or `docs/update-prerequisites`.
 </Callout>
 
 ### Open and edit the file
@@ -149,7 +148,7 @@ Fill in:
 Then click **Create pull request**.
 
 <Callout type="info">
-  An admin will review your PR at [/admin/prs](/admin/prs) and merge or request changes. You'll get a GitHub notification when it's reviewed.
+  An admin will review your PR on GitHub and merge or request changes. You'll get a GitHub notification when it's reviewed.
 </Callout>
 
 </Steps>
@@ -158,9 +157,9 @@ Then click **Create pull request**.
 
 ## What happens after you submit
 
-1. Your PR appears in the admin panel at `/admin/prs`
+1. Your PR shows up on GitHub for review
 2. An admin reviews the changed files and either **merges** or **closes** the PR
-3. If merged, the changes are live on the next page load — no deployment needed
+3. If merged into `master`, Cloudflare Workers Builds automatically redeploys the docs site
 4. If closed with feedback, update your branch and the PR will refresh automatically
 
 ---

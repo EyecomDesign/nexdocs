@@ -12,12 +12,8 @@ const withNextra = nextra({
 })
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["@prisma/client", ".prisma/client"],
   images: {
     unoptimized: true,
-    remotePatterns: [
-      { protocol: "https", hostname: "avatars.githubusercontent.com" },
-    ],
   },
   async headers() {
     return [

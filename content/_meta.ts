@@ -5,5 +5,4 @@ export default {
   },
   guides: "Guides",
   "api-reference": "API Reference",
-  internal: "Internal",
 }
