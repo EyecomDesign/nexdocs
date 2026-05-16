@@ -8,12 +8,22 @@ function buildClient(connectionString: string) {
   return new PrismaClient({ adapter })
 }
 
+function readHyperdrive(env: CloudflareEnv): string {
+  const hd = (env as unknown as { HYPERDRIVE?: Hyperdrive }).HYPERDRIVE
+  if (!hd?.connectionString) {
+    throw new Error(
+      "HYPERDRIVE binding is not configured. Add a hyperdrive entry to wrangler.jsonc to enable DB-backed routes.",
+    )
+  }
+  return hd.connectionString
+}
+
 export const getDb = cache(() => {
   const { env } = getCloudflareContext()
-  return buildClient(env.HYPERDRIVE.connectionString)
+  return buildClient(readHyperdrive(env))
 })
 
 export const getDbAsync = async () => {
   const { env } = await getCloudflareContext({ async: true })
-  return buildClient(env.HYPERDRIVE.connectionString)
+  return buildClient(readHyperdrive(env))
 }
