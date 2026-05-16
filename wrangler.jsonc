@@ -1,0 +1,35 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "nexdocs",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-05-16",
+  "compatibility_flags": [
+    "nodejs_compat",
+    "global_fetch_strictly_public"
+  ],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "observability": {
+    "enabled": true
+  },
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      // Replace with the ID from `wrangler hyperdrive create nexdocs-pg --connection-string="postgres://..."`
+      // or from the dashboard at https://dash.cloudflare.com → Hyperdrive.
+      "id": "REPLACE_WITH_HYPERDRIVE_ID",
+      // Used only by `wrangler dev` / `opennextjs-cloudflare preview` for local DB access.
+      // Override per-machine with CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE.
+      "localConnectionString": "postgres://user:password@localhost:5432/nexdocs"
+    }
+  ]
+  // Optional caching / self-reference bindings — uncomment after creating the R2 bucket:
+  // "services": [
+  //   { "binding": "WORKER_SELF_REFERENCE", "service": "nexdocs" }
+  // ],
+  // "r2_buckets": [
+  //   { "binding": "NEXT_INC_CACHE_R2_BUCKET", "bucket_name": "nexdocs-cache" }
+  // ]
+}

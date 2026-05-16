@@ -46,7 +46,7 @@ export default function PRsPage() {
 
   useEffect(() => {
     fetch("/api/admin/github/prs")
-      .then((r) => r.json())
+      .then((r) => r.json() as Promise<{ data?: PR[]; error?: string }>)
       .then((d) => {
         if (d.error) setError(d.error)
         else setPrs(d.data ?? [])
@@ -65,7 +65,7 @@ export default function PRsPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action, mergeMethod }),
     })
-    const data = await res.json()
+    const data = (await res.json()) as { error?: string }
     setActing(null)
 
     if (!res.ok) {

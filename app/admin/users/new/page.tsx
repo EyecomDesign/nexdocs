@@ -41,7 +41,7 @@ export default function NewUserPage() {
       body: JSON.stringify(form),
     })
 
-    const data = await res.json()
+    const data = (await res.json()) as { error?: string }
     setSaving(false)
 
     if (!res.ok) {

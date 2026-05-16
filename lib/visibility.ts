@@ -1,4 +1,4 @@
-import { db } from "@/lib/db"
+import { getDbAsync } from "@/lib/db"
 
 type VisibilityTier = "PUBLIC" | "PARTNER" | "ADMIN"
 
@@ -24,6 +24,7 @@ export async function resolveVisibility(
     ancestorPaths.push("/" + segments.slice(0, i).join("/"))
   }
 
+  const db = await getDbAsync()
   // Check section overrides (most specific match wins)
   const sectionRecord = await db.sectionVisibility.findFirst({
     where: { path: { in: ancestorPaths } },

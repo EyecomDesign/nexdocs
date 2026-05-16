@@ -46,7 +46,7 @@ export default function VisibilityPage() {
 
   useEffect(() => {
     fetch("/api/admin/visibility")
-      .then((r) => r.json())
+      .then((r) => r.json() as Promise<{ data?: VisibilityRecord[] }>)
       .then((d) => {
         setRecords(d.data ?? [])
         setLoading(false)

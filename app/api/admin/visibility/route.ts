@@ -1,7 +1,7 @@
 import { currentUser } from "@clerk/nextjs/server"
 import { NextResponse } from "next/server"
 import { z } from "zod"
-import { db } from "@/lib/db"
+import { getDb } from "@/lib/db"
 import { canEdit } from "@/lib/auth"
 import type { NexDocsMetadata } from "@/lib/auth"
 
@@ -23,6 +23,7 @@ export async function GET() {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
 
+  const db = getDb()
   const [pages, sections] = await Promise.all([
     db.pageVisibility.findMany({ orderBy: { path: "asc" } }),
     db.sectionVisibility.findMany({ orderBy: { path: "asc" } }),
@@ -62,6 +63,7 @@ export async function PUT(request: Request) {
 
   const { path, type, tier } = parsed.data
 
+  const db = getDb()
   if (type === "page") {
     await db.pageVisibility.upsert({
       where: { path },
@@ -93,6 +95,7 @@ export async function DELETE(request: Request) {
 
   const { path, type } = parsed.data
 
+  const db = getDb()
   if (type === "page") {
     await db.pageVisibility.deleteMany({ where: { path } })
   } else {

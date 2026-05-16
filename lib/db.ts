@@ -1,17 +1,19 @@
+import { getCloudflareContext } from "@opennextjs/cloudflare"
+import { cache } from "react"
 import { PrismaClient } from "@prisma/client"
 import { PrismaPg } from "@prisma/adapter-pg"
 
-function createPrismaClient() {
-  const url = process.env.DATABASE_URL
-  if (!url) throw new Error("DATABASE_URL is not set")
-  const adapter = new PrismaPg({ connectionString: url })
+function buildClient(connectionString: string) {
+  const adapter = new PrismaPg({ connectionString, maxUses: 1 })
   return new PrismaClient({ adapter })
 }
 
-const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient }
+export const getDb = cache(() => {
+  const { env } = getCloudflareContext()
+  return buildClient(env.HYPERDRIVE.connectionString)
+})
 
-export const db = globalForPrisma.prisma ?? createPrismaClient()
-
-if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = db
+export const getDbAsync = async () => {
+  const { env } = await getCloudflareContext({ async: true })
+  return buildClient(env.HYPERDRIVE.connectionString)
 }

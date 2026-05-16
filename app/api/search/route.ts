@@ -1,6 +1,6 @@
 import { auth } from "@clerk/nextjs/server"
 import { NextResponse } from "next/server"
-import { db } from "@/lib/db"
+import { getDb } from "@/lib/db"
 import { meetsVisibilityTier, extractMetadata } from "@/lib/auth"
 
 export async function GET(request: Request) {
@@ -23,7 +23,7 @@ export async function GET(request: Request) {
     if (meetsVisibilityTier(metadata, "ADMIN")) allowedTiers.push("ADMIN")
   }
 
-  const results = await db.pageVisibility.findMany({
+  const results = await getDb().pageVisibility.findMany({
     where: {
       tier: { in: allowedTiers },
       path: { contains: query, mode: "insensitive" },

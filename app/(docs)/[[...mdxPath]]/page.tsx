@@ -5,6 +5,8 @@ import { redirect, notFound } from "next/navigation"
 import { extractMetadata, meetsVisibilityTier } from "@/lib/auth"
 import { resolveVisibility } from "@/lib/visibility"
 
+export const dynamic = "force-dynamic"
+
 export const generateStaticParams = generateStaticParamsFor("mdxPath")
 
 export async function generateMetadata(props: {

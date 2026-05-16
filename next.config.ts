@@ -1,5 +1,8 @@
 import type { NextConfig } from "next"
 import nextra from "nextra"
+import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare"
+
+initOpenNextCloudflareForDev()
 
 const withNextra = nextra({
   defaultShowCopyCode: true,
@@ -9,7 +12,9 @@ const withNextra = nextra({
 })
 
 const nextConfig: NextConfig = {
+  serverExternalPackages: ["@prisma/client", ".prisma/client"],
   images: {
+    unoptimized: true,
     remotePatterns: [
       { protocol: "https", hostname: "avatars.githubusercontent.com" },
     ],
