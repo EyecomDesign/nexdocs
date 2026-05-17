@@ -1,0 +1,51 @@
+# Code and syntax highlighting
+
+Fenced code blocks get language-aware highlighting. Use a language tag after the opening backticks.
+
+## Shell
+
+```bash
+pnpm install
+pnpm dev
+```
+
+## JavaScript
+
+```js
+function greet(name) {
+  return `Hello, ${name}!`;
+}
+
+console.log(greet("Nextra"));
+```
+
+## TypeScript
+
+```ts
+type Page = {
+  title: string;
+  path: string;
+};
+
+const home: Page = { title: "Home", path: "/" };
+```
+
+## JSON
+
+```json
+{
+  "name": "my-docs",
+  "private": true
+}
+```
+
+## Diff-style comment
+
+```text
+# Lines starting with # are comments in many configs
+NEXT_PUBLIC_SITE_URL=https://example.com
+```
+
+## Inline hint
+
+Remember to run `pnpm build` before deploying a production build.

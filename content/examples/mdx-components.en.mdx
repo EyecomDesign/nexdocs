@@ -1,0 +1,55 @@
+import { Callout, Tabs, Cards } from "nextra/components";
+
+# MDX components
+
+Nextra ships UI building blocks you can import in MDX. Below are a few common ones.
+
+## Callout
+
+Use callouts for tips, warnings, and important notes.
+
+<Callout type="info">
+  **Info** callouts work well for extra context that should not interrupt the main flow.
+</Callout>
+
+<Callout type="warning" emoji="⚠️">
+  **Warning** — double-check destructive commands or breaking changes before you run them.
+</Callout>
+
+## Tabs
+
+Switch between equivalent commands (for example, different package managers).
+
+<Tabs items={["pnpm", "npm", "yarn"]}>
+  <Tabs.Tab>
+    ```bash
+    pnpm install
+    pnpm dev
+    ```
+  </Tabs.Tab>
+  <Tabs.Tab>
+    ```bash
+    npm install
+    npm run dev
+    ```
+  </Tabs.Tab>
+  <Tabs.Tab>
+    ```bash
+    yarn
+    yarn dev
+    ```
+  </Tabs.Tab>
+</Tabs>
+
+## Cards
+
+Link to other docs pages with a small preview grid.
+
+<Cards>
+  <Cards.Card title="Markdown basics" icon="📝" href="./markdown-basics">
+    Headings, lists, tables, and links.
+  </Cards.Card>
+  <Cards.Card title="Code examples" icon="💻" href="./code-examples">
+    Highlighted code blocks and snippets.
+  </Cards.Card>
+</Cards>

@@ -1,0 +1,73 @@
+import { Callout } from "nextra/components";
+
+# 🌍 Server Overview
+
+<Callout type="warning">
+  **This section contains operational credentials, hostnames, and infrastructure details.**
+  The docs site is currently public with no auth gate. Once an auth layer is added in front of NexDocs, the secrets on these pages are considered safe; until then, **assume anything published here is reachable by anyone on the internet** and rotate before going truly public.
+</Callout>
+
+The **NexNavigation HTTP server** is the live backend that the Lua client talks to for pathfinding, height queries, batch tile fetches, and runtime obstacles. It runs on a single OVHcloud VPS in Gravelines (France), fronted by Cloudflare, and is reached at `https://retail.nexor.app`.
+
+## Architecture at a glance
+
+```
+Internet
+   │
+   ▼
+Cloudflare (orange-cloud, free plan)
+   retail.nexor.app, dash.nexor.app, classic.nexor.app, classicera.nexor.app
+   │   (TLS terminates at CF edge with Universal SSL)
+   ▼
+OVHcloud VPS-2 (51.75.64.12, Ubuntu 25.04, 12 GB RAM, 6 vCores, 100 GB NVMe)
+   ufw: 443/80 allowed from Cloudflare IPs only; 22 open (key-only auth)
+   │
+   ▼ docker compose (network: nexnav)
+   ┌──────────────────────────────────────────────────────────────┐
+   │ caddy   :443/:80   ←─ TLS via Cloudflare Origin Cert          │
+   │                       (SANs: nexor.app + *.nexor.app, 15 yr)  │
+   │   ├─ basic_auth → grafana:3000   for dash.nexor.app           │
+   │   ├─ reverse_proxy app:5100      for retail/classic/era       │
+   │   └─ blocks /metrics on public hosts                          │
+   │                                                                │
+   │ app     :5100  (NexNavigation.HttpServer, MemoryBudget 9 GB)  │
+   │   ├─ /healthz/{live,ready}                                     │
+   │   ├─ /metrics  (RequireHost app:5100 — internal only)         │
+   │   └─ /{mapId}/path, /closest, /height, /tiles, /obstacles      │
+   │                                                                │
+   │ redis   :6379  (obstacle pub/sub + cache; not exposed)         │
+   │                                                                │
+   │ prometheus :9090  (scrapes app + caddy, 7 d retention)         │
+   │                                                                │
+   │ grafana    :3000  (NexNav Overview dashboard)                  │
+   └──────────────────────────────────────────────────────────────┘
+        │
+        ▼
+   /var/lib/nexnav/mmaps/{retail,classic,classicera}/
+        ↑ rsync push from operator's workstation (master copy)
+```
+
+## Live URLs
+
+| URL | Purpose | Auth |
+|---|---|---|
+| `https://retail.nexor.app` | Public pathfinding API (retail flavor) | None |
+| `https://classic.nexor.app` | (DNS pre-listed, app inactive) | None |
+| `https://classicera.nexor.app` | (DNS pre-listed, app inactive) | None |
+| `https://dash.nexor.app` | Grafana monitoring dashboard | Basic auth at the Caddy edge |
+
+## What lives where
+
+- **Server code:** [`EyecomDesign/AmeisenNavigation`](https://github.com/EyecomDesign/AmeisenNavigation) (master)
+- **Lua client:** `NexorSystem/NexorBot` (branch `Navigation-Rework`); local clone at `C:\Nex\scripts\Nexor_Dev`
+- **mmaps source of truth:** operator workstation at `C:\Nex\mmaps\<flavor>\`; pushed to VPS via rsync
+- **Operational secrets:** `/opt/nexnav/.env` on the VPS (not in repo)
+- **Origin cert + key:** `/etc/nexnav/origin.{crt,key}` on the VPS
+
+## Continue reading
+
+- [🔑 Access](/server/access) — who logs in where, with which credentials
+- [🚀 Deployment](/server/deployment) — how a `git push` becomes a live release
+- [📊 Monitoring](/server/monitoring) — the Grafana dashboard, scrape targets, scaling triggers
+- [🛠️ Operations](/server/operations) — common runbooks (rotate password, push new mmaps, enable a flavor)
+- [📑 Reference](/server/reference) — URL/port/path cheat-sheet

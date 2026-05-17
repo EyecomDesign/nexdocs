@@ -1,0 +1,232 @@
+# Grinding Profiles
+
+## Profile Documentation
+
+### Overview
+
+This page provides detailed documentation for the **Profile** used by the Bot. The profile defines the behavior, movement, interaction, and logic used by the bot when running in different modes.
+
+### Profile Structure
+
+A profile consists of several fields, defining the **type of activity**, **movement logic**, **units to engage or avoid**, and **points of interest**.
+
+---
+
+### Basic Profile Information
+
+```lua
+Name    = "DefaultProfile"  -- Name of the profile
+Type    = "Grinding"        -- Profile type
+```
+
+#### Possible Profile Types:
+
+- **"Questing"** — The bot follows a predefined questing path.
+- **"Grinding"** — The bot continuously kills enemies for experience or loot.
+- **"Gathering"** — The bot collects resources such as herbs and ores.
+- **"Fishing"** — The bot automatically fishes in specified areas.
+- **"Crafting"** — The bot engages in crafting activities.
+- **"PVP"** — The bot focuses on engaging in PvP combat.
+- **"Dungeon"** — The bot follows a predefined dungeon path.
+- **"Raid"** — The bot follows a raid-specific behavior.
+
+#### Profile Subtypes:
+
+```lua
+SubType = "Level"  -- Profile subtype
+```
+
+- **"Level"** — Bot ignores trivial units.
+- **"Reputation"** (WIP) — Determines if trivial units give reputation.
+- **"Gold"** (WIP) — Determines if trivial units give gold.
+- **"Profession"** (WIP) — Determines if profession-based logic is needed.
+
+---
+
+### Logic
+
+Defines how the bot moves and engages with objects or units.
+
+```lua
+Logic = "Path"  -- Movement logic type
+```
+
+#### Possible Logic Types:
+
+- **"Spot"** — Bot moves between predefined spots, engaging nearby targets. Movement: 1-2-3-4-1-2-3-4 (circular).
+- **"Path"** — Bot follows a set of waypoints and interacts along the route. Movement: 1-2-3-4-1-2-3-4 (circular).
+- **"Bounce"** — Similar to "Spot" but moves back and forth. Movement: 1-2-3-4-3-2-1-2-3-4.
+
+---
+
+### Points
+
+Points define locations where the bot performs specific actions.
+
+```lua
+Points = {
+    {
+        Type     = "Checkpoint",
+        X        = 0,
+        Y        = 0,
+        Z        = 0,
+        Range    = 10,  -- Useless if using "Path"
+        MapID    = 1,
+        Callback = function()
+            -- Custom logic for Checkpoint
+        end,
+    },
+}
+```
+
+#### Possible Point Types:
+
+- **"Checkpoint"** — Defines movement waypoints.
+- **"Waypoint"** — Used for custom logic (not part of movement path).
+- **"RestPoint"** — Designates resting locations.
+- **"Ignore"** — Marks an area to avoid engagements.
+
+---
+
+### Units Definition
+
+Specifies how the bot interacts with different unit types.
+
+```lua
+Units = {
+    { Type = "Ignore",   UnitID = 12345 },
+    { Type = "Priority", UnitID = 67890 },
+    { Type = "Flee",     UnitID = 13579 },
+}
+```
+
+#### Possible Unit Types:
+
+- **"Ignore"** — The bot will not interact with this unit.
+- **"Priority"** — Engages this unit first when multiple targets are present.
+- **"Flee"** — The bot will retreat from this unit.
+
+---
+
+### NPCs Definition (Optional)
+
+Defines non-player characters (NPCs) for vendor interactions or quest hand-ins.
+
+```lua
+NPCs = {
+    {
+        UnitID         = 11111,
+        Type           = "Vendor",
+        UnitName       = "NPC Name",
+        X              = 0,
+        Y              = 0,
+        Z              = 0,
+        MapID          = 1,
+        EnglishFaction = "Neutral",
+    },
+}
+```
+
+**Possible NPC Types:**
+
+- **"Vendor"** — Bot interacts with the NPC to buy/sell items.
+- Other types (WIP).
+
+---
+
+### Custom Code
+
+Allows execution of custom logic during bot operation.
+
+```lua
+CustomCode = function()
+    -- Insert custom logic here
+end,
+```
+
+---
+
+### Description
+
+A simple description of the profile.
+
+```lua
+Description = [[No Description found]]
+```
+
+---
+
+### Full Example
+
+```lua
+Profile = {
+    -- Basic Profile Information
+    Name    = "DefaultProfile",  -- [string] Name of the profile
+    Type    = "Grinding",        -- [string] Profile type
+    -- Possible Types:
+    --   "Questing", "Grinding", "Gathering",
+    --   "Fishing", "Crafting", "PVP", "Dungeon", "Raid"
+
+    SubType = "Level",           -- [string] Profile subtype
+    -- Possible SubTypes:
+    --   "Level": Bot will automatically ignore trivial units
+    --   "Reputation": WIP
+    --   "Gold": WIP
+    --   "Profession": WIP
+
+    Auth    = {},                -- [table] Authorization details (WIP)
+
+    Logic   = "Path",            -- [string] Logic type
+    -- Possible Logic Types:
+    --   "Spot": Scans around the spot, circular movement
+    --   "Path": Scans around the player, follows waypoints
+    --   "Bounce": Like Spot but moves back and forth
+
+    Points  = {
+        {
+            Type     = "Checkpoint",
+            X        = 0,
+            Y        = 0,
+            Z        = 0,
+            Range    = 10,
+            MapID    = 1,
+            Callback = function()
+                -- Custom code (optional)
+            end,
+        },
+        {
+            Type     = "RestPoint",
+            X        = 0,
+            Y        = 0,
+            Z        = 0,
+            RestTime = 30,
+            MapID    = 1,
+        },
+    },
+
+    Units   = {
+        { Type = "Ignore",   UnitID = 12345 },
+        { Type = "Priority", UnitID = 67890 },
+        { Type = "Flee",     UnitID = 13579 },
+    },
+
+    NPCs = {
+        {
+            UnitID         = 11111,
+            Type           = "Vendor",
+            UnitName       = "NPC Name",
+            X              = 0,
+            Y              = 0,
+            Z              = 0,
+            MapID          = 1,
+            EnglishFaction = "Neutral",
+        },
+    },
+
+    Description = [[No Description found]],
+
+    CustomCode  = function()
+        -- Insert custom logic here.
+    end,
+}
+```

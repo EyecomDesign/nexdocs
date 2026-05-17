@@ -1,0 +1,267 @@
+---
+title: TrinityCore MMAP Export Guide (WSL)
+description: How to build TrinityCore tools and export mmaps under WSL for Main/Retail and TBC Anniversary.
+---
+
+# TrinityCore MMAP Export Guide (WSL)
+
+## Overview
+
+This guide explains how to build TrinityCore tools and export mmaps under WSL.
+
+Most of the time you only need one TrinityCore checkout (current `master` / Main or whatever branch matches Retail). Configure CMake, build with `TOOLS=1`, copy binaries, sync game data, and run the extractors. That path has fewer steps and no dependency juggling.
+
+TBC from the live Anniversary build is the special case. TrinityCore does not ship a dedicated TBC extractor branch that matches this client, so you build tools from `wotlk_classic` — it is the closest branch to the TBC expansion for this workflow. The `wotlk_classic` tree's bundled CascLib may still be too old for the live client, so this workflow also clones Main once to copy `deps/CascLib` into the `wotlk_classic` tree before building. If you are not doing TBC Anniversary extraction, you can skip the entire section [TBC (Anniversary) — wotlk\_classic and CascLib](#5-tbc-anniversary--wotlk_classic-and-casclib).
+
+You can also apply optional source tweaks in your checkout before CMake / ninja (optional, but worth knowing for Anniversary TBC).
+
+---
+
+## 1. Install dependencies
+
+```bash
+sudo apt update
+sudo apt install -y git cmake ninja-build clang-19 lld-19 build-essential unzip zip rsync libboost-all-dev libssl-dev
+```
+
+## 2. Setup workspace
+
+```bash
+mkdir -p ~/repos
+mkdir -p ~/wow
+```
+
+---
+
+## 3. Optional source adjustments (before CMake)
+
+These edits are optional; upstream TrinityCore may already work for your exact client. For TBC Anniversary, they are often important in practice (extractor DB2 metadata, nav mesh tuning). For Main / Retail, you usually leave sources as-is unless a patch or fork documents a needed change.
+
+Apply changes in the same repository tree you are about to build (`~/repos/TrinityCore` or `~/repos/TrinityCore-wotlk`), then run CMake / ninja as usual. Line numbers drift between commits — search for the symbols / comments below if files move.
+
+### 3.1 `ExtractorDB2LoadInfo.h` (Map DB2 metadata)
+
+**File:** `src/tools/extractor_common/ExtractorDB2LoadInfo.h` (struct for Map / MapLoadInfo).
+
+You need the layout hash (and sometimes field counts / layout) to match the exact client build you are extracting, or the tools will complain.
+
+#### Where the definitions come from
+
+Community definitions live in [WoWDBDefs](https://github.com/wowdev/WoWDBDefs). Open `Map.dbd` in that tree and search for your game version / build. Use those values as the source of truth when you manually align TrinityCore's extractor metadata with your client.
+
+#### What to change in the codebase
+
+Copy the relevant pieces into `ExtractorDB2LoadInfo.h` for the Map entry — for example:
+
+- **`.LayoutHash`** — most common fix; example change: `0x32401DC5` → `0xB47C6F05`.
+- **`.FileDataId`** — remove or set to match your build if TrinityCore's hardcoded id is wrong (example removal: `1349477`).
+- **`.FieldCount` / `.FileFieldCount` / field layout** — if the DB2 definition for your version differs from what TrinityCore expects, you may need to adjust those fields (and related Fields metadata) by hand. That is rarer; most of the time only the hash changed.
+
+#### When you know something is wrong
+
+If the layout hash or fields do not match, the extractor will error when you export (hash mismatch, wrong field count, or similar). Treat the message as a pointer: update the Map entry from WoWDBDefs for your build, rebuild the tools, and try again. It is usually a small edit even when you have to touch more than `LayoutHash`.
+
+### 3.2 `MapBuilder.cpp` (mmaps / Recast)
+
+**File:** `src/tools/mmaps_generator/MapBuilder.cpp` (inside namespace `MMAP`, `buildMoveMapTile` and related config).
+
+**Erosion** (polymesh intermediates): in the `// build polymesh intermediates` block, call `rcErodeWalkableArea` with a fixed radius of `1` instead of `config.walkableRadius`:
+
+```cpp
+if (!rcErodeWalkableArea(m_rcContext, 1, *tile.chf))
+```
+
+**Tile config defaults** (where `walkableSlopeAngle`, region sizes, etc. are set — often near comments about slope angles and fences):
+
+| Setting | Typical upstream default | Example tweak |
+|---|---|---|
+| `walkableSlopeAngle` (fallback when unset) | `55` | `50` |
+| `walkableSlopeAngleNotSteep` (fallback when unset) | `55` | `50` |
+| `minRegionArea` | `rcSqr(60)` | `rcSqr(40)` |
+| `mergeRegionArea` | `rcSqr(50)` | `rcSqr(30)` |
+
+These Recast changes trade off polygon count vs. walkability (e.g. slopes, small regions). Adjust to taste; the table matches one known-good Anniversary TBC tuning.
+
+---
+
+## 4. Main or Retail (default path)
+
+Use a single TrinityCore repository at the branch that matches your client (usually `master` for current Main/Retail tooling).
+
+```bash
+git clone https://github.com/TrinityCore/TrinityCore.git ~/repos/TrinityCore
+```
+
+If you need any optional source adjustments, apply them in `~/repos/TrinityCore` before the next step.
+
+### Configure build
+
+```bash
+mkdir -p ~/repos/TrinityCore/build
+
+/usr/bin/cmake --no-warn-unused-cli \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DTOOLS=1 \
+  -DSERVERS=0 \
+  -DCMAKE_C_COMPILER=/usr/bin/clang-19 \
+  -DCMAKE_CXX_COMPILER=/usr/bin/clang++-19 \
+  -S ~/repos/TrinityCore \
+  -B ~/repos/TrinityCore/build \
+  -G Ninja
+```
+
+### Build
+
+```bash
+cd ~/repos/TrinityCore/build
+ninja
+```
+
+### Copy tools
+
+```bash
+cp ~/repos/TrinityCore/build/bin/Release/bin/* ~/wow/
+```
+
+Pick the `-p` (product) and any other flags that match your installed client when you run the extractors below (Retail is typically simpler than Anniversary TBC). TrinityCore's extractor help or docs list valid product names for each era.
+
+---
+
+## 5. TBC (Anniversary) — wotlk\_classic and CascLib
+
+> Only follow this block when you are extracting TBC data from the WoW Anniversary / `wow_anniversary` live build.
+
+- **Why `wotlk_classic`:** use this branch for the extractor build because it is the closest TrinityCore tree to the TBC era (there is no separate TBC branch that fits this flow as well for these tools).
+- **Why a second clone (Main):** the `wotlk_classic` tree's bundled CascLib may not match the live client, so you copy `deps/CascLib` from Main into `wotlk_classic` before CMake. For Main or Retail mmaps you do not need `wotlk_classic` or this CascLib step.
+
+You need both checkouts when doing this TBC path: Main supplies CascLib; `wotlk_classic` is what you actually configure and build for the Anniversary TBC extractors.
+
+### Clone both repositories
+
+```bash
+git clone https://github.com/TrinityCore/TrinityCore.git ~/repos/TrinityCore-main
+git clone -b wotlk_classic https://github.com/TrinityCore/TrinityCore.git ~/repos/TrinityCore-wotlk
+```
+
+### Fix CascLib (TBC Anniversary)
+
+```bash
+rm -rf ~/repos/TrinityCore-wotlk/deps/CascLib
+cp -r ~/repos/TrinityCore-main/deps/CascLib ~/repos/TrinityCore-wotlk/deps/
+```
+
+### Configure build (wotlk\_classic)
+
+```bash
+mkdir -p ~/repos/TrinityCore-wotlk/build
+
+/usr/bin/cmake --no-warn-unused-cli \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DTOOLS=1 \
+  -DSERVERS=0 \
+  -DCMAKE_C_COMPILER=/usr/bin/clang-19 \
+  -DCMAKE_CXX_COMPILER=/usr/bin/clang++-19 \
+  -S ~/repos/TrinityCore-wotlk \
+  -B ~/repos/TrinityCore-wotlk/build \
+  -G Ninja
+```
+
+### Build
+
+```bash
+cd ~/repos/TrinityCore-wotlk/build
+ninja
+```
+
+### Copy tools
+
+```bash
+cp ~/repos/TrinityCore-wotlk/build/bin/Release/bin/* ~/wow/
+```
+
+---
+
+## 6. Copy WoW data
+
+Adjust the source paths if your install or drive letters differ.
+
+```bash
+rsync -av "/mnt/c/Program Files (x86)/World of Warcraft/Data" ~/wow/
+rsync -av "/mnt/c/Program Files (x86)/World of Warcraft/.build.info" ~/wow/
+```
+
+---
+
+## 7. Run extractors
+
+From `~/wow`, use the product and flags that match your client.
+
+**Example — TBC Anniversary (`wow_anniversary`):**
+
+```bash
+cd ~/wow
+
+./mapextractor -p wow_anniversary -f 0
+./vmap4extractor -l -p wow_anniversary
+./vmap4assembler
+./mmaps_generator
+```
+
+For Main / Retail, you usually use fewer or different flags and a different `-p` value (see TrinityCore documentation for your exact client). You do not need `wotlk_classic` or the Main + CascLib copy unless you are doing TBC Anniversary extraction as above.
+
+---
+
+## 8. Output
+
+You should now have:
+
+```
+maps/
+vmaps/
+mmaps/
+dbc/
+```
+
+### Rebuild after changes
+
+**Main / single clone:**
+
+```bash
+cd ~/repos/TrinityCore/build
+ninja
+cp bin/Release/bin/* ~/wow/
+```
+
+**TBC (wotlk\_classic tree):**
+
+```bash
+cd ~/repos/TrinityCore-wotlk/build
+ninja
+cp bin/Release/bin/* ~/wow/
+```
+
+---
+
+## Common issues
+
+### Missing Boost
+
+```bash
+sudo apt install libboost-all-dev
+```
+
+### Missing OpenSSL
+
+```bash
+sudo apt install libssl-dev
+```
+
+### Slow extraction
+
+Do not use `/mnt/c/...` paths for running tools; keep working copies under the Linux filesystem (e.g. `~/wow`).
+
+---
+
+## Done
+
+You should now have generated mmaps for your target client.

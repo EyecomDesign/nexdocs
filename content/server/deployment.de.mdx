@@ -1,0 +1,83 @@
+import { Callout } from "nextra/components";
+
+# 🚀 Bereitstellung
+
+Jeder Push auf den `master`-Branch von [`EyecomDesign/AmeisenNavigation`](https://github.com/EyecomDesign/AmeisenNavigation) triggert `.github/workflows/deploy.yml`. Die gesamte Pipeline dauert etwa 3–5 Minuten.
+
+## Was der Workflow tut
+
+1. **`build-and-push`** (`ubuntu-latest`, Permissions: `contents: read`, `packages: write`)
+   - `actions/checkout@v4`
+   - `docker/setup-buildx-action@v3` + `docker/login-action@v3` zu `ghcr.io`
+   - `docker/build-push-action@v6` baut aus dem Repo-Root, pusht zwei Tags:
+     - `ghcr.io/eyecomdesign/nexnav:sha-<full-sha>`
+     - `ghcr.io/eyecomdesign/nexnav:latest`
+   - Layer werden via `type=gha` gecached
+
+2. **`deploy`** (`ubuntu-latest`, Permissions: `contents: read`, `packages: read`, `needs: build-and-push`)
+   - `actions/checkout@v4` (damit der Runner `deploy/*` + `docker-compose.yml` für den Upload hat)
+   - **`appleboy/scp-action@v0.1.7`** lädt `deploy/,docker-compose.yml` rekursiv nach `/opt/nexnav/` auf den VPS. Das ist die einzige Stelle, an der die On-Box-Config aktualisiert wird — ohne diesen Schritt würden Caddyfile-/Prometheus-/Grafana-Änderungen die Box nie erreichen.
+   - **`appleboy/ssh-action@v1.2.0`** verbindet sich per SSH als `deploy@$DEPLOY_HOST` und führt aus:
+     - `docker login ghcr.io` mit dem `GITHUB_TOKEN` des Workflows (damit der VPS das private Image pullen kann)
+     - Snapshot des aktuellen `NEXNAV_IMAGE` aus `/opt/nexnav/.env` als `prev_tag` für Rollback
+     - Schreibt `.env` mit dem neuen `sha-<sha>`-Tag um
+     - `docker compose pull app prometheus grafana && up -d --remove-orphans`
+     - Pollt `http://localhost:5100/healthz/ready` alle 3 s bis zu 90 s lang
+     - Bei Health-Gate-Fehlschlag: schreibt `.env` zurück auf `prev_tag`, führt erneut `up -d` aus, exitet 1
+     - Bei Erfolg: `docker image prune -f` zum Aufräumen
+
+<Callout type="info">
+  Das Health-Gate gibt der App 90 s — genug für den Cold-Mmap-Preload. Falls je länger nötig (Tier 1.5 mit classic + classicera mmaps geladen), `for i in $(seq 1 30)` im Workflow erhöhen.
+</Callout>
+
+## Benötigte GitHub-Secrets
+
+Setze unter **Settings → Secrets and variables → Actions**:
+
+| Secret | Wert |
+|---|---|
+| `DEPLOY_HOST` | `51.75.64.12` |
+| `DEPLOY_USER` | `deploy` |
+| `DEPLOY_SSH_KEY` | Volles PEM des Workstation-Private-Keys (die Public-Hälfte liegt in `/home/deploy/.ssh/authorized_keys` auf dem VPS) |
+
+Das `GITHUB_TOKEN` für den GHCR-Pull ist das eingebaute Per-Job-Token des Workflows; kein extra Secret nötig.
+
+## Manueller Deploy / Re-run
+
+```bash
+# Frisches Deploy des aktuellen master-HEAD triggern
+gh workflow run deploy.yml
+
+# Einen fehlgeschlagenen Deploy nochmal laufen lassen
+gh run list --workflow=deploy.yml --limit 5
+gh run rerun <run-id> --failed
+```
+
+## Rollback
+
+Zwei Wege. **Automatisch** (während Deploy): bei Health-Gate-Fehler schreibt der Workflow `.env` zurück auf `prev_tag` und `up -d` startet den vorigen SHA.
+
+**Manuell** (nach Deploy, im Incident):
+
+```bash
+ssh -i ~/.ssh/id_nexnav_deploy deploy@51.75.64.12
+cd /opt/nexnav
+
+# Bekannten guten SHA aus `git log --oneline` oder GHCR wählen
+PREV='ghcr.io/eyecomdesign/nexnav:sha-426f2b1fdf740e1bc5640f9e7493da18230680c0'
+sed -i "s|^NEXNAV_IMAGE=.*|NEXNAV_IMAGE=$PREV|" .env
+docker compose pull app
+docker compose up -d
+docker compose logs app --tail 30
+```
+
+Wenn GHCR einen älteren SHA bereits aufgeräumt hat (selten; wir prunen nicht standardmäßig), musst du einen noch verfügbaren Tag finden. Auflisten: `gh api /users/EyecomDesign/packages/container/nexnav/versions`.
+
+## Image-Hygiene
+
+`docker image prune -f` läuft nach jedem erfolgreichen Deploy. Behaltene Images: aktueller `sha-`, `latest`, und alles, was noch von einem Container referenziert wird. Für aggressiveres Trimmen bei Disk-Druck:
+
+```bash
+ssh deploy@51.75.64.12
+docker image prune -a -f --filter "until=168h"   # alles Dangling + ungenutzt > 7 Tage weg
+```

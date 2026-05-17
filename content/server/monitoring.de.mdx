@@ -1,0 +1,91 @@
+import { Callout } from "nextra/components";
+
+# 📊 Monitoring
+
+Ein einzelnes Grafana-Dashboard unter `https://dash.nexor.app` deckt Traffic, Latenz, Cache-Effektivität, geografische Verteilung und Trend-Graphen für Skalierungs-Entscheidungen ab.
+
+## Zugang
+
+| | |
+|---|---|
+| **URL** | [`https://dash.nexor.app`](https://dash.nexor.app) |
+| **Benutzer** | `admin` |
+| **Passwort** | `B1y2bcVfXL0slQwCfg13WD7hJFXr3nI` |
+
+## Wie es verdrahtet ist
+
+```
+app:5100/metrics    ─┐
+  OpenTelemetry → Prometheus-Exporter                   ┌─ Prometheus :9090
+  (Tags: NavMetrics-Engine + nav.http.* Edge + AspNet)  │   • alle 15 s scrapen
+                                                         │   • 7 d Retention
+caddy:2019/metrics  ─┘                                  │   • 200 MB Disk-Cap
+  Caddy-Admin-Endpoint, nur im Docker-Netz               │
+                                                         ▼
+                                                 Grafana :3000 → dash.nexor.app
+                                                  • Datasource: Prometheus (uid=prometheus)
+                                                  • Dashboard: NexNavigation Overview
+                                                    (uid=nexnav-overview, 16 Panels)
+```
+
+`/metrics` der App ist via `RequireHost("app:5100", "localhost:5100", "127.0.0.1:5100")` in `Program.cs` geschützt, damit die öffentlichen Cloudflare-Hosts es nicht erreichen können. Caddy fügt zusätzlich `@metrics 404` als Belt-and-Braces hinzu.
+
+## Was die Instrumente bedeuten
+
+| Instrument (Prometheus-Name) | Was |
+|---|---|
+| `nav_http_requests_total{flavor,country,route,status,method}` | Edge-Counter, ein Inkrement pro Request. `country` aus Cloudflares `CF-IPCountry`-Header. |
+| `nav_http_request_duration_seconds_bucket{flavor,route,status}` | Edge-Latenz-Histogramm. **`country` weggelassen**, um die Label-Kardinalität zu begrenzen. |
+| `nav_path_total_bucket` | Engine-seitige Gesamtlatenz einer Path-Query (Sekunden). |
+| `nav_path_queue_wait_bucket` | Wartezeit in der Worker-Queue. |
+| `nav_path_pipeline_bucket` | Worker-seitige Rechenzeit nach Lease-Acquire. |
+| `nav_cache_hit_total{layer}` | Cache-Hits. `layer ∈ {full_path, negative}`. (`nearest_poly`, `direct_ray` existieren im Code, sind aber noch nicht getaggt.) |
+| `nav_cache_miss_total` | Full-Path-Cache-Misses. |
+| `nav_inflight_dedupe_hit_total` | Gleichzeitig identische Requests, die zu einer Berechnung dedupliziert wurden. |
+| `nav_queue_reject_total` | Path-Requests, die abgewiesen wurden weil die Worker-Queue saturiert war. **Rote Schwelle im Dashboard.** |
+| `nav_map_cold_load_total{outcome}` | Cold-Load-Versuche. `outcome ∈ {success, timeout, ...}`. |
+| `caddy_http_requests_total` | Edge-Traffic vom Caddy-Built-in-Exporter. |
+
+## Panel-Inventar
+
+Das `NexNavigation Overview`-Dashboard hat diese Panels:
+
+1. **Stat-Reihe** (oben): Total req/s, durchschn. Duration, p95 Duration (Farbschwellen), Cache-Hit-Ratio (Farbschwellen).
+2. **Req/s pro Flavor** (Stacked Area) + **Req/s pro Country, Top 10** (Bar Gauge).
+3. **Path-Latenz p50/p95/p99** (Engine-Histogramm) + **HTTP p95 pro Route** (Tabelle).
+4. **Cache-Hits pro Layer** + **In-flight Dedupe Wins** + **Queue Rejects** (rote Schwelle > 0).
+5. **Cold-Load-Outcomes** + **Status-Code-Mix** + **Caddy Edge req/s**.
+6. **24h Tier-Entscheidungs-Summary**: Peak req/s, p99-Latenz, gesamte Queue-Rejects. **Diese drei treiben die Tier 1 → 1.5 → 2-Diskussion.**
+
+Eine `$flavor`-Template-Variable lässt dich jedes Panel nach retail/classic/classicera filtern.
+
+## Skalierungs-Trigger
+
+Daumenregeln für diesen einzelnen VPS-2 (~3 GB RAM-Headroom, ~5 vCores Idle):
+
+| Signal (über eine Woche) | Aktion |
+|---|---|
+| Peak req/s dauerhaft > 200 | p95 genau beobachten. Wenn Queue-Rejects auftauchen, ist der Worker-Pool der Bottleneck. |
+| p99-Latenz > 250 ms im Peak | Tier 1.5 (Hetzner AX42, 64 GB RAM) lohnt sich. |
+| `nav_queue_reject_total` > 0 über 24 h | `WorkerCount` in `appsettings.Production.json` hochdrehen; wenn das nicht hilft, zu Tier 1.5 wechseln. |
+| RAM-Nutzung > 11 GB | `MapManager` evicted zu aggressiv → Cold-Load-Timeouts erscheinen im `outcome`-Panel. Tier 1.5 fixt das. |
+
+<Callout type="info">
+  Alle vier Signale sind in der 24h-Summary-Zeile unten im Dashboard sichtbar. Wöchentlich draufschauen.
+</Callout>
+
+## Resource-Budgets
+
+| Service | Memory-Limit | Typische Nutzung |
+|---|---|---|
+| `app` | (kein Limit, MapManager budgetiert intern 9 GB) | ~35 MB im Idle, skaliert mit dem Hot-Map-Set |
+| `caddy` | (kein Limit) | ~12 MB |
+| `redis` | (kein Limit, 64 MB internes Cap) | ~3 MB |
+| `prometheus` | 256 MB | ~22 MB + ~100 MB TSDB nach 7 Tagen |
+| `grafana` | 96 MB | ~53 MB |
+
+## Wenn Metriken verschwinden
+
+- **Alle Panels leer** → prüfe ob `prometheus`-Container healthy ist: `docker compose ps prometheus`. Logs: `docker compose logs prometheus`.
+- **App-Metriken leer, Caddy-Metriken da** → App-`/metrics` ist von Prometheus nicht erreichbar. Verifiziere dass `RequireHost` in `Program.cs` noch `app:5100` enthält. Test: `docker compose exec prometheus wget -qO- http://app:5100/metrics | head`.
+- **Ein Panel leer nach einem Deploy** → Metric-Name hat sich geändert. Der OpenTelemetry-`Prometheus.AspNetCore`-Exporter ist Pre-Release (`1.10.0-beta.1`); Release-Notes auf Breaking-Renames prüfen und das Dashboard-JSON aktualisieren.

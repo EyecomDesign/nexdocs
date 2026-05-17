@@ -1,0 +1,51 @@
+# Code und Syntaxhervorhebung
+
+Eingezäunte Codeblöcke erhalten eine sprachabhängige Hervorhebung. Geben Sie nach den öffnenden Backticks den Sprachnamen an.
+
+## Shell
+
+```bash
+pnpm install
+pnpm dev
+```
+
+## JavaScript
+
+```js
+function greet(name) {
+  return `Hello, ${name}!`;
+}
+
+console.log(greet("Nextra"));
+```
+
+## TypeScript
+
+```ts
+type Page = {
+  title: string;
+  path: string;
+};
+
+const home: Page = { title: "Home", path: "/" };
+```
+
+## JSON
+
+```json
+{
+  "name": "my-docs",
+  "private": true
+}
+```
+
+## Konfigurationsstil
+
+```text
+# In vielen Konfigurationsdateien sind Zeilen mit # Kommentare
+NEXT_PUBLIC_SITE_URL=https://example.com
+```
+
+## Inline
+
+Vergessen Sie nicht, vor dem Produktions-Deployment `pnpm build` auszuführen.

@@ -1,0 +1,79 @@
+import { Callout } from "nextra/components";
+
+# 🎨 Common Problems
+
+<Callout type="error">
+  Before you open a ticket in Discord, please make sure you read these Common Problems to solve it by just reading.
+
+  If you encounter any issues, it's always a good idea to consider disabling all of your addons. Additionally, for the optimal performance and security of your bot/unlocker files, it is recommended to avoid using OneDrive or any other cloud folders as storage solutions.
+</Callout>
+
+---
+
+## Bot closes quest windows before accepting quests
+
+To enhance your World of Warcraft experience, kindly enable the **"Instant quest Text"** feature in your WoW interface settings. This simple adjustment will provide you with a smoother and more immersive questing experience.
+
+---
+
+## Bad mesh / pathing
+
+Please check the file paths of your mmaps files. If you have not downloaded mesh files, you should check the [Windows guide](/getting-started/download-and-install/noname-windows) again.
+
+**mmaps Classic & TBC & WotLK:** `nn/mmaps/wotlk/*filesInHere*`
+
+**mmaps Retail:** `nn/mmaps/sl/*filesInHere*`
+
+Make sure there are no other folders. Only `mmaps/wotlk` and `mmaps/sl`! A common mistake is nested folders like: `mmaps/wotlk/wotlk` — this will **NOT** work.
+
+Your nav.exe needs to be running so if it closes automatically, there is a problem. You need to install C++ redistributables to fix it and/or update your .NET:
+
+- [vc_redist.x64.exe](https://aka.ms/vs/17/release/vc_redist.x64.exe)
+- [.NET 4.8 Web Installer](https://dotnet.microsoft.com/en-us/download/dotnet-framework/thank-you/net48-web-installer)
+
+---
+
+## My character doesn't move, just unstuck. What to do?
+
+1. Please verify the location of your mmaps to ensure they are in the correct path or folder.
+2. Confirm if your Nav.exe (NilName - Windows Unlocker) process is currently running.
+3. Reboot your computer and then proceed to restart your bot setup.
+
+---
+
+## Nexor doesn't appear in-game. What to do?
+
+**WINDOWS:**
+
+1. Move the unlocker / bot directly to `C:/`, creating a folder named `C:/NN`.
+2. Confirm that the `_nexorloader.nn` file is located within the `nn/scripts/` folder.
+3. Ensure you start World of Warcraft **AFTER** launching the NilName application (tool.exe).
+4. Look for "NN Loaded" chat notifications in-game when loading for the first time.
+5. If necessary, consider restarting your system even if you believe you followed all steps correctly.
+6. Temporarily disable ALL addons.
+7. Avoid using OneDrive folders for the bot files.
+8. Ensure your antivirus software isn't blocking the injection process.
+9. Verify that tool.exe displays "Injected" after launching the game.
+
+**MacOS:**
+
+1. Check for any `.nn` files within your Tinkr folders and remove them if present.
+2. Place the `_NEXOR.luac` file into the `tinkr/scripts/Nexor/` folder.
+3. In-game, type the command `/console scriptErrors 1` and then perform a `/reload` to identify any Lua errors.
+4. Start World of Warcraft using the Tinkr application and look for Tinkr chat notifications in-game during the initial loading process.
+
+---
+
+## I got low fps / wow is laggy. What to do?
+
+The issue could stem from various factors, with the primary one being the potential absence of nav.exe (on Windows) or incorrect placement of your mmaps files. Our docs site offers comprehensive [guides](/faq/guides) for troubleshooting; pay meticulous attention to the provided file paths!
+
+Should in-game lag persist, consider deactivating the "drawing" feature for circles, text, and lines.
+
+If the lag or FPS problems persist, attempt to disable all addons.
+
+---
+
+## My Game crashes after I started Nexor. What to do?
+
+Please open a support ticket on our [Discord server](/general/discord-links) with details about the crash.

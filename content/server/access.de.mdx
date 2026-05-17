@@ -1,0 +1,66 @@
+import { Callout } from "nextra/components";
+
+# 🔑 Zugang
+
+<Callout type="warning">
+  Die Zugangsdaten auf dieser Seite sind ein Momentaufnahme und stehen auf einer **öffentlichen** Docs-Seite. Behandle sie als kompromittiert, sobald diese Seite im Internet erreichbar ist. Rotiere vor/nach einem öffentlichen Go-Live. Siehe [Betrieb → Dashboard-Passwort rotieren](/server/operations) für das exakte Rotation-Runbook.
+</Callout>
+
+## Monitoring-Dashboard
+
+| | |
+|---|---|
+| **URL** | `https://dash.nexor.app` |
+| **Benutzer** | `admin` |
+| **Passwort** | `B1y2bcVfXL0slQwCfg13WD7hJFXr3nI` |
+
+Caddys Edge-`basic_auth` ist das **einzige** Gate; einmal durchgekommen, loggt Grafana automatisch als Admin ein (`GF_AUTH_ANONYMOUS_ENABLED=true` + `GF_AUTH_DISABLE_LOGIN_FORM=true`). Kein zweites Prompt.
+
+## SSH auf den VPS
+
+Zwei User existieren auf `51.75.64.12`:
+
+| User | sudo | docker-Gruppe | Wann verwenden |
+|---|---|---|---|
+| `ubuntu` | passwordless sudo | nein | Bootstrap, Datei-Installs in `/etc/*` / `/opt/*`, alles mit Root-Rechten |
+| `deploy` | kein sudo | ja | `docker compose`-Befehle, Logs, App-Operations |
+
+Beide haben den RSA-PEM-SSH-Key der Workstation (`~/.ssh/id_nexnav_deploy`) in ihren `authorized_keys`. Passwort-Auth ist deaktiviert.
+
+```bash
+# Privilegierte Operationen (Installs, sshd-Config, /etc/* Edits)
+ssh -i ~/.ssh/id_nexnav_deploy ubuntu@51.75.64.12
+
+# Tagesgeschäft mit Docker
+ssh -i ~/.ssh/id_nexnav_deploy deploy@51.75.64.12
+cd /opt/nexnav && docker compose ps
+```
+
+Falls du den privaten SSH-Key nicht hast, hol ihn aus dem Passwort-Manager des Operators. Der zugehörige Public-Key-Fingerabdruck ist `SHA256:c3CrFlQI39C4Hvea74lbJkOZzg6dx8XE5pJJHxlCA7I`.
+
+## Cloudflare
+
+- **Zone-Owner:** `Hi@nexor.app`
+- **Zone:** `nexor.app` (Zone-ID `60574bdab9b6c5144a1f670f3c57c455`)
+- **SSL/TLS-Modus:** Full (strict)
+- **Universal SSL** deckt `*.nexor.app` (eine Subdomain-Ebene) — deshalb sind Flavor-Hosts flach (`retail.nexor.app`) statt verschachtelt (`retail.nav.nexor.app`)
+
+## GitHub
+
+- **Server-Repo:** [`EyecomDesign/AmeisenNavigation`](https://github.com/EyecomDesign/AmeisenNavigation) — Push auf `master` triggert Deploy
+- **Actions-Tab:** [Workflow-Runs](https://github.com/EyecomDesign/AmeisenNavigation/actions/workflows/deploy.yml)
+- **Benötigte Repo-Secrets** (Settings → Secrets and variables → Actions):
+  - `DEPLOY_HOST` = `51.75.64.12`
+  - `DEPLOY_USER` = `deploy`
+  - `DEPLOY_SSH_KEY` = volles PEM des Workstation-Private-Keys (derselbe wie in `~/.ssh/id_nexnav_deploy`)
+- **GHCR-Package:** `ghcr.io/eyecomdesign/nexnav` — privat, vom VPS mit dem per-Job-`GITHUB_TOKEN` des Workflows gepullt
+
+## Öffentliche App-Endpoints
+
+| Host | Status |
+|---|---|
+| `retail.nexor.app` | **Live**, Default-Flavor |
+| `classic.nexor.app` | DNS vorgemerkt, Caddyfile listet es; App-Konfig aktiviert es noch NICHT — braucht mmaps + Eintrag in `appsettings.Production.json` |
+| `classicera.nexor.app` | Dasselbe — vorgemerkt aber inaktiv |
+
+Alle drei lösen via Cloudflare-Proxy auf denselben VPS auf. Die App wählt den Flavor aus dem ersten Dot-Label des `Host`-Headers über `FlavorResolver`.

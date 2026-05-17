@@ -1,0 +1,91 @@
+import { Callout } from "nextra/components";
+
+# 📊 Monitoring
+
+Single Grafana dashboard at `https://dash.nexor.app` covering traffic, latency, cache effectiveness, geographic distribution, and trend graphs for scaling decisions.
+
+## Access
+
+| | |
+|---|---|
+| **URL** | [`https://dash.nexor.app`](https://dash.nexor.app) |
+| **User** | `admin` |
+| **Password** | `B1y2bcVfXL0slQwCfg13WD7hJFXr3nI` |
+
+## How it's wired
+
+```
+app:5100/metrics    ─┐
+  OpenTelemetry → Prometheus exporter                   ┌─ Prometheus :9090
+  (tagged: NavMetrics engine + nav.http.* edge + AspNet)│   • scrape every 15 s
+                                                         │   • 7 d retention
+caddy:2019/metrics  ─┘                                  │   • 200 MB disk cap
+  Caddy admin endpoint, docker-net only                  │
+                                                         ▼
+                                                 Grafana :3000 → dash.nexor.app
+                                                  • datasource: Prometheus (uid=prometheus)
+                                                  • dashboard: NexNavigation Overview
+                                                    (uid=nexnav-overview, 16 panels)
+```
+
+The app's `/metrics` is gated by `RequireHost("app:5100", "localhost:5100", "127.0.0.1:5100")` in `Program.cs` so the public Cloudflare-fronted hosts can't reach it. Caddy also adds a `@metrics 404` belt-and-braces.
+
+## What each instrument means
+
+| Instrument (Prometheus name) | What |
+|---|---|
+| `nav_http_requests_total{flavor,country,route,status,method}` | Edge counter, one increment per request. `country` from Cloudflare's `CF-IPCountry` header. |
+| `nav_http_request_duration_seconds_bucket{flavor,route,status}` | Edge latency histogram. **`country` omitted** to cap label cardinality. |
+| `nav_path_total_bucket` | Engine-side total path-query latency (seconds). |
+| `nav_path_queue_wait_bucket` | Time a request sat in the worker queue. |
+| `nav_path_pipeline_bucket` | Worker-side compute time once a lease is acquired. |
+| `nav_cache_hit_total{layer}` | Cache hits. `layer ∈ {full_path, negative}`. (`nearest_poly`, `direct_ray` are present in code but not yet tagged.) |
+| `nav_cache_miss_total` | Full-path cache misses. |
+| `nav_inflight_dedupe_hit_total` | Concurrent identical requests deduplicated to one compute. |
+| `nav_queue_reject_total` | Path requests rejected because the worker queue was saturated. **Red threshold on the dashboard.** |
+| `nav_map_cold_load_total{outcome}` | Cold-load attempts. `outcome ∈ {success, timeout, ...}`. |
+| `caddy_http_requests_total` | Edge traffic from Caddy's built-in exporter. |
+
+## Panel inventory
+
+The `NexNavigation Overview` dashboard ships with these panels:
+
+1. **Stat row** (top): total req/s, avg duration, p95 duration (color thresholded), cache hit ratio (color thresholded).
+2. **Req/s by flavor** (stacked area) + **Req/s by country, top 10** (bar gauge).
+3. **Path latency p50/p95/p99** (engine histogram) + **HTTP p95 by route** (table).
+4. **Cache hits by layer** + **In-flight dedupe wins** + **Queue rejects** (red threshold > 0).
+5. **Cold-load outcomes** + **Status code mix** + **Caddy edge req/s**.
+6. **24h tier-decision summary**: peak req/s, p99 latency, total queue rejects. **These three drive the Tier 1 → 1.5 → 2 conversation.**
+
+A `$flavor` template variable lets you filter every panel by retail/classic/classicera.
+
+## Scaling triggers
+
+Rules of thumb on this single VPS-2 (~3 GB RAM headroom, ~5 vCores idle):
+
+| Signal (over a week) | Action |
+|---|---|
+| Peak req/s sustained > 200 | Watch p95 closely. If queue rejects start appearing, the worker pool is the bottleneck. |
+| p99 latency > 250 ms during peak | Tier 1.5 (Hetzner AX42, 64 GB RAM) starts to pay for itself. |
+| `nav_queue_reject_total` > 0 over 24 h | Bump `WorkerCount` in `appsettings.Production.json` first; if that doesn't help, move to Tier 1.5. |
+| RAM usage > 11 GB | `MapManager` is evicting too aggressively → cold-load timeouts will show up in the `outcome` panel. Tier 1.5 fixes this. |
+
+<Callout type="info">
+  All four signals are visible on the dashboard's 24h summary row at the bottom. Glance at it weekly.
+</Callout>
+
+## Resource budgets
+
+| Service | Memory limit | Typical use |
+|---|---|---|
+| `app` | (no limit, MapManager budgets 9 GB internally) | ~35 MB at idle, scales with hot map set |
+| `caddy` | (no limit) | ~12 MB |
+| `redis` | (no limit, 64 MB internal cap) | ~3 MB |
+| `prometheus` | 256 MB | ~22 MB + ~100 MB TSDB after 7 days |
+| `grafana` | 96 MB | ~53 MB |
+
+## When metrics disappear
+
+- **All panels empty** → check `prometheus` container is healthy: `docker compose ps prometheus`. Logs: `docker compose logs prometheus`.
+- **App metrics empty, Caddy metrics present** → app `/metrics` is unreachable from Prometheus. Verify `RequireHost` in `Program.cs` still includes `app:5100`. Test: `docker compose exec prometheus wget -qO- http://app:5100/metrics | head`.
+- **One panel empty after a deploy** → metric name changed. The OpenTelemetry `Prometheus.AspNetCore` exporter is in pre-release (`1.10.0-beta.1`); track its release notes for breaking renames and update the dashboard JSON.

@@ -1,0 +1,45 @@
+import { Callout } from "nextra/components";
+
+# 🎨 Häufige Probleme
+
+<Callout type="error">
+  Bevor du ein Ticket in Discord öffnest, lies bitte diese häufigen Probleme durch, um sie selbst zu lösen.
+
+  Wenn du auf Probleme stößt, empfehle ich, alle Addons zu deaktivieren. Außerdem wird empfohlen, keine OneDrive-Ordner für Bot-/Unlocker-Dateien zu verwenden.
+</Callout>
+
+---
+
+## Bot schließt Quest-Fenster vor dem Annehmen von Quests
+
+Aktiviere die Funktion **"Sofortiger Questtext"** in deinen WoW-Schnittstelleneinstellungen.
+
+---
+
+## Schlechte Mesh-Dateien / Wegfindung
+
+Überprüfe die Dateipfade deiner mmaps-Dateien. Wenn du keine Mesh-Dateien heruntergeladen hast, schau dir den [Windows-Guide](/de/getting-started/download-and-install/noname-windows) erneut an.
+
+**mmaps Classic & TBC & WotLK:** `nn/mmaps/wotlk/*DateienHier*`
+
+**mmaps Retail:** `nn/mmaps/sl/*DateienHier*`
+
+Ein häufiger Fehler sind verschachtelte Ordner wie: `mmaps/wotlk/wotlk` — das funktioniert **NICHT**.
+
+---
+
+## Nexor erscheint nicht im Spiel. Was tun?
+
+**WINDOWS:**
+
+1. Verschiebe den Unlocker/Bot direkt nach `C:/`, erstelle einen Ordner namens `C:/NN`.
+2. Bestätige, dass die `_nexorloader.nn`-Datei im `nn/scripts/`-Ordner liegt.
+3. Starte World of Warcraft **NACH** dem Starten der NilName-Anwendung (tool.exe).
+4. Deaktiviere vorübergehend ALLE Addons.
+5. Vermeide OneDrive-Ordner für Bot-Dateien.
+
+**MacOS:**
+
+1. Überprüfe Tinkr-Ordner auf `.nn`-Dateien und entferne sie.
+2. Platziere die `_NEXOR.luac`-Datei im `tinkr/scripts/Nexor/`-Ordner.
+3. Gib im Spiel `/console scriptErrors 1` ein und führe `/reload` aus.

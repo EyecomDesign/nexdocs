@@ -1,0 +1,104 @@
+# 📑 Reference
+
+Quick lookup tables. For the why behind any of these, see [Overview](/server/overview), [Deployment](/server/deployment), or [Monitoring](/server/monitoring).
+
+## External URLs
+
+| URL | Service | Auth |
+|---|---|---|
+| `https://retail.nexor.app` | NexNavigation HTTP API (retail flavor) | None |
+| `https://classic.nexor.app` | Same, classic flavor (DNS pre-listed, app inactive) | None |
+| `https://classicera.nexor.app` | Same, classicera flavor (pre-listed, inactive) | None |
+| `https://dash.nexor.app` | Grafana monitoring dashboard | Basic auth at Caddy edge |
+| `https://github.com/EyecomDesign/AmeisenNavigation` | Server source repo | GitHub login |
+| `https://github.com/EyecomDesign/AmeisenNavigation/actions` | Deploy workflow runs | GitHub login |
+
+## VPS internals
+
+| Port | Service | Reachable from |
+|---|---|---|
+| 22 | sshd | Anywhere (key-only auth) |
+| 80 | caddy (HTTP) | Cloudflare IP ranges only (ufw) |
+| 443 | caddy (HTTPS) | Cloudflare IP ranges only (ufw) |
+| 5100 | app (NexNavigation.HttpServer) | docker network `nexnav` only |
+| 2019 | caddy admin (/metrics, /config) | docker network `nexnav` only |
+| 3000 | grafana | docker network `nexnav` only |
+| 9090 | prometheus | docker network `nexnav` only |
+| 6379 | redis | docker network `nexnav` only |
+
+## VPS filesystem layout
+
+| Path | Owner | What |
+|---|---|---|
+| `/etc/nexnav/origin.crt` | `root:deploy` 0640 | Cloudflare Origin Certificate (PEM) |
+| `/etc/nexnav/origin.key` | `root:deploy` 0640 | Origin Cert private key (RSA) |
+| `/opt/nexnav/.env` | `deploy:deploy` 0640 | Runtime env: `NEXNAV_IMAGE`, `DASH_BASIC_AUTH_HASH`, `GRAFANA_ADMIN_PASSWORD`, `MMAPS_DIR`, `ORIGIN_CERT_DIR` |
+| `/opt/nexnav/docker-compose.yml` | `deploy:deploy` 0644 | Compose stack definition (synced from repo on every deploy) |
+| `/opt/nexnav/deploy/Caddyfile` | `deploy:deploy` 0644 | Caddy config (synced from repo) |
+| `/opt/nexnav/deploy/prometheus/prometheus.yml` | `deploy:deploy` 0644 | Prometheus scrape config |
+| `/opt/nexnav/deploy/grafana/` | `deploy:deploy` 0644 | Grafana provisioning + dashboard JSON |
+| `/var/lib/nexnav/mmaps/<flavor>/` | `deploy:deploy` 0755 | Navmesh tiles (18 GB retail, rsync'd from workstation) |
+| `/home/ubuntu/.ssh/authorized_keys` | `ubuntu:ubuntu` 0600 | Workstation key (used for SSH + sudo ops) |
+| `/home/deploy/.ssh/authorized_keys` | `deploy:deploy` 0600 | Workstation + CI key (used for `docker compose` + scp deploys) |
+
+## Origin Cert
+
+| | |
+|---|---|
+| Subject (SANs) | `nexor.app`, `*.nexor.app` |
+| Issuer | CloudFlare Origin SSL Certificate Authority |
+| Validity | 2026-05-16 → 2041-05-12 (~15 years) |
+| Key | RSA-2048, modulus md5 `71abf8b0223ad53dba16f77bb2bd4d47` |
+| On-VPS path | `/etc/nexnav/origin.{crt,key}` |
+| Issued via | Cloudflare dashboard → SSL/TLS → Origin Server (API path was blocked by OAuth scope) |
+
+## Container images (pinned)
+
+| Service | Image |
+|---|---|
+| `app` | `ghcr.io/eyecomdesign/nexnav:sha-<git-sha>` (and `:latest`) — built by CI on every push to master |
+| `caddy` | `caddy:2-alpine` |
+| `redis` | `redis:7-alpine` |
+| `prometheus` | `prom/prometheus:v3.1.0` |
+| `grafana` | `grafana/grafana:11.4.0` |
+
+## Resource pins
+
+| Knob | Value | Where |
+|---|---|---|
+| `MapManager.MemoryBudgetBytes` | 9 GB | `NexNavigation.HttpServer/appsettings.Production.json` |
+| `prometheus` mem limit | 256 M | `docker-compose.yml` |
+| `prometheus` TSDB retention | 7 d / 200 MB | `docker-compose.yml` (command args) |
+| `grafana` mem limit | 96 M | `docker-compose.yml` |
+| Scrape interval | 15 s | `deploy/prometheus/prometheus.yml` |
+| Health gate poll | 30 attempts × 3 s = 90 s | `.github/workflows/deploy.yml` |
+
+## Source repos
+
+| Repo | Branch | Purpose | Local clone |
+|---|---|---|---|
+| `EyecomDesign/AmeisenNavigation` | `master` | Server (NexNavigation.HttpServer + .Native, Dockerfile, compose, Caddyfile, prom/grafana) | `C:\Users\justi\AmeisenNavigation` |
+| `NexorSystem/NexorBot` | `Navigation-Rework` | Lua client (TileClient, NavServerClient, NavObstacleTester, etc.) | `C:\Nex\scripts\Nexor_Dev` |
+| `EyecomDesign/NexDocs` (this site) | `master` | Public documentation | `C:\Users\justi\NexDocs` |
+
+## Cloudflare zone
+
+| | |
+|---|---|
+| Zone | `nexor.app` |
+| Zone ID | `60574bdab9b6c5144a1f670f3c57c455` |
+| Account | `Hi@nexor.app's Account` |
+| Account ID | `39c1241084a7b95eceea1e1892dd20f0` |
+| Plan | Free (Universal SSL covers `*.nexor.app` one-level only — that's why flavor URLs are flat) |
+| SSL/TLS mode | Full (strict) |
+
+## Lua client toggle
+
+Set in `NEX.CustomSettings` (overrides) or `C:\Nex\scripts\Nexor_Dev\src\data\runtime\default_settings.lua` (defaults):
+
+| Setting | Default | Effect |
+|---|---|---|
+| `NavServer_UseRemote` | `true` | Send all queries to `https://{flavor}.nexor.app` |
+| `NavServer_UseRemote = false` | — | Local-debug mode: `http://localhost:5100` with `Host: {flavor}.nav.local` header |
+| `NavServer_RemoteDomain` | `"nexor.app"` | Domain used when remote mode is on |
+| `NavServer_Host` / `NavServer_Port` | `"localhost"` / `5100` | Used only when remote mode is off |

@@ -1,0 +1,130 @@
+import { Callout } from "nextra/components";
+
+# 🛠️ Operations
+
+Common runbooks. SSH user choice matters: `ubuntu` has passwordless sudo, `deploy` is in the `docker` group but has no sudo. Pick `ubuntu` for `/etc/*` work and `deploy` for `docker compose` work.
+
+## Rotate the dashboard password
+
+The password lives in `/opt/nexnav/.env` as `DASH_BASIC_AUTH_HASH` (bcrypt). Caddy reads it via `env_file:`.
+
+<Callout type="warning">
+  **You MUST escape `$` to `$$` when writing the bcrypt hash to `.env`.** Docker Compose interpolates `${VAR}` in env values — and bcrypt's `$2a$14$<salt>$<hash>` format contains `$` chars that get treated as variable references. The salt portion becomes `${IdZTdCj7...}` and substitutes to empty string, producing a broken hash. The script below handles the escape automatically.
+</Callout>
+
+```bash
+ssh -i ~/.ssh/id_nexnav_deploy ubuntu@51.75.64.12
+
+NEW_PW='paste-a-strong-32+-char-password-here'
+
+NEW_HASH=$(sudo docker run --rm caddy:2-alpine caddy hash-password --plaintext "$NEW_PW")
+ESCAPED=${NEW_HASH//\$/\$\$}
+
+sudo cp -a /opt/nexnav/.env /opt/nexnav/.env.bak.$(date +%s)
+sudo sed -i '/^DASH_BASIC_AUTH_HASH=/d' /opt/nexnav/.env
+awk -v h="DASH_BASIC_AUTH_HASH=$ESCAPED" 'BEGIN{print h}' | sudo tee -a /opt/nexnav/.env >/dev/null
+
+cd /opt/nexnav && sudo -u deploy docker compose up -d caddy
+```
+
+Verify:
+
+```bash
+curl -u admin:"$NEW_PW" https://dash.nexor.app/api/health
+# expect: {"database":"ok",...}
+```
+
+Then update [`/server/access`](/server/access) with the new value.
+
+## Push fresh mmaps from your workstation
+
+Source-of-truth lives at `C:\Nex\mmaps\<flavor>\` on the operator's machine. Use WSL's `rsync` (Windows-native `rsync` is rare; the SSH key needs Linux 0600 perms, easier to keep it in WSL `~/.ssh`).
+
+```bash
+# First-time WSL setup (one-off)
+mkdir -p ~/.ssh && cp /mnt/c/Users/justi/.ssh/id_nexnav_deploy ~/.ssh/
+chmod 600 ~/.ssh/id_nexnav_deploy
+
+# Push (re-runnable; only deltas transfer on subsequent runs)
+rsync -avh --partial --info=progress2 \
+  -e 'ssh -i ~/.ssh/id_nexnav_deploy -o StrictHostKeyChecking=accept-new' \
+  /mnt/c/Nex/mmaps/retail/ \
+  deploy@51.75.64.12:/var/lib/nexnav/mmaps/retail/
+```
+
+~18 GB retail mmaps transfer in ~3 min on fibre (~100 MB/s). The running app picks up new tiles on its next cold load; obstacle/cache state is invalidated by `NavVersion` bumps, so cache freshness is automatic.
+
+## Enable a new flavor (classic / classicera)
+
+1. **Push the flavor's mmaps** (see above, swap `retail` for the new flavor name).
+2. **Add the DNS record** on Cloudflare via the dashboard or API: `A classic.nexor.app → 51.75.64.12` (proxied).
+3. **Caddyfile already pre-lists** `classic.nexor.app, classicera.nexor.app` — no edit needed.
+4. **Add a flavor block to `appsettings.Production.json`** in the repo (next to the existing `retail` block; set `MmapsPath` to `/mmaps/classic`).
+5. `git push origin master` — Actions deploys and the new flavor becomes live at `https://classic.nexor.app`.
+
+The Origin Cert (`*.nexor.app`) already covers the new hostname; no cert work needed.
+
+## Tail logs
+
+```bash
+ssh -i ~/.ssh/id_nexnav_deploy deploy@51.75.64.12
+cd /opt/nexnav
+
+# Live tail one or many
+docker compose logs -f app
+docker compose logs -f caddy
+docker compose logs -f --since 10m app caddy grafana
+
+# Just the last 50 lines of everything
+docker compose logs --tail 50
+```
+
+Caddy emits JSON access logs to stdout; pipe through `jq` for structured filtering.
+
+## Restart a single service
+
+```bash
+ssh deploy@51.75.64.12
+cd /opt/nexnav
+docker compose restart caddy        # graceful, ~1 s downtime
+docker compose up -d --force-recreate caddy   # recreate if config changed
+```
+
+## Refresh the Cloudflare IP allowlist (ufw)
+
+Cloudflare publishes their proxy IPs at `https://www.cloudflare.com/ips-v4` / `-v6`. Re-apply quarterly:
+
+```bash
+ssh -i ~/.ssh/id_nexnav_deploy ubuntu@51.75.64.12
+
+# Append new rules (idempotent; ufw skips dupes)
+for ip in $(curl -fsS https://www.cloudflare.com/ips-v4); do
+  sudo ufw allow proto tcp from "$ip" to any port 443 comment 'cf 443' >/dev/null
+  sudo ufw allow proto tcp from "$ip" to any port 80  comment 'cf 80'  >/dev/null
+done
+for ip in $(curl -fsS https://www.cloudflare.com/ips-v6); do
+  sudo ufw allow proto tcp from "$ip" to any port 443 comment 'cf 443 v6' >/dev/null
+  sudo ufw allow proto tcp from "$ip" to any port 80  comment 'cf 80 v6'  >/dev/null
+done
+
+sudo ufw reload && sudo ufw status numbered | head -20
+```
+
+If the CF list shrinks, manually `ufw delete <number>` the stale entries (`status numbered` shows them).
+
+## Trigger a manual deploy
+
+```bash
+gh workflow run deploy.yml
+gh run watch $(gh run list --workflow=deploy.yml --limit 1 --json databaseId -q '.[0].databaseId')
+```
+
+## Check disk + memory headroom
+
+```bash
+ssh deploy@51.75.64.12
+df -h /var/lib/nexnav   # mmap dir
+df -h /var/lib/docker   # image cache + named volumes
+free -m
+docker stats --no-stream
+```
