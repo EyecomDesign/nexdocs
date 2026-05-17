@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { Syne, Outfit, Geist_Mono } from "next/font/google"
 import { Footer, Layout, Navbar } from "nextra-theme-docs"
+import { Head } from "nextra/components"
 import { getPageMap } from "nextra/page-map"
 import "nextra-theme-docs/style.css"
 import "../globals.css"
@@ -45,6 +46,7 @@ export default async function LangLayout({
       suppressHydrationWarning
       className={`dark ${syne.variable} ${outfit.variable} ${geistMono.variable}`}
     >
+      <Head />
       <body>
         <Layout
           pageMap={pageMap}
