@@ -12,6 +12,13 @@ const withNextra = nextra({
 })
 
 const nextConfig: NextConfig = {
+  // Pages Router setting that Next.js App Router ignores, but Nextra 4
+  // reads it to build per-locale page maps. Without this, getPageMap(`/en`)
+  // throws "Can't find pageMap for 'en' in route '/en'" at runtime.
+  i18n: {
+    locales: ["en", "de"],
+    defaultLocale: "en",
+  },
   images: {
     unoptimized: true,
   },
