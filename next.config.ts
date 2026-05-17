@@ -12,6 +12,12 @@ const withNextra = nextra({
 })
 
 const nextConfig: NextConfig = {
+  // OpenNext expects the standalone build output (.next/standalone/...).
+  // Normally OpenNext sets this implicitly when it invokes `next build`
+  // internally, but our build chain runs `next build` first (so Pagefind
+  // can index .next/server/app) and then opennextjs-cloudflare --skipNextBuild
+  // — so we have to opt into standalone explicitly here.
+  output: "standalone",
   // Pages Router setting that Next.js App Router ignores, but Nextra 4
   // reads it to build per-locale page maps. Without this, getPageMap(`/en`)
   // throws "Can't find pageMap for 'en' in route '/en'" at runtime.

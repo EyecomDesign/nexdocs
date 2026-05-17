@@ -34,9 +34,10 @@ yarn-error.log*
 .env.local
 .env.*.local
 
-# pagefind search index
+# pagefind search index (regenerated each build)
 /pagefind
 /.pagefind
+/public/_pagefind/
 
 # vercel
 .vercel

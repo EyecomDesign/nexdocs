@@ -5,9 +5,9 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "build:cf": "opennextjs-cloudflare build",
-    "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
-    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "build:cf": "next build && pagefind --site .next/server/app --output-path public/_pagefind && opennextjs-cloudflare build --skipNextBuild",
+    "preview": "pnpm run build:cf && opennextjs-cloudflare preview",
+    "deploy": "pnpm run build:cf && opennextjs-cloudflare deploy",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit"
@@ -23,6 +23,7 @@
   "pnpm": {
     "onlyBuiltDependencies": [
       "esbuild",
+      "pagefind",
       "workerd"
     ],
     "ignoredBuiltDependencies": [
@@ -38,6 +39,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
     "eslint-config-prettier": "^10.1.8",
+    "pagefind": "^1.5.2",
     "prettier": "^3.8.2",
     "tailwindcss": "^4",
     "typescript": "^5",
