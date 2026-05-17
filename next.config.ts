@@ -12,10 +12,6 @@ const withNextra = nextra({
 })
 
 const nextConfig: NextConfig = {
-  i18n: {
-    locales: ["en", "de"],
-    defaultLocale: "en",
-  },
   images: {
     unoptimized: true,
   },
@@ -34,18 +30,21 @@ const nextConfig: NextConfig = {
   },
   async redirects() {
     return [
-      { source: "/general", destination: "/general/what-is-nexor", permanent: false },
-      { source: "/getting-started", destination: "/getting-started/buy-nexor", permanent: false },
-      { source: "/profile-creator", destination: "/profile-creator/grinding-profiles", permanent: false },
-      { source: "/developer", destination: "/developer/grinding-profiles", permanent: false },
-      { source: "/server", destination: "/server/overview", permanent: false },
-      { source: "/faq", destination: "/faq/faq", permanent: false },
-      { source: "/general/features", destination: "/general/features/included-profiles", permanent: false },
-      { source: "/getting-started/buy-unlocker", destination: "/getting-started/buy-unlocker/noname-windows", permanent: false },
-      { source: "/getting-started/download-and-install", destination: "/getting-started/download-and-install/nexor", permanent: false },
-      { source: "/developer/nexor-docs", destination: "/developer/nexor-docs/introduction", permanent: false },
-      { source: "/faq/guides", destination: "/faq/guides/how-to-add-a-session-to-nexor", permanent: false },
-      { source: "/faq/guides/how-to-create-profiles", destination: "/faq/guides/how-to-create-profiles/questing-profile", permanent: false },
+      // Locale root → /en
+      { source: "/", destination: "/en", permanent: false },
+      // Locale-aware section indexes (Next.js path params)
+      { source: "/:lang(en|de)/general", destination: "/:lang/general/what-is-nexor", permanent: false },
+      { source: "/:lang(en|de)/getting-started", destination: "/:lang/getting-started/buy-nexor", permanent: false },
+      { source: "/:lang(en|de)/profile-creator", destination: "/:lang/profile-creator/grinding-profiles", permanent: false },
+      { source: "/:lang(en|de)/developer", destination: "/:lang/developer/grinding-profiles", permanent: false },
+      { source: "/:lang(en|de)/server", destination: "/:lang/server/overview", permanent: false },
+      { source: "/:lang(en|de)/faq", destination: "/:lang/faq/faq", permanent: false },
+      { source: "/:lang(en|de)/general/features", destination: "/:lang/general/features/included-profiles", permanent: false },
+      { source: "/:lang(en|de)/getting-started/buy-unlocker", destination: "/:lang/getting-started/buy-unlocker/noname-windows", permanent: false },
+      { source: "/:lang(en|de)/getting-started/download-and-install", destination: "/:lang/getting-started/download-and-install/nexor", permanent: false },
+      { source: "/:lang(en|de)/developer/nexor-docs", destination: "/:lang/developer/nexor-docs/introduction", permanent: false },
+      { source: "/:lang(en|de)/faq/guides", destination: "/:lang/faq/guides/how-to-add-a-session-to-nexor", permanent: false },
+      { source: "/:lang(en|de)/faq/guides/how-to-create-profiles", destination: "/:lang/faq/guides/how-to-create-profiles/questing-profile", permanent: false },
     ]
   },
 }
