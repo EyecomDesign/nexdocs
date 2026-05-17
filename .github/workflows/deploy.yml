@@ -32,9 +32,7 @@ jobs:
         run: pnpm run build:cf
 
       - name: Deploy to Cloudflare Workers
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: 39c1241084a7b95eceea1e1892dd20f0
-          command: deploy
-          packageManager: pnpm
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: 39c1241084a7b95eceea1e1892dd20f0
+        run: pnpm exec opennextjs-cloudflare deploy
