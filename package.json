@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:cf": "opennextjs-cloudflare build",
     "build:search": "pagefind --site .open-next/assets --output-path .open-next/assets/_pagefind",
     "start": "next start",
     "preview": "opennextjs-cloudflare build && pnpm run build:search && opennextjs-cloudflare preview",
