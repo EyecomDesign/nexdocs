@@ -9,7 +9,7 @@ type PageProps = {
 
 export async function generateMetadata(props: PageProps) {
   const params = await props.params
-  const { metadata } = await importPage(params.mdxPath, params.lang)
+  const { metadata } = await importPage(params.mdxPath ?? [], params.lang)
   return metadata
 }
 
@@ -22,7 +22,7 @@ const Wrapper = useMDXComponents().wrapper as React.ComponentType<{
 
 export default async function Page(props: PageProps) {
   const params = await props.params
-  const result = await importPage(params.mdxPath, params.lang)
+  const result = await importPage(params.mdxPath ?? [], params.lang)
   const { default: MDXContent, toc, metadata, sourceCode } = result
   return (
     <Wrapper toc={toc} metadata={metadata} sourceCode={sourceCode}>
