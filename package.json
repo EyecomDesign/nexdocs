@@ -5,16 +5,12 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "build:cf": "opennextjs-cloudflare build",
-    "build:search": "pagefind --site .open-next/assets --output-path .open-next/assets/_pagefind",
-    "start": "next start",
-    "preview": "opennextjs-cloudflare build && pnpm run build:search && opennextjs-cloudflare preview",
-    "deploy": "opennextjs-cloudflare build && pnpm run build:search && opennextjs-cloudflare deploy",
+    "build:cf": "opennextjs-cloudflare build && pagefind --site .open-next/assets --output-path .open-next/assets/_pagefind",
+    "preview": "pnpm run build:cf && opennextjs-cloudflare preview",
+    "deploy": "pnpm run build:cf && opennextjs-cloudflare deploy",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit",
-    "test": "vitest",
-    "test:run": "vitest run"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@opennextjs/cloudflare": "^1.19.10",
@@ -37,12 +33,9 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
-    "@testing-library/jest-dom": "^6.9.1",
-    "@testing-library/react": "^16.3.2",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@vitejs/plugin-react": "^6.0.1",
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
     "eslint-config-prettier": "^10.1.8",
@@ -50,7 +43,6 @@
     "prettier": "^3.8.2",
     "tailwindcss": "^4",
     "typescript": "^5",
-    "vitest": "^4.1.4",
     "wrangler": "^4.92.0"
   }
 }

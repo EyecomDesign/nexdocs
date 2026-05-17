@@ -1,36 +1,54 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# NexDocs
 
-## Getting Started
+Documentation site for **Nexor** — a bot built in Lua 5.1.
 
-First, run the development server:
+Live at **https://docs.nexor.app**. Pushes to `master` auto-deploy to Cloudflare Workers via Workers Builds.
+
+## Stack
+
+- [Next.js](https://nextjs.org/) 16 (App Router)
+- [Nextra](https://nextra.site/) 4 (theme: `nextra-theme-docs`)
+- [Tailwind CSS](https://tailwindcss.com/) v4
+- [OpenNext](https://opennext.js.org/cloudflare) for Cloudflare Workers deployment
+- [Pagefind](https://pagefind.app/) for client-side search
+- pnpm (workspace package manager)
+
+## Local development
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+pnpm install
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The dev server runs on http://localhost:3000.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Writing docs
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+All content lives under `content/` as MDX files. Each section has a `_meta.ts` controlling sidebar order and labels.
 
-## Learn More
+See the in-site guides for the full flow:
+- [Creating a new page](https://docs.nexor.app/guides/creating-a-page)
+- [Updating an existing page](https://docs.nexor.app/guides/editing-a-page)
 
-To learn more about Next.js, take a look at the following resources:
+## Deployment
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Cloudflare Workers Builds is wired to this repo. On push to `master`:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. `pnpm install`
+2. `pnpm run build:cf` — runs `opennextjs-cloudflare build` then Pagefind indexing
+3. `npx wrangler deploy` — auto-detects OpenNext, ships the worker
 
-## Deploy on Vercel
+No env vars or bindings are required for the current docs-only deploy.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Scripts
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Command | What it does |
+|---|---|
+| `pnpm dev` | Next.js dev server |
+| `pnpm build` | `next build` (CI typecheck path) |
+| `pnpm build:cf` | OpenNext build + Pagefind index — what production uses |
+| `pnpm preview` | Build and locally serve the Worker via `wrangler dev` |
+| `pnpm deploy` | Build and deploy directly from your machine (rarely needed; Workers Builds handles this) |
+| `pnpm cf-typegen` | Regenerate `cloudflare-env.d.ts` from `wrangler.jsonc` |
+| `pnpm lint` | ESLint |
+| `pnpm typecheck` | `tsc --noEmit` |
