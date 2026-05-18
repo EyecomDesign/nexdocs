@@ -1,10 +1,13 @@
 import type { Metadata } from "next"
 import { Syne, Outfit, Geist_Mono } from "next/font/google"
+import { notFound } from "next/navigation"
 import { Footer, Layout, Navbar } from "nextra-theme-docs"
 import { Head } from "nextra/components"
 import { getPageMap } from "nextra/page-map"
 import "nextra-theme-docs/style.css"
 import "../globals.css"
+
+const LOCALES = new Set(["en", "de"])
 
 const syne = Syne({
   variable: "--font-syne",
@@ -37,6 +40,11 @@ export default async function LangLayout({
   params: Promise<{ lang: string }>
 }) {
   const { lang } = await params
+  // [lang] is a dynamic segment that matches any value at runtime. Bail out
+  // early for anything that isn't a real locale — otherwise getPageMap() throws
+  // and turns a should-be-404 (e.g. /gitbook-assets/missing.png, /random-page)
+  // into a 500.
+  if (!LOCALES.has(lang)) notFound()
   const pageMap = await getPageMap(`/${lang}`)
 
   return (
