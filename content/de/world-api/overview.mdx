@@ -1,0 +1,94 @@
+import { Callout } from "nextra/components";
+
+# 🌍 World API – Überblick
+
+Die **NexorWorldAPI** ist die **Datenbank + REST-Endpunkte**, die den Bot mit *Weltdaten* versorgen –
+den NPCs und Briefkästen, die er braucht, um sich in der Welt zu bewegen und mit dem Spiel zu
+interagieren. Statt fest zu verdrahten, wo jeder Händler, Lehrer oder Briefkasten steht, fragt der
+Bot Zone für Zone die World API und erhält Koordinaten, Rollen und Fraktionsinfos zurück.
+
+Es handelt sich um einen kleinen ASP.NET-Core-8-Dienst mit eingebautem **Admin-Bereich**, in dem sich
+ein Entwickler anmeldet, um diese Daten zu prüfen und zu bearbeiten. Wie man ihn erreicht, steht unter
+[🛠️ Admin-Bereich](/world-api/admin-area).
+
+| | |
+|---|---|
+| **Framework** | ASP.NET Core 8 (REST-API + Blazor-Server-Admin-UI, MudBlazor) |
+| **Speicher** | Azure Table Storage (NoSQL Key/Value – kein SQL, kein ORM) |
+| **Auth** | API-Key für die Bot-Endpunkte; Admin-Token + Cookie für den Admin-Bereich |
+| **Hosting** | Azure App Service (Produktion); Azurite-Emulator für die lokale Entwicklung |
+
+## Weltobjekte
+
+„Weltobjekte" sind die Datensätze, die ein Entwickler bearbeitet. Es gibt zwei Arten.
+
+### NPCs
+
+Ein NPC enthält alles, was der Bot braucht, um eine Einheit zu finden und zu nutzen. Wichtige Felder:
+
+| Feld | Bedeutung |
+|---|---|
+| `NpcId` | Die NPC-ID im Spiel |
+| `Name` | Anzeigename |
+| `ZoneId` | Zone, in der der NPC lebt |
+| `X` / `Y` / `Z` | Weltkoordinaten |
+| `Faction` | Allianz / Horde / neutral |
+| `Roles` | Wofür der NPC nützlich ist (siehe unten) |
+| `VendorItems` | Verkaufte Gegenstände (bei Händlern) |
+| `TrainerClassType` / `TrainerProfessionType` | Lehrer-Spezialisierung |
+| `FlightConnections` | Flugmeister-Routen |
+
+Ein einzelner NPC kann **mehrere Rollen** tragen:
+
+```
+VendorFood   VendorDrink   VendorAmmo    VendorRepair   VendorReagent   VendorGeneral
+Innkeeper    FlightMaster  Banker        AuctioneerHouse
+ClassTrainer ProfessionTrainer
+```
+
+### Briefkästen
+
+Briefkästen sind Spielobjekte (ein eigener ID-Bereich, getrennt von NPCs) und liegen daher in einer
+eigenen Tabelle. Sie sind einfacher aufgebaut:
+
+| Feld | Bedeutung |
+|---|---|
+| `ObjectId` | Die Spielobjekt-ID im Spiel |
+| `ObjectName` | Anzeigename |
+| `ZoneId` | Zone, in der der Briefkasten steht |
+| `X` / `Y` / `Z` | Weltkoordinaten |
+| `Faction` | Allianz / Horde / neutral |
+
+<Callout type="info">
+  Datensätze werden nach **`{WowProjectId}_{ZoneId}`** partitioniert. Deshalb ist jeder Lese- und jeder
+  Bearbeitungsvorgang an ein bestimmtes WoW-Projekt **und** eine Zone gebunden – das hält Abfragen
+  schnell und Bearbeitungen gut eingegrenzt.
+</Callout>
+
+## Wie der Bot die Daten nutzt
+
+Der Bot lädt Weltdaten pro Zone über zwei API-Key-geschützte, paginierte Lese-Endpunkte:
+
+| Endpunkt | Liefert |
+|---|---|
+| `GET /api/v2/npc` | NPCs für eine oder mehrere Zonen (filterbar nach Rolle und Fraktion) |
+| `GET /api/v2/mailbox` | Briefkästen für eine oder mehrere Zonen |
+
+Mehr braucht der Bot zur Laufzeit nicht – er liest die **Live-Daten**. Wie diese Live-Daten
+geschrieben und gepflegt werden, ist Aufgabe des Admin-Bereichs.
+
+## Das zweistufige Sicherheitsmodell
+
+Die API hält Weltdaten in zwei Ebenen:
+
+- **Haupttabellen** (`Npcs`, `Mailboxes`) – die Live-Daten, die der Bot liest.
+- **Submission-Tabellen** (`NpcSubmissions`, `MailboxSubmissions`) – eine *Quarantäne* für
+  ausstehende Änderungen, die noch nicht geprüft wurden.
+
+Neue oder geänderte Daten landen zuerst in den Submission-Tabellen; nichts erreicht die
+Live-Tabellen, bevor ein Entwickler es im Admin-Bereich **freigibt**. Um diese Prüf-Nahtstelle geht
+es auf der nächsten Seite.
+
+## Weiterlesen
+
+- [🛠️ Admin-Bereich](/world-api/admin-area) – anmelden, die Warteschlange prüfen und Weltobjekte bearbeiten

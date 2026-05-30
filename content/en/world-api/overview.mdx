@@ -1,0 +1,91 @@
+import { Callout } from "nextra/components";
+
+# 🌍 World API Overview
+
+The **NexorWorldAPI** is the **database + REST endpoints** that supply the bot with *world data* —
+the NPCs and mailboxes it needs to navigate the world and interact with the game. Instead of the bot
+hard-coding where every vendor, trainer, or mailbox sits, it asks the World API, zone by zone, and
+gets back coordinates, roles, and faction info.
+
+It is a small ASP.NET Core 8 service with a built-in **Admin Area** where a developer logs in to
+review and edit that data. See [🛠️ Admin Area](/world-api/admin-area) for how to access it.
+
+| | |
+|---|---|
+| **Framework** | ASP.NET Core 8 (REST API + Blazor Server admin UI, MudBlazor) |
+| **Storage** | Azure Table Storage (NoSQL key/value — no SQL, no ORM) |
+| **Auth** | API key for the bot-facing endpoints; admin token + cookie for the Admin Area |
+| **Hosting** | Azure App Service (production); Azurite emulator for local dev |
+
+## World objects
+
+"World objects" are the records a developer edits. There are two kinds.
+
+### NPCs
+
+An NPC carries everything the bot needs to find and use a unit. Key fields:
+
+| Field | Meaning |
+|---|---|
+| `NpcId` | The in-game NPC id |
+| `Name` | Display name |
+| `ZoneId` | Zone the NPC lives in |
+| `X` / `Y` / `Z` | World coordinates |
+| `Faction` | Alliance / Horde / neutral |
+| `Roles` | What the NPC is good for (see below) |
+| `VendorItems` | Items sold (for vendors) |
+| `TrainerClassType` / `TrainerProfessionType` | Trainer specialization |
+| `FlightConnections` | Flight-master routes |
+
+A single NPC can hold **multiple roles**:
+
+```
+VendorFood   VendorDrink   VendorAmmo    VendorRepair   VendorReagent   VendorGeneral
+Innkeeper    FlightMaster  Banker        AuctioneerHouse
+ClassTrainer ProfessionTrainer
+```
+
+### Mailboxes
+
+Mailboxes are game objects (a separate id space from NPCs), so they live in their own table. They
+are simpler:
+
+| Field | Meaning |
+|---|---|
+| `ObjectId` | The in-game game-object id |
+| `ObjectName` | Display name |
+| `ZoneId` | Zone the mailbox is in |
+| `X` / `Y` / `Z` | World coordinates |
+| `Faction` | Alliance / Horde / neutral |
+
+<Callout type="info">
+  Records are partitioned by **`{WowProjectId}_{ZoneId}`**. That is why every read and every edit is
+  scoped to a specific WoW project **and** zone — it keeps lookups fast and edits well-contained.
+</Callout>
+
+## How the bot consumes it
+
+The bot loads world data per zone through two API-key-protected, paginated read endpoints:
+
+| Endpoint | Returns |
+|---|---|
+| `GET /api/v2/npc` | NPCs for one or more zones (filterable by role and faction) |
+| `GET /api/v2/mailbox` | Mailboxes for one or more zones |
+
+That is all the bot needs at runtime — it reads from the **live** data. How that live data gets
+written and curated is the job of the Admin Area.
+
+## The two-tier safety model
+
+The API keeps world data in two layers:
+
+- **Main tables** (`Npcs`, `Mailboxes`) — the live data the bot reads.
+- **Submission tables** (`NpcSubmissions`, `MailboxSubmissions`) — a *quarantine* for pending
+  changes that haven't been reviewed yet.
+
+New or changed data lands in the submission tables first; nothing reaches the live tables until a
+developer **approves** it in the Admin Area. That review seam is what the next page is about.
+
+## Continue reading
+
+- [🛠️ Admin Area](/world-api/admin-area) — log in, review the queue, and edit world objects

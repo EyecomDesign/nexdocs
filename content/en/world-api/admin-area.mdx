@@ -1,0 +1,109 @@
+import { Callout } from "nextra/components";
+
+# 🛠️ Admin Area
+
+The Admin Area is a Blazor web UI built into the NexorWorldAPI where a developer logs in to review,
+edit, approve, or reject changes to [world objects](/world-api/overview). It is the safe path for changing
+the data the bot reads — pending changes sit in a quarantine until someone approves them here.
+
+<Callout type="warning">
+  The **AdminToken** is a credential — anyone holding it can edit live world data. This docs site is
+  currently public with no auth gate, so treat the token names and URLs below accordingly and rotate
+  the token before sharing the site more widely.
+</Callout>
+
+## Accessing the Admin Area
+
+1. Go to **`/Admin/Login`**.
+2. Enter the **AdminToken**.
+3. On success the server sets a `nexorworldapi.admin` cookie (8-hour lifetime, HttpOnly,
+   SameSite=Lax) under the `AdminCookie` scheme. Every admin page is gated by the `AdminUiPolicy`,
+   so once the cookie is set you stay signed in for the session.
+
+The AdminToken is stored as the config key **`NexorWorldAPI-AdminToken`**:
+
+- **Production** — in Azure Key Vault (the app reads it via its configured `VaultUri`).
+- **Local dev** — via user-secrets or an environment variable:
+  ```bash
+  dotnet user-secrets set NexorWorldAPI-AdminToken <your-token>
+  ```
+
+## Running it locally
+
+The fastest way to open the Admin Area on your machine is the **Azurite** launch profile, which runs
+the API against the local Azure Storage emulator (no Azure credentials needed):
+
+```bash
+dotnet run --launch-profile "NexorWorldApi (Azurite)"
+```
+
+| | |
+|---|---|
+| **URL** | `https://localhost:7164` (HTTP `http://localhost:5164`) |
+| **Entry point** | `/Admin/Login` |
+| **Storage** | Local Azurite table emulator |
+
+The default profile (`dotnet run`) instead targets Azure Key Vault and opens `/swagger`.
+
+In production the service runs on Azure App Service (`WoWVendorApiApp`), so the live Admin Area is at:
+
+```
+https://wowvendorapiapp.azurewebsites.net/Admin/Login
+```
+
+<Callout type="info">
+  The production admin uses the AdminToken from Azure Key Vault. The local URL above
+  (`https://localhost:7164/Admin/Login`) is the same UI running against the Azurite emulator for
+  development.
+</Callout>
+
+## Dashboard
+
+After login, **`/Admin`** shows the work queue at a glance — counts of pending NPC submissions,
+pending mailbox submissions, and rejected items (the audit trail). The counts auto-refresh roughly
+every 10 seconds, so you can leave it open while data comes in.
+
+## Editing world objects
+
+Changes are reviewed in two queues:
+
+| Page | Queue |
+|---|---|
+| `/Admin/Submissions/Npc` | Pending NPC changes |
+| `/Admin/Submissions/Mailbox` | Pending mailbox changes |
+| `/Admin/Submissions/History` | Audit log of rejected submissions |
+
+Each queue is a data grid of pending submissions with three per-row actions:
+
+- **Edit** — opens a dialog to fix the pending record before it goes live: name, ids, zone, X/Y/Z
+  coordinates, continent, faction, roles (comma-separated), and trainer types.
+- **Approve** — promotes the submission into the live main table and deletes the submission record.
+  After this, the bot will read the new data.
+- **Reject** — moves the submission to *Rejected* status (with optional notes) so it's kept for the
+  audit log instead of going live.
+
+### Where changes come from
+
+The bot and developer tools `POST` proposed changes into the quarantine via the
+`.../submit` endpoints — they never write straight to the live tables. Nothing the bot reads changes
+until you approve it here.
+
+<Callout type="info">
+  A direct-upsert endpoint (`POST /api/v2/npc`) does exist and writes straight to the live table,
+  bypassing review. In normal operation, work the submission queue instead so changes are auditable.
+</Callout>
+
+## Doing it via the API instead
+
+Every grid action maps to an admin endpoint, protected by the `[AdminApiKey]`, for developers who
+prefer curl or scripts over the UI:
+
+| Action | Endpoint |
+|---|---|
+| List submissions | `GET /api/v2/admin/submissions/{npc\|mailbox}` |
+| Approve | `POST /api/v2/admin/submissions/{npc\|mailbox}/{id}/approve` |
+| Reject | `POST /api/v2/admin/submissions/{npc\|mailbox}/{id}/reject` |
+| Edit pending | `POST /api/v2/admin/submissions/{npc\|mailbox}/{id}/edit` |
+
+The behavior is identical to the UI — approve promotes to the live table, reject moves to the audit
+log.

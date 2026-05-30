@@ -51,6 +51,7 @@ const nextConfig: NextConfig = {
       { source: "/:lang(en|de)/profile-creator", destination: "/:lang/profile-creator/grinding-profiles", permanent: false },
       { source: "/:lang(en|de)/developer", destination: "/:lang/developer/grinding-profiles", permanent: false },
       { source: "/:lang(en|de)/server", destination: "/:lang/server/overview", permanent: false },
+      { source: "/:lang(en|de)/world-api", destination: "/:lang/world-api/overview", permanent: false },
       { source: "/:lang(en|de)/faq", destination: "/:lang/faq/faq", permanent: false },
       { source: "/:lang(en|de)/general/features", destination: "/:lang/general/features/included-profiles", permanent: false },
       { source: "/:lang(en|de)/getting-started/buy-unlocker", destination: "/:lang/getting-started/buy-unlocker/noname-windows", permanent: false },

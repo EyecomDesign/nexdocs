@@ -1,0 +1,113 @@
+import { Callout } from "nextra/components";
+
+# 🛠️ Admin-Bereich
+
+Der Admin-Bereich ist eine in die NexorWorldAPI eingebaute Blazor-Web-UI, in der sich ein Entwickler
+anmeldet, um Änderungen an [Weltobjekten](/world-api/overview) zu prüfen, zu bearbeiten, freizugeben oder
+abzulehnen. Es ist der sichere Weg, die Daten zu ändern, die der Bot liest – ausstehende Änderungen
+liegen in Quarantäne, bis sie hier freigegeben werden.
+
+<Callout type="warning">
+  Das **AdminToken** ist eine Zugangsberechtigung – wer es besitzt, kann Live-Weltdaten bearbeiten.
+  Diese Doku-Seite ist derzeit öffentlich ohne Auth-Schranke; behandle die unten genannten
+  Token-Namen und URLs entsprechend und rotiere das Token, bevor du die Seite breiter teilst.
+</Callout>
+
+## Zugang zum Admin-Bereich
+
+1. Gehe zu **`/Admin/Login`**.
+2. Gib das **AdminToken** ein.
+3. Bei Erfolg setzt der Server ein `nexorworldapi.admin`-Cookie (8 Stunden Laufzeit, HttpOnly,
+   SameSite=Lax) unter dem Schema `AdminCookie`. Jede Admin-Seite ist durch die `AdminUiPolicy`
+   geschützt, sodass du nach dem Setzen des Cookies für die Sitzung angemeldet bleibst.
+
+Das AdminToken wird unter dem Konfigurationsschlüssel **`NexorWorldAPI-AdminToken`** gespeichert:
+
+- **Produktion** – in Azure Key Vault (die App liest es über die konfigurierte `VaultUri`).
+- **Lokale Entwicklung** – über user-secrets oder eine Umgebungsvariable:
+  ```bash
+  dotnet user-secrets set NexorWorldAPI-AdminToken <dein-token>
+  ```
+
+## Lokal ausführen
+
+Am schnellsten öffnest du den Admin-Bereich lokal über das **Azurite**-Launch-Profil, das die API
+gegen den lokalen Azure-Storage-Emulator laufen lässt (keine Azure-Anmeldedaten nötig):
+
+```bash
+dotnet run --launch-profile "NexorWorldApi (Azurite)"
+```
+
+| | |
+|---|---|
+| **URL** | `https://localhost:7164` (HTTP `http://localhost:5164`) |
+| **Einstiegspunkt** | `/Admin/Login` |
+| **Speicher** | Lokaler Azurite-Tabellen-Emulator |
+
+Das Standardprofil (`dotnet run`) zielt stattdessen auf Azure Key Vault und öffnet `/swagger`.
+
+In der Produktion läuft der Dienst auf Azure App Service (`WoWVendorApiApp`), der Live-Admin-Bereich
+ist also erreichbar unter:
+
+```
+https://wowvendorapiapp.azurewebsites.net/Admin/Login
+```
+
+<Callout type="info">
+  Der Produktions-Admin nutzt das AdminToken aus Azure Key Vault. Die obige lokale URL
+  (`https://localhost:7164/Admin/Login`) ist dieselbe UI, die für die Entwicklung gegen den
+  Azurite-Emulator läuft.
+</Callout>
+
+## Dashboard
+
+Nach der Anmeldung zeigt **`/Admin`** die Warteschlange auf einen Blick – Anzahl ausstehender
+NPC-Submissions, ausstehender Briefkasten-Submissions und abgelehnter Einträge (das Audit-Protokoll).
+Die Zähler aktualisieren sich etwa alle 10 Sekunden, sodass du es geöffnet lassen kannst, während
+Daten eintreffen.
+
+## Weltobjekte bearbeiten
+
+Änderungen werden in zwei Warteschlangen geprüft:
+
+| Seite | Warteschlange |
+|---|---|
+| `/Admin/Submissions/Npc` | Ausstehende NPC-Änderungen |
+| `/Admin/Submissions/Mailbox` | Ausstehende Briefkasten-Änderungen |
+| `/Admin/Submissions/History` | Audit-Protokoll abgelehnter Submissions |
+
+Jede Warteschlange ist ein Datengitter ausstehender Submissions mit drei Aktionen pro Zeile:
+
+- **Edit** – öffnet einen Dialog, um den ausstehenden Datensatz vor der Freigabe zu korrigieren:
+  Name, IDs, Zone, X/Y/Z-Koordinaten, Kontinent, Fraktion, Rollen (kommagetrennt) und Lehrer-Typen.
+- **Approve** – befördert die Submission in die Live-Haupttabelle und löscht den Submission-Datensatz.
+  Danach liest der Bot die neuen Daten.
+- **Reject** – setzt die Submission auf den Status *Rejected* (mit optionalen Notizen), sodass sie
+  fürs Audit-Protokoll erhalten bleibt, statt live zu gehen.
+
+### Woher die Änderungen kommen
+
+Der Bot und Entwickler-Tools schicken vorgeschlagene Änderungen per `POST` über die
+`.../submit`-Endpunkte in die Quarantäne – sie schreiben nie direkt in die Live-Tabellen. Nichts, was
+der Bot liest, ändert sich, bevor du es hier freigibst.
+
+<Callout type="info">
+  Es gibt einen Direkt-Upsert-Endpunkt (`POST /api/v2/npc`), der unter Umgehung der Prüfung direkt in
+  die Live-Tabelle schreibt. Im Normalbetrieb solltest du stattdessen die Submission-Warteschlange
+  nutzen, damit Änderungen nachvollziehbar bleiben.
+</Callout>
+
+## Alternativ über die API
+
+Jede Aktion im Datengitter entspricht einem Admin-Endpunkt, geschützt durch den `[AdminApiKey]`, für
+Entwickler, die curl oder Skripte gegenüber der UI bevorzugen:
+
+| Aktion | Endpunkt |
+|---|---|
+| Submissions auflisten | `GET /api/v2/admin/submissions/{npc\|mailbox}` |
+| Freigeben | `POST /api/v2/admin/submissions/{npc\|mailbox}/{id}/approve` |
+| Ablehnen | `POST /api/v2/admin/submissions/{npc\|mailbox}/{id}/reject` |
+| Ausstehende bearbeiten | `POST /api/v2/admin/submissions/{npc\|mailbox}/{id}/edit` |
+
+Das Verhalten ist identisch mit der UI – Freigeben befördert in die Live-Tabelle, Ablehnen verschiebt
+ins Audit-Protokoll.
