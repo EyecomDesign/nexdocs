@@ -1,21 +1,160 @@
 # ⁉️ Questing Profiles
 
-## How Projects work
+A **Questing Profile** describes how the bot completes a single quest: where to pick it
+up, what to do for each objective, and where to turn it in. Unlike a grinding or gathering
+profile (which defines a flat `Points` patrol), a quest profile lays out an ordered set of
+**phases** inside an `Executecodeorder` block.
 
-Nullam quis risus eget urna mollis ornare vel eu leo. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Maecenas sed diam eget risus varius blandit sit amet non magna. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Etiam porta sem malesuada magna mollis euismod. Donec id elit non mi porta gravida at eget metus. Donec id elit non mi porta gravida at eget metus.
+A quest profile can run two ways:
 
-### The Basics
+- **Loaded directly** from the **Profiles** browser → the bot runs the *whole* quest
+  (pick up → every objective → turn in) and stops when the quest is complete.
+- **Driven by a [Task Routine](/profile-creator/task-routines)** → either one task per phase
+  (`Run Quest Phase`) or the whole quest in one task (`Run Full Quest`).
 
-Praesent commodo cursus magna, vel scelerisque nisl consectetur et. Duis mollis, est non commodo luctus, nisi erat porttitor ligula, eget lacinia odio sem nec elit.
+## File shape
 
-Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Aenean eu leo quam. Pellentesque ornare sem lacinia quam venenatis vestibulum.
+Quest profiles live under `Profiles/` — a common layout is
+`Profiles/{Expansion}/Questing/{Name}.lua`. The filename is free-form; a handy convention is
+`<questid>_<Name>.lua`.
 
-### Creating a Project
+```lua
+Profile = {
+    Name = "Cutting_Teeth",
+    Type = "QUESTING",
+    Executecodeorder = {
+        questid = 25126,
 
-Nullam quis risus eget urna mollis ornare vel eu leo. Cras justo odio, dapibus ac facilisis in, egestas eget quam. Praesent commodo cursus magna, vel scelerisque nisl consectetur et.
+        -- Where to accept the quest.
+        PickUp = {
+            npcid  = 3143,                                -- the quest giver's NPC id
+            Points = { { -597.74, -4248.26, 38.96, 5 } }, -- a spot next to the giver
+        },
 
-### Organizing your Projects
+        -- Where to hand it in (often the same NPC).
+        TurnIn = {
+            npcid  = 3143,
+            Points = { { -597.74, -4248.26, 38.96, 5 } },
+        },
 
-Sed posuere consectetur est at lobortis. Curabitur blandit tempus porttitor. Donec ullamcorper nulla non metus auctor fringilla. Donec sed odio dui.
+        -- One entry per quest objective.
+        Objectives = {
+            [1] = {
+                type           = "KillAndLoot",
+                objectiveIndex = 1,
+                WhitelistIDs   = { 3098 },              -- only these mobs count
+                Points = {                              -- roam these while killing
+                    { -471.28, -4270.47, 42.89, 35 },
+                    { -433.26, -4287.73, 42.86, 35 },
+                    { -494.11, -4340.77, 38.66, 35 },
+                },
+            },
+        },
+    },
+}
+```
 
-Curabitur blandit tempus porttitor. Donec id elit non mi porta gravida at eget metus. Nullam id dolor id nibh ultricies vehicula ut id elit. Aenean eu leo quam. Pellentesque ornare sem lacinia quam venenatis vestibulum.
+## The `Executecodeorder` block
+
+| Field | Type | Purpose |
+|-------|------|---------|
+| `questid` | number | The **server** quest id. Everything keys off this — it must match the quest your server actually grants. |
+| `PickUp` | table\|nil | `{ npcid, Points }` — the quest giver and a spot to interact from. Omit if the quest is auto-granted. |
+| `TurnIn` | table\|nil | `{ npcid, Points }` — the turn-in NPC and spot. Often the same NPC as `PickUp`. |
+| `Objectives` | table | Array of objective phases (see below). Empty `{}` for a pure pickup/turn-in quest. |
+
+### Points format
+
+Every `Points` entry is `{ x, y, z, radius }` in **world coordinates**:
+
+- **PickUp / TurnIn** → a single point right next to the NPC, `radius` ≈ `5` (interaction range).
+- **Objectives** → several points spread across the objective area, `radius` ≈ `35` (the bot roams these while working the objective; more points = better coverage).
+
+> **Capturing coordinates & ids in-game:** stand on a spot and run the bot's waypoint
+> helper (`/run NexorWP()`), or target an NPC/mob and run `/run NexorTarget()` to print its
+> `npcid` and position. Drop the printed `{ x, y, z, r }` line straight into a `Points` table.
+
+## Phase types
+
+Phases are resolved by the questing engine (`src/machines/profiles/questing.lua`) and run in
+this order: **PickUp → each incomplete Objective (by `objectiveIndex`) → TurnIn**. Completion
+is detected live from the quest log, so a phase that is already done is skipped automatically.
+
+**Implemented today** (these have full driving logic):
+
+| Phase | Where | Fields | Behaviour |
+|-------|-------|--------|-----------|
+| `PickUp` | `Executecodeorder.PickUp` | `npcid`, `Points` | Walk to the giver, then the `QuestTalk` substate interacts and accepts the quest. |
+| `TurnIn` | `Executecodeorder.TurnIn` | `npcid`, `Points` | Walk to the NPC, `QuestTalk` interacts and completes the quest. |
+| `KillAndLoot` | `Objectives[n]` | `type`, `objectiveIndex`, `WhitelistIDs`, `Points` | Roam the points and engage **only** the whitelisted mobs, looting after each kill (reuses the same engage/loot machinery as a grinding profile). |
+
+> **Not yet implemented:** the Task UI's "Run Quest Phase" dropdown also lists
+> `CompleteQuest`, `Gathering`, `Grinding`, `UseItemOnPosition/Mob/Self`,
+> `UseSpellOnPosition/Mob/Self`, `TalkTo`, `InteractWithUnit`, `InteractWithObject`,
+> `MoveTo`, and `CustomCode`. These are placeholders carried over from the legacy engine —
+> selecting one loads the phase but the bot idles ("No handler for phase type"). They will be
+> documented here as each is ported.
+
+### Objective fields
+
+| Field | Type | Purpose |
+|-------|------|---------|
+| `type` | string | The phase type, e.g. `"KillAndLoot"`. |
+| `objectiveIndex` | number | Which quest objective this drives (matches the in-game objective order, 1-based). |
+| `WhitelistIDs` | number[] | NPC/object ids that count for this objective — the bot engages/interacts only with these. |
+| `Points` | table | `{ {x,y,z,r}, … }` area to work the objective in. |
+| `logic` | string\|nil | Optional nav/combat logic override (`"Path"` default, or `"Spot"`/`"Bounce"`). |
+
+## Navigation & combat logic
+
+Each phase defaults to **`Path`** logic (the bot fights from its current position while
+roaming the points — the same behaviour as a grinding profile). You normally don't set
+`logic` at all. Only override it per phase (e.g. `logic = "Spot"`) if you specifically want
+the bot to anchor combat to a fixed point.
+
+## Complete example
+
+`Profiles/Examples/Questing/25126_Cutting_Teeth.lua` — *Cutting Teeth* (Valley of Trials):
+
+```lua
+-- PickUp/TurnIn: Gornek (3143). Obj 1: kill Mottled Boars (3098).
+Profile = {
+    Name = "Cutting_Teeth",
+    Type = "QUESTING",
+    Executecodeorder = {
+        questid = 25126,
+        PickUp = { npcid = 3143, Points = { { -597.74, -4248.26, 38.96, 5 } } },
+        TurnIn = { npcid = 3143, Points = { { -597.74, -4248.26, 38.96, 5 } } },
+        Objectives = {
+            [1] = {
+                type = "KillAndLoot", objectiveIndex = 1, WhitelistIDs = { 3098 },
+                Points = {
+                    { -471.28, -4270.47, 42.89, 35 },
+                    { -433.26, -4287.73, 42.86, 35 },
+                    { -494.11, -4340.77, 38.66, 35 },
+                },
+            },
+        },
+    },
+}
+```
+
+Loading this from the Profiles browser makes the bot accept the quest at Gornek, kill
+Mottled Boars until objective 1 is done, then return to Gornek to turn it in — then stop.
+
+## Best practices
+
+- **Use the real `questid`.** If it doesn't match the quest your server grants, pickup,
+  objective tracking, and turn-in will never register. Verify it in-game:
+  `/run print(C_QuestLog.GetLogIndexForQuestID(<id>))` (prints a number when the quest is in
+  your log).
+- **One quest per file.** Chain related quests with a [Task Routine](/profile-creator/task-routines)
+  rather than cramming several quests into one profile.
+- **Whitelist precisely.** Put the exact mob/object ids in `WhitelistIDs` so the bot doesn't
+  fight unrelated enemies.
+- **Spread objective points** across the spawn area and keep `radius` generous (~35) so the
+  bot finds targets; keep PickUp/TurnIn radius small (~5).
+- **Mind prerequisites.** If a quest requires an earlier one (e.g. it isn't offered until a
+  prior quest is turned in), model the whole chain in a routine in the right order.
+- **`Type` is `"QUESTING"`** (the loader treats any profile with an `Executecodeorder` block
+  as a quest profile).

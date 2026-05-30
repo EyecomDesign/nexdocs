@@ -1,0 +1,191 @@
+# 🧭 Task Routines
+
+A **Task Routine** is an ordered list of tasks that orchestrate profiles and bot actions —
+for example: *“pick up quest A, kill the mobs, grind to level 4, then turn it in.”* Where a
+profile says *what to do in one place*, a routine strings several profiles and actions
+together into a full play session.
+
+Routines live under `Tasks/Routines/{Name}.lua` and are loaded from the
+**Tasks → Library** tab.
+
+## File shape
+
+A routine file `return`s a table with optional metadata and a `Tasks` list:
+
+```lua
+return {
+    Name        = "VoT Intro (25152 + 25126)",
+    Author      = "Nexor",
+    Description = "Valley of Trials intro chain.",
+    Faction     = "Horde",
+    Expansion   = "Retail",
+    LevelRange  = "1-4",
+
+    Tasks = {
+        {
+            Name      = "Pick Up: Your Place in the World (25152)",
+            Enabled   = true,
+            Condition = { name = "OnLoad", args = {} },
+            Action    = { name = "Run Quest Phase", args = {
+                ["Profile"]         = "Examples/Questing/25152_Your_Place_In_The_World.lua",
+                ["Phase Type"]      = "PickUp",
+                ["Objective Index"] = "",
+            }},
+            Repeat = 1, DelayBefore = 0, DelayAfter = 0,
+        },
+        -- … more tasks …
+    },
+}
+```
+
+The metadata fields (`Author`, `Description`, `Faction`, `Expansion`, `LevelRange`) are
+optional and only shown in the Library browser.
+
+## Task fields
+
+| Field | Type | Purpose |
+|-------|------|---------|
+| `Name` | string | Label shown in the Tasks panel. |
+| `Enabled` | boolean | Disabled tasks are skipped. |
+| `Condition` | table | `{ name, args }` — the **stop / advance gate** (see below). |
+| `Action` | table | `{ name, args }` — what the bot does while the task is active. |
+| `Mode` | string\|nil | `"In Row"` (default) or `"Always"`. |
+| `Repeat` | number | How many times to run (1 = once; 0 = infinite). |
+| `DelayBefore` / `DelayAfter` | number | Seconds to wait before starting / after finishing. |
+
+## How tasks run
+
+`In Row` tasks run **sequentially**: the first enabled task is the *head* and runs every
+tick until it finishes, then the next becomes the head, and so on. `Always` tasks run every
+tick alongside the In-Row queue.
+
+A task finishes when **either**:
+
+1. its **Action self-completes** (e.g. `Run Quest Phase` reports the phase done), **or**
+2. its **Condition fires** (the stop gate returns true).
+
+> **Mental model:** the `Condition` is *when to stop this task and advance*, **not** when to
+> start it. `OnLoad` means “run immediately; advance when the action says it’s done.”
+> `OnLevelReached` means “keep running until I reach this level, then advance.”
+
+## Conditions (stop gates)
+
+All conditions are defined in `src/machines/task.lua` (the `Conditions` table). Each is a
+WoW-event-driven or polled stop-gate.
+
+| Condition | Args | Fires when… |
+|-----------|------|-------------|
+| `OnLoad` / `OnStart` / `OnStop` / `OnError` | — | Never on its own — the **action** decides completion (use for quest phases). |
+| `OnLevelReached` | `Level` | The player reaches that level. |
+| `OnLevelUp` | — | The player gains any level. |
+| `OnFreeBagSlotsBelow` | `Free Bag Slots Threshold` | Free bag slots drop below the value. |
+| `OnGoldReached` | `Gold Threshold` (copper) | Gold reaches the amount. |
+| `OnItem` | `Item ID` | The item count changes. |
+| `OnTime` | `Time Interval` (s) | The interval elapses. |
+| `OnZoneChange` | — | The player changes zone. |
+| `OnHealthBelow` | `Health Threshold` (%) | Health drops below the percent. |
+| `OnDurabilityBelow` | `Durability Threshold` (%) | Durability drops below the percent. |
+| `OnCombatEnter` / `OnCombatExit` | — | Combat starts / ends. |
+| `OnBuffGain` / `OnDebuffGain` | `Buff ID` / `Debuff ID` | The aura is gained. |
+| `OnAchievementEarned` | `Achievement ID` | That achievement is earned. |
+| `OnMailReceived` / `OnWhisperReceived` / `OnGroupInvite` / `OnGuildMessage` | — | The matching event arrives. |
+| `OnPlayerDeath` | — | The player dies. |
+| `OnEvent` | `Event Name` | An arbitrary WoW event fires. |
+| `OnCondition` | `Condition Function` | A custom Lua function you supply returns true. |
+
+## Actions
+
+Actions are defined in `src/systems/task_organizer.lua`.
+
+| Action | Args | Does |
+|--------|------|------|
+| `Run Full Quest` | `Profile` | Runs an entire quest profile (pick up → all objectives → turn in), then completes. The simplest way to do a whole quest in one task. |
+| `Run Quest Phase` | `Profile`, `Phase Type`, `Objective Index` | Runs a single phase of a quest profile and completes when that phase is done. Use when you want to interleave other steps (e.g. grind) between phases. |
+| `Switch Profile` | `Profile` | Loads a normal profile (grind/gather/…) and **keeps running it** until the task’s `Condition` advances. Pair with `OnLevelReached`/`OnGoldReached`/etc. |
+| `Switch State` | `State` | Forces a bot state (`Sell`, `Mail`, `Repair`, `Buy`). |
+
+`Profile` paths are **relative to `Profiles/`** — e.g.
+`"Examples/Questing/25126_Cutting_Teeth.lua"` or `"Durotar.lua"`. `Objective Index` is the
+objective number (as a string) or `""` to match the whole phase type. See
+[Questing Profiles](/profile-creator/questing-profiles) for which `Phase Type` values are
+implemented.
+
+## Profile ⇄ Routine precedence
+
+Routines and directly-loaded profiles are **mutually exclusive** top-level modes:
+
+- Loading a **routine** clears any directly-loaded profile and the routine takes over.
+- Loading a **profile** directly from the Profiles browser clears the active routine.
+
+The active routine is **persisted across `/reload`** — on reload it is re-loaded (in
+preference to the last profile) so its logic keeps driving, and the bot auto-starts only if
+your **AutoStart** setting is on. Because phase/level conditions are evaluated live,
+re-running a routine **smart-skips** anything already completed.
+
+## Complete example — Valley of Trials intro chain
+
+`Tasks/Routines/Test_Cutting_Teeth.lua` — two quests, with a grind in the middle:
+
+```lua
+return {
+    Name        = "VoT Intro (25152 + 25126)",
+    Faction     = "Horde", Expansion = "Retail", LevelRange = "1-4",
+    Tasks = {
+        -- Quest 25152: Your Place in the World (pickup -> turn in)
+        { Name = "Pick Up 25152", Enabled = true,
+          Condition = { name = "OnLoad", args = {} },
+          Action = { name = "Run Quest Phase", args = {
+              ["Profile"] = "Examples/Questing/25152_Your_Place_In_The_World.lua",
+              ["Phase Type"] = "PickUp", ["Objective Index"] = "" }},
+          Repeat = 1 },
+        { Name = "Turn In 25152", Enabled = true,
+          Condition = { name = "OnLoad", args = {} },
+          Action = { name = "Run Quest Phase", args = {
+              ["Profile"] = "Examples/Questing/25152_Your_Place_In_The_World.lua",
+              ["Phase Type"] = "TurnIn", ["Objective Index"] = "" }},
+          Repeat = 1 },
+
+        -- Quest 25126: Cutting Teeth (pickup -> kill -> grind to 4 -> turn in)
+        { Name = "Pick Up 25126", Enabled = true,
+          Condition = { name = "OnLoad", args = {} },
+          Action = { name = "Run Quest Phase", args = {
+              ["Profile"] = "Examples/Questing/25126_Cutting_Teeth.lua",
+              ["Phase Type"] = "PickUp", ["Objective Index"] = "" }},
+          Repeat = 1 },
+        { Name = "Kill Boars (obj 1)", Enabled = true,
+          Condition = { name = "OnLoad", args = {} },
+          Action = { name = "Run Quest Phase", args = {
+              ["Profile"] = "Examples/Questing/25126_Cutting_Teeth.lua",
+              ["Phase Type"] = "KillAndLoot", ["Objective Index"] = "1" }},
+          Repeat = 1 },
+        { Name = "Grind to level 4", Enabled = true,
+          Condition = { name = "OnLevelReached", args = { ["Level"] = "4" } },
+          Action = { name = "Switch Profile", args = { ["Profile"] = "Durotar.lua" }},
+          Repeat = 1 },
+        { Name = "Turn In 25126", Enabled = true,
+          Condition = { name = "OnLoad", args = {} },
+          Action = { name = "Run Quest Phase", args = {
+              ["Profile"] = "Examples/Questing/25126_Cutting_Teeth.lua",
+              ["Phase Type"] = "TurnIn", ["Objective Index"] = "" }},
+          Repeat = 1 },
+    },
+}
+```
+
+> **Tip:** the three `Run Quest Phase` tasks for 25126 (PickUp + KillAndLoot + TurnIn) could
+> be replaced by a single **`Run Full Quest`** task — unless, as here, you want to inject the
+> *grind to level 4* step between killing and turning in.
+
+## Best practices
+
+- **Reach for `Run Full Quest`** for a self-contained quest; use per-phase
+  `Run Quest Phase` only when you need to interleave other steps.
+- **`Switch Profile` always needs a stop `Condition`** (e.g. `OnLevelReached`,
+  `OnGoldReached`) — otherwise it grinds forever. `OnLoad` on a `Switch Profile` task means
+  “run this profile indefinitely.”
+- **Order matters.** Put prerequisite quests before the quests that depend on them.
+- **Lean on smart-skip.** It’s safe to keep completed phases in the routine; on reload or
+  re-run they’re skipped based on live quest/level state.
+- **Profile paths are relative to `Profiles/`** — never hard-code `scripts/Nexor_User/...`.
+- See the [Questing Profiles](/profile-creator/questing-profiles) guide for the quest files a
+  routine drives.

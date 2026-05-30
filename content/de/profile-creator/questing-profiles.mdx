@@ -1,3 +1,165 @@
 # ⁉️ Questing-Profile
 
-Dokumentation folgt bald.
+Ein **Questing-Profil** beschreibt, wie der Bot eine einzelne Quest abschließt: wo er sie
+annimmt, was er für jedes Ziel tun muss und wo er sie abgibt. Anders als ein Grinding- oder
+Sammel-Profil (das eine flache `Points`-Route definiert) legt ein Quest-Profil eine
+geordnete Folge von **Phasen** innerhalb eines `Executecodeorder`-Blocks fest.
+
+Ein Quest-Profil kann auf zwei Arten laufen:
+
+- **Direkt geladen** über den **Profiles**-Browser → der Bot spielt die *gesamte* Quest
+  (annehmen → alle Ziele → abgeben) und stoppt, sobald die Quest abgeschlossen ist.
+- **Gesteuert durch eine [Task-Routine](/profile-creator/task-routines)** → entweder eine
+  Aufgabe pro Phase (`Run Quest Phase`) oder die ganze Quest in einer Aufgabe
+  (`Run Full Quest`).
+
+## Dateiaufbau
+
+Quest-Profile liegen unter `Profiles/` — eine übliche Struktur ist
+`Profiles/{Expansion}/Questing/{Name}.lua`. Der Dateiname ist frei wählbar; eine praktische
+Konvention ist `<questid>_<Name>.lua`.
+
+```lua
+Profile = {
+    Name = "Cutting_Teeth",
+    Type = "QUESTING",
+    Executecodeorder = {
+        questid = 25126,
+
+        -- Wo die Quest angenommen wird.
+        PickUp = {
+            npcid  = 3143,                                -- NPC-ID des Questgebers
+            Points = { { -597.74, -4248.26, 38.96, 5 } }, -- ein Punkt direkt beim Geber
+        },
+
+        -- Wo sie abgegeben wird (oft derselbe NPC).
+        TurnIn = {
+            npcid  = 3143,
+            Points = { { -597.74, -4248.26, 38.96, 5 } },
+        },
+
+        -- Ein Eintrag pro Quest-Ziel.
+        Objectives = {
+            [1] = {
+                type           = "KillAndLoot",
+                objectiveIndex = 1,
+                WhitelistIDs   = { 3098 },              -- nur diese Mobs zählen
+                Points = {                              -- diese Punkte beim Töten ablaufen
+                    { -471.28, -4270.47, 42.89, 35 },
+                    { -433.26, -4287.73, 42.86, 35 },
+                    { -494.11, -4340.77, 38.66, 35 },
+                },
+            },
+        },
+    },
+}
+```
+
+## Der `Executecodeorder`-Block
+
+| Feld | Typ | Zweck |
+|------|-----|-------|
+| `questid` | number | Die **Server**-Quest-ID. Alles hängt daran — sie muss mit der Quest übereinstimmen, die dein Server tatsächlich vergibt. |
+| `PickUp` | table\|nil | `{ npcid, Points }` — der Questgeber und ein Punkt zum Interagieren. Weglassen, wenn die Quest automatisch vergeben wird. |
+| `TurnIn` | table\|nil | `{ npcid, Points }` — Abgabe-NPC und Punkt. Oft derselbe NPC wie `PickUp`. |
+| `Objectives` | table | Liste der Ziel-Phasen (siehe unten). Leer `{}` für eine reine Annehmen/Abgeben-Quest. |
+
+### Format der Punkte
+
+Jeder `Points`-Eintrag ist `{ x, y, z, radius }` in **Weltkoordinaten**:
+
+- **PickUp / TurnIn** → ein einzelner Punkt direkt neben dem NPC, `radius` ≈ `5` (Interaktionsreichweite).
+- **Objectives** → mehrere Punkte über das Zielgebiet verteilt, `radius` ≈ `35` (der Bot
+  läuft diese ab, während er das Ziel bearbeitet; mehr Punkte = bessere Abdeckung).
+
+> **Koordinaten & IDs im Spiel erfassen:** Stell dich auf einen Punkt und nutze den
+> Wegpunkt-Helfer des Bots (`/run NexorWP()`), oder visiere einen NPC/Mob an und führe
+> `/run NexorTarget()` aus, um dessen `npcid` und Position auszugeben. Übernimm die
+> ausgegebene `{ x, y, z, r }`-Zeile direkt in eine `Points`-Tabelle.
+
+## Phasentypen
+
+Die Phasen werden von der Questing-Engine (`src/machines/profiles/questing.lua`) in dieser
+Reihenfolge ausgeführt: **PickUp → jedes noch offene Objective (nach `objectiveIndex`) →
+TurnIn**. Der Abschluss wird live aus dem Questlog ermittelt, sodass eine bereits erledigte
+Phase automatisch übersprungen wird.
+
+**Heute umgesetzt** (diese besitzen vollständige Steuerlogik):
+
+| Phase | Ort | Felder | Verhalten |
+|-------|-----|--------|-----------|
+| `PickUp` | `Executecodeorder.PickUp` | `npcid`, `Points` | Zum Geber laufen, dann interagiert und akzeptiert die `QuestTalk`-Substate die Quest. |
+| `TurnIn` | `Executecodeorder.TurnIn` | `npcid`, `Points` | Zum NPC laufen, `QuestTalk` interagiert und schließt die Quest ab. |
+| `KillAndLoot` | `Objectives[n]` | `type`, `objectiveIndex`, `WhitelistIDs`, `Points` | Punkte ablaufen und **nur** die gelisteten Mobs angreifen, nach jedem Kill looten (nutzt dieselbe Kampf-/Loot-Mechanik wie ein Grinding-Profil). |
+
+> **Noch nicht umgesetzt:** Das „Run Quest Phase“-Dropdown im Task-UI listet außerdem
+> `CompleteQuest`, `Gathering`, `Grinding`, `UseItemOnPosition/Mob/Self`,
+> `UseSpellOnPosition/Mob/Self`, `TalkTo`, `InteractWithUnit`, `InteractWithObject`,
+> `MoveTo` und `CustomCode`. Das sind Platzhalter aus der alten Engine — wählt man einen,
+> wird die Phase geladen, aber der Bot bleibt stehen („No handler for phase type“). Sie
+> werden hier dokumentiert, sobald sie portiert sind.
+
+### Felder eines Objectives
+
+| Feld | Typ | Zweck |
+|------|-----|-------|
+| `type` | string | Der Phasentyp, z. B. `"KillAndLoot"`. |
+| `objectiveIndex` | number | Welches Quest-Ziel diese Phase bedient (entspricht der In-Game-Zielreihenfolge, beginnend bei 1). |
+| `WhitelistIDs` | number[] | NPC-/Objekt-IDs, die für dieses Ziel zählen — der Bot greift nur diese an bzw. interagiert nur mit diesen. |
+| `Points` | table | `{ {x,y,z,r}, … }` Gebiet, in dem das Ziel bearbeitet wird. |
+| `logic` | string\|nil | Optionale Überschreibung der Navigations-/Kampflogik (`"Path"` Standard, oder `"Spot"`/`"Bounce"`). |
+
+## Navigations- & Kampflogik
+
+Jede Phase nutzt standardmäßig **`Path`**-Logik (der Bot kämpft aus seiner aktuellen Position
+heraus, während er die Punkte abläuft — genau wie ein Grinding-Profil). Normalerweise setzt
+du `logic` gar nicht. Überschreibe es nur pro Phase (z. B. `logic = "Spot"`), wenn der Bot den
+Kampf gezielt an einem festen Punkt verankern soll.
+
+## Vollständiges Beispiel
+
+`Profiles/Examples/Questing/25126_Cutting_Teeth.lua` — *Cutting Teeth* (Tal der Prüfungen):
+
+```lua
+-- PickUp/TurnIn: Gornek (3143). Ziel 1: Gefleckte Keiler (3098) töten.
+Profile = {
+    Name = "Cutting_Teeth",
+    Type = "QUESTING",
+    Executecodeorder = {
+        questid = 25126,
+        PickUp = { npcid = 3143, Points = { { -597.74, -4248.26, 38.96, 5 } } },
+        TurnIn = { npcid = 3143, Points = { { -597.74, -4248.26, 38.96, 5 } } },
+        Objectives = {
+            [1] = {
+                type = "KillAndLoot", objectiveIndex = 1, WhitelistIDs = { 3098 },
+                Points = {
+                    { -471.28, -4270.47, 42.89, 35 },
+                    { -433.26, -4287.73, 42.86, 35 },
+                    { -494.11, -4340.77, 38.66, 35 },
+                },
+            },
+        },
+    },
+}
+```
+
+Lädst du dies aus dem Profiles-Browser, nimmt der Bot die Quest bei Gornek an, tötet
+Gefleckte Keiler bis Ziel 1 erfüllt ist, kehrt zu Gornek zur Abgabe zurück — und stoppt dann.
+
+## Best Practices
+
+- **Verwende die echte `questid`.** Passt sie nicht zur Quest deines Servers, werden
+  Annahme, Zielverfolgung und Abgabe nie erkannt. Prüfe sie im Spiel:
+  `/run print(C_QuestLog.GetLogIndexForQuestID(<id>))` (gibt eine Zahl aus, wenn die Quest im
+  Log ist).
+- **Eine Quest pro Datei.** Verkette zusammenhängende Quests mit einer
+  [Task-Routine](/profile-creator/task-routines), statt mehrere Quests in ein Profil zu pressen.
+- **Whitelist genau setzen.** Trage die exakten Mob-/Objekt-IDs in `WhitelistIDs` ein, damit
+  der Bot keine fremden Gegner angreift.
+- **Ziel-Punkte verteilen** über das Spawngebiet und `radius` großzügig halten (~35), damit
+  der Bot Ziele findet; PickUp/TurnIn-Radius klein halten (~5).
+- **Voraussetzungen beachten.** Setzt eine Quest eine frühere voraus (wird sie z. B. erst nach
+  Abgabe einer vorherigen angeboten), bilde die ganze Kette in einer Routine in der richtigen
+  Reihenfolge ab.
+- **`Type` ist `"QUESTING"`** (der Loader behandelt jedes Profil mit einem
+  `Executecodeorder`-Block als Quest-Profil).
