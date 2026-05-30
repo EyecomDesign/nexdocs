@@ -2,11 +2,11 @@ name: Deploy to Cloudflare Workers
 
 on:
   push:
-    branches: [master]
+    branches: [main]
   workflow_dispatch:
 
 concurrency:
-  group: deploy-master
+  group: deploy-main
   cancel-in-progress: false
 
 jobs:
