@@ -1,0 +1,13 @@
+# Units and targets
+
+`NX.UnitManager.Get(token)` returns a live wrapper. Common tokens are `player`,
+`target`, `pet`, and the explicit empty `none` unit.
+
+Use `EnumFriends`, `EnumEnemies`, or `EnumActiveEnemies` for bounded selection.
+The callback returns `true` to stop. `CreateCustomUnit(token, callback)` is the
+escape hatch; its callback must return a wrapper, never `nil`.
+
+`Spell:SetTarget` accepts a wrapper, token, resolver function, or selector object.
+`Spell:Cast(target)` is a one-off full-gate cast. A resolver returning `nil` is a
+no-op. Harmful predicates should explicitly check `unit:IsEnemy()`; mechanical
+validity and range remain in the spell gate.

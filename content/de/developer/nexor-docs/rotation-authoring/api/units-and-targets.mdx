@@ -1,0 +1,13 @@
+# Einheiten und Ziele
+
+`NX.UnitManager.Get(token)` liefert einen Live-Wrapper. Häufige Tokens sind
+`player`, `target`, `pet` und die explizit leere Einheit `none`.
+
+Für begrenzte Auswahl `EnumFriends`, `EnumEnemies` oder `EnumActiveEnemies`
+verwenden. Der Callback beendet mit `true`. `CreateCustomUnit(token, callback)`
+ist der Ausweg; der Callback darf nie `nil` liefern.
+
+`Spell:SetTarget` akzeptiert Wrapper, Token, Resolver oder Selector.
+`Spell:Cast(target)` ist ein einmaliger Cast mit vollständigem Gate. Ein Resolver
+mit `nil` ist No-op. Schadens-Predicates prüfen explizit `unit:IsEnemy()`;
+mechanische Gültigkeit und Reichweite bleiben im Gate.

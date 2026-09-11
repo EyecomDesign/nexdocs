@@ -1,0 +1,53 @@
+# 2. Einheiten und Ziele
+
+Drei Entscheidungen bleiben getrennt:
+
+- Eine Live-Einheit mit `NX.UnitManager.Get` holen.
+- Mit einem UnitManager-Selector eine Einheit auswählen.
+- Mit `SetTarget` oder `Cast(target)` festlegen, wem ein Zauber gehört.
+
+Das normale Kampfziel gehört der Engine. Eine Rotation kann einen Wrapper prüfen
+und einen besonderen Zauber einem eigenen Ziel zuweisen.
+
+## Zielformen
+
+`SetTarget` akzeptiert einen Wrapper, einen Token-String, eine Resolver-Funktion
+oder einen Selector. Gibt ein Resolver `nil` zurück, bedeutet das „nichts tun“ und
+nicht „auf mich selbst wirken“. Für ein explizit leeres Ergebnis gibt es den
+`objects.none`-Sentinel.
+
+```lua
+local target = NX.UnitManager.Get("target")
+local Corruption = NX.SpellBook:GetGlobal().Corruption
+
+Corruption:CastableIf(function()
+    return NX.Toggles["Damage"] ~= false and target:IsEnemy()
+end)
+Corruption:SetTarget(function()
+    return NX.UnitManager.Get("target")
+end)
+```
+
+Das Predicate beschreibt Policy: Schaden ist aktiv und das Ziel ist feindlich.
+Es wiederholt nicht `IsAlive`, Reichweite, Cooldown oder Spell-Nutzbarkeit. Diese
+mechanischen Prüfungen gehören zum Zauber-Gate.
+
+## Eine begrenzte Gruppe auswählen
+
+Bei `EnumActiveEnemies` beendet ein Callback mit `true` die Enumeration:
+
+```lua
+local selected = {}
+NX.UnitManager.EnumActiveEnemies(function(enemy)
+    if enemy:IsEnemy() then
+        selected[#selected + 1] = enemy
+    end
+    return #selected >= 3
+end)
+```
+
+`CreateCustomUnit` ist der Ausweg für einen Selector, den die API nicht ausdrücken
+kann. Sein Callback muss einen Wrapper oder `NX.UnitManager.Get("none")` liefern,
+niemals `nil`.
+
+Siehe [Einheiten und Ziele](../api/units-and-targets).

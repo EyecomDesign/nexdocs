@@ -1,0 +1,32 @@
+# 7. Multipull und vollständige Quelle
+
+Das Tutorial hat einen eigenen `MultiPullPulse`. Er wählt höchstens drei aktive
+Feinde, wirkt nur verfügbare sofortige DoTs und meldet danach, dass die Arbeit
+fertig ist. Die normale Engine bleibt für Navigation und Kampfzustand zuständig.
+
+Der Übergang ist kantengetrieben:
+
+1. Beim Sammelstart Pet einmal stoppen und passiv setzen.
+2. Höchstens drei aktive Feinde auswählen.
+3. `Corruption:Cast(enemy)` und `CurseOfAgony:Cast(enemy)` verwenden, wenn der
+   jeweilige DoT fehlt. `Cast(target)` behält das vollständige Gate.
+4. Wenn keine Arbeit bleibt, Pet auf defensiv stellen. Der nächste Combat-Pulse
+   ruft wieder `NX.Pet.Assist()` auf.
+
+Der Multipull-Pfad fügt keinen Hardcast auf jedes Ziel ein, baut keine neue Mana-
+Policy und behauptet nicht, in Zauberstab-Reichweite zu laufen.
+
+## Kanonische Quelle
+
+Die kanonische Datei liegt im NexorBot-Repository. Der folgende Codeblock ist der
+im Docs-Build eingecheckte Snapshot. Vergleiche ihn beim Aktualisieren des
+Tutorials mit der verlinkten Quelle:
+
+<CodeFile path="Warlock_TBC_Authoring_Tutorial.lua" language="lua" />
+
+[Kanonische Quelle in NexorBot öffnen](https://github.com/NexorSystem/NexorBot/blob/Development/Rotations/ClassicTBC/WARLOCK/Warlock_TBC_Authoring_Tutorial.lua).
+
+Sie enthält `OutOfCombatPulse`, `EngagementPulse`, `CombatPulse` und
+`MultiPullPulse`. Die bestehende V2-Produktionsrotation bleibt separat.
+
+Weiter zu [Audit und Prüfung](./08-audit-and-validation).

@@ -1,0 +1,10 @@
+# Pulse
+
+Pflichtfelder der Rotationstabelle sind `EngagementPulse`, `CombatPulse` und
+`OutOfCombatPulse`. `MultiPullPulse` ist optional und fällt auf `CombatPulse`
+zurück.
+
+`OutOfCombatPulse` gibt `true` zurück, solange Arbeit bleibt, und `false`, wenn
+der Zustand leer ist. Die Rückgaben der anderen Pulse sind Aktionsresultate und
+kein OOC-Drain-Signal. Pulse bleiben kurz: Policy einmal anhängen, danach eine
+frühe Prioritätsleiter verwenden.

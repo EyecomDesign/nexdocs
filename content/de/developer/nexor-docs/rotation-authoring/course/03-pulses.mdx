@@ -1,0 +1,44 @@
+# 3. Pulse und der erste Ladevorgang
+
+Die Engine bildet Zustände auf Pulse ab. Eine Rotation muss
+`EngagementPulse`, `CombatPulse` und `OutOfCombatPulse` anbieten.
+`MultiPullPulse` ist optional und fällt ohne eigene Implementierung auf
+`CombatPulse` zurück.
+
+| Zustand | Pulse | Bedeutung |
+| --- | --- | --- |
+| Engage | `EngagementPulse` | Erstes Aktionsfenster öffnen. |
+| Pulling oder Killing | `CombatPulse` | Normale Prioritätsleiter. |
+| Moving, Waiting, Searching oder MapMovement | `OutOfCombatPulse` | OOC-Arbeit abarbeiten. |
+| MultiPull | `MultiPullPulse` | Explizite Sammel-Policy der Rotation. |
+
+## Vertrag für den OOC-Drain
+
+`OutOfCombatPulse` gibt `true` zurück, solange Arbeit übrig ist, und `false`, wenn
+alles erledigt ist. So weiß die Engine, ob sie weiter fragen soll. `nil` oder ein
+ewiges `true` kann den Zustand festhalten.
+
+Der erste ladbare Checkpoint ist bewusst klein:
+
+```lua
+local Rotation = {
+    OutOfCombatPulse = function()
+        if NX.Pet.Maintain() then
+            return true
+        end
+        return false
+    end,
+    EngagementPulse = function() return false end,
+    CombatPulse = function() return false end,
+}
+
+return Rotation
+```
+
+Der vollständige Checkpoint bleibt zusätzlich als Quell-Snapshot erhalten:
+
+<CodeFile path="stages/03-skeleton.lua" language="lua" />
+
+Baue diesen Checkpoint vor der Prioritätsleiter. Frühe Fragmente sind bewusst
+konzeptionell. Ab diesem Skelett bleibt die vollständige Quelle ladbar; Lektion 7
+zeigt sie komplett. Die [Pulse-API](../api/pulses) erklärt die Details.

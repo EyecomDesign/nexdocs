@@ -1,0 +1,52 @@
+# 1. Environment and file shape
+
+A rotation is a Lua chunk loaded with a `RotationEnv`. The first line names the
+public environment:
+
+```lua
+---@type RotationEnv
+local NX = ...
+
+local spells = NX.SpellBook:GetGlobal()
+
+return {
+    EngagementPulse = function() return false end,
+    CombatPulse = function() return false end,
+    OutOfCombatPulse = function() return false end,
+}
+```
+
+The chunk returns a table. The normal rotation loader supplies `NX`; a rotation
+must not reach into the engine's `NEX` namespace. Use `NX.*` first. A raw WoW
+global is a documented compatibility fallback only, and it should be called via
+`_G` when the API page says that it is allowed.
+
+## Use the global spellbook first
+
+`NX.SpellBook:GetGlobal()` gives the merged flavor and class catalog. Refer to a
+spell by its catalog name, such as `spells.Corruption`, rather than by a numeric
+spell ID. The catalog resolves the rank and flavor. A handle can exist while the
+character does not know that spell; `Execute()` owns the known-spell gate.
+
+Custom spellbooks are an advanced option. Learn the global path first, then read
+the [spellbook API](../api/spellbooks) before registering a custom handle.
+
+## Units are live wrappers
+
+`NX.UnitManager.Get("player")` and `NX.UnitManager.Get("target")` return live unit
+wrappers. `NX.Player` is a class description, not the live player unit. Keep the
+environment and the live unit model separate:
+
+```lua
+local function Player()
+    return NX.UnitManager.Get("player")
+end
+
+local function Target()
+    return NX.UnitManager.Get("target")
+end
+```
+
+The [environment API](../api/environment) lists the public services. The next
+lesson uses the unit and target services without moving target selection into the
+engine or into raw WoW calls.

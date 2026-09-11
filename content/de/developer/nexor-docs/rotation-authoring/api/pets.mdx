@@ -1,0 +1,11 @@
+# Pets
+
+`NX.Pet.Maintain()` ist allgemeine Wartungsabsicht außerhalb des Kampfes.
+`NX.Pet.Assist()` ist die normale Kampfabsicht.
+
+Das Modul bietet außerdem Status, Einstellungen, Beschwörung, Heilung und Befehle
+wie `CommandPetPassive`, `CommandPetDefensive`, `CommandPetFollow` und
+`CommandPetStopAttack`. Befehle nur an Zustandskanten senden.
+Klassenspezifische Entscheidungen bleiben in der Rotation: Das
+Warlock-Tutorial entscheidet über `HealthFunnel` und delegiert diese Policy nicht
+an einen generischen Pet-Heiler.

@@ -1,0 +1,12 @@
+# Pets
+
+`NX.Pet.Maintain()` is the generic out-of-combat maintenance intent. A successful
+action can keep `OutOfCombatPulse` returning `true`. `NX.Pet.Assist()` is the
+normal combat assist intent.
+
+The module also exposes state, settings, summon, heal, and command helpers such as
+`CommandPetPassive`, `CommandPetDefensive`, `CommandPetFollow`, and
+`CommandPetStopAttack`. Use command helpers on state edges, not every pulse.
+Class-specific behavior remains rotation-owned: the
+Warlock tutorial decides when to cast `HealthFunnel`; it does not ask a generic
+pet healer to make that class decision.

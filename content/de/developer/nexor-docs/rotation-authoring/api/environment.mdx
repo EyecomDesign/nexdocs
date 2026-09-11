@@ -1,0 +1,12 @@
+# Umgebung
+
+Der Chunk erhält `---@type RotationEnv` als `local NX = ...`. Öffentliche Dienste
+sind unter anderem `NX.SpellBook`, `NX.UnitManager`, `NX.Item`, `NX.Pet`,
+`NX.Combat`, `NX.Movement`, `NX.Wand`, `NX.Toggles` und `NX.Options`.
+
+Für die Live-Spielereinheit `NX.UnitManager.Get("player")` verwenden. `NX.Player`
+ist eine Klasse und kein Object-Manager-Token. Erst `NX.*`, dann ein rohes WoW-
+Global verwenden. Ein Fallback muss dokumentiert sein.
+
+`NX.Toggles[name]` und `NX.Options[name]` sind aktuelle Werte und werden bei der
+Entscheidung gelesen. Intrinsische Zauberflags gehören in den Katalog.

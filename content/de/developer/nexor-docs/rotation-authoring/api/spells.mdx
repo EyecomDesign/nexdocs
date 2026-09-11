@@ -1,0 +1,19 @@
+# Zauber
+
+Der Authoring-Seam ist:
+
+```lua
+spell:CastableIf(function() return policy end)
+spell:SetTarget(targetOrResolver)
+spell:Behavior(name, policy, targetResolver)
+spell:Execute()
+```
+
+`CastableIf` beschreibt Absicht. `Execute()` prüft bekannte Zauber, Cooldown/GCD,
+Reichweite, Sichtlinie, Blickrichtung, Bewegung, Cast-Zustand, Nutzbarkeit und
+Ziel. Diese Mechanik nicht im Predicate wiederholen. `Cast(target)` ist der
+einmalige Full-Gate-Ausweg.
+
+Katalognamen statt IDs verwenden. `:IsKnown()` ist nur für eine Verfügbarkeits-
+verzweigung. Intrinsische Optionen wie `isPetSpell`, `ignoreFacing` und
+`allowDead` gehören in den Katalog.

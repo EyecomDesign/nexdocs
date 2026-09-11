@@ -1,0 +1,56 @@
+# 6. Items, settings, and wands
+
+This lesson adds three public contracts without changing the runtime.
+
+## Settings and fractional sliders
+
+Toggles describe on/off policy. Options describe user values. A fractional slider
+must declare both `Step` and `Precision`; `Precision` is the snap increment, not
+the number of decimal places:
+
+```lua
+{
+    Name = "Dot Refresh Seconds",
+    Type = "Slider",
+    Min = 0,
+    Max = 10,
+    Step = 0.1,
+    Precision = 0.1,
+    Default = 1.5,
+}
+```
+
+Read `NX.Toggles[name]` and `NX.Options[name]` at decision time. The UI may change
+them while the rotation is running.
+
+## Healthstones
+
+The tutorial keeps a small list of Healthstone item IDs. It checks
+`NX.Item.GetItemCount(itemID)` and consumes with `NX.Item.UseItemByID(itemID)`.
+`CreateHealthstone` is a normal catalog spell used when no stone is available.
+Those are item IDs, not spell IDs. The public item API is the boundary; do not
+read internal item tables from a rotation.
+
+## Wand maintenance
+
+The rotation chooses whether its combat priority ladder wants a wand. It calls
+`NX.Wand.Maintain()` once per combat pulse that should wand. The method registers
+intent and returns nothing. The framework resolves the continuous Shoot cadence
+after the pulse.
+
+Do not call `Shoot:Execute()` or `Shoot:Cast()` directly. Do not build a consumer
+list, an OOM fallback, a second cooldown arbiter, or a movement-into-range claim.
+The controller handles mechanics and queue boundaries. When the ladder’s demand
+changes, the framework disarms or re-arms and starts a fresh priority evaluation
+at the queue boundary. Wand maintenance is a TBC contract in this tutorial; it is
+not a Retail migration.
+
+See the [items, wands, and settings API](../api/items-wands-settings) and the
+[wand contract in the rotation guide](https://github.com/NexorSystem/NexorBot/blob/Development/Rotations/CLAUDE.md).
+
+## Accumulated source after this lesson
+
+This snapshot adds the public item helpers, settings metadata, and wand intent to
+the earlier source:
+
+<CodeFile path="stages/06-items-settings-and-wand.lua" language="lua" />

@@ -1,0 +1,51 @@
+# 5. Pet ownership
+
+The Pet Module owns generic pet maintenance. The rotation owns class-specific
+choices. In the tutorial that gives the pulses a simple shape:
+
+```lua
+local function MaintainPetOutOfCombat()
+    return NX.Toggles["Pet"] ~= false and NX.Pet.Maintain()
+end
+
+local function AssistPetInCombat()
+    return NX.Toggles["Pet"] ~= false and NX.Pet.Assist()
+end
+```
+
+Call `Maintain` from `OutOfCombatPulse` and `Assist` from the engagement/combat
+path. A successful action returns `true`, so the OOC pulse can drain it before
+returning `false`.
+
+## Health Funnel is rotation-owned
+
+Generic pet healing and Warlock Health Funnel are different decisions. The Pet
+Module can expose generic health policy, but the Warlock rotation decides when
+spending the player’s health and mana on `HealthFunnel` makes sense:
+
+```lua
+HealthFunnel:CastableIf(function()
+    local pet = NX.UnitManager.Get("pet")
+    return NX.Pet.IsPetActive()
+        and (pet:GetHP() or 100) < 50
+        and (NX.UnitManager.Get("player"):GetHP() or 100) > 40
+end)
+HealthFunnel:SetTarget(function()
+    return NX.UnitManager.Get("pet")
+end)
+```
+
+During the tutorial’s multipull gather, the pet is stopped and set to passive at
+the transition edge. When the gather pulse finishes, it returns to defensive and
+the normal combat pulse calls `Assist` again. Do not issue those commands on every
+tick.
+
+Custom pet logic is an advanced path. Use the documented Pet settings and command
+methods; do not call private `NEX` helpers. See the [Pet API](../api/pets).
+
+## Accumulated source after this lesson
+
+The next snapshot keeps the earlier spell attachments and adds Pet Module intent
+plus the Warlock-owned Health Funnel policy:
+
+<CodeFile path="stages/05-pets.lua" language="lua" />

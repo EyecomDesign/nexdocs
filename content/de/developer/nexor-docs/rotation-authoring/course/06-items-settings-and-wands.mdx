@@ -1,0 +1,51 @@
+# 6. Items, Einstellungen und Zauberstab
+
+Diese Lektion fügt drei öffentliche Verträge ohne Runtime-Änderung hinzu.
+
+## Einstellungen und Bruchteile
+
+Toggles sind Ein/Aus-Policy. Options sind Benutzerwerte. Ein gebrochener Slider
+braucht `Step` und `Precision`; `Precision` ist das Raster und nicht die Zahl der
+Nachkommastellen:
+
+```lua
+{
+    Name = "Dot Refresh Seconds",
+    Type = "Slider",
+    Min = 0,
+    Max = 10,
+    Step = 0.1,
+    Precision = 0.1,
+    Default = 1.5,
+}
+```
+
+`NX.Toggles[name]` und `NX.Options[name]` werden bei der Entscheidung gelesen,
+damit Änderungen während des Laufs sichtbar sind.
+
+## Healthstones
+
+Das Tutorial hält eine kleine Liste von Healthstone-Item-IDs. Es prüft
+`NX.Item.GetItemCount(itemID)` und verbraucht mit `NX.Item.UseItemByID(itemID)`.
+`CreateHealthstone` ist ein normaler Katalogzauber, wenn kein Stein vorhanden
+ist. Das sind Item-IDs, keine Spell-IDs. Interne Item-Tabellen sind keine API.
+
+## Zauberstab-Wartung
+
+Die Rotation entscheidet, ob ihre Kampf-Prioritätsleiter einen Zauberstab will.
+Sie ruft `NX.Wand.Maintain()` einmal pro passendem Combat-Pulse auf. Die Funktion
+registriert nur die Absicht und gibt nichts zurück. Die Engine erledigt danach die
+kontinuierliche Shoot-Mechanik.
+
+Kein `Shoot:Execute()` oder `Shoot:Cast()`, keine Consumer-Liste, kein OOM-Fallback
+und kein Anspruch, in Zauberstab-Reichweite zu laufen. Die Steuerung übernimmt
+Mechanik und Queue-Grenzen. Dieser Vertrag ist hier TBC, nicht Retail.
+
+Siehe die [API für Items, Zauberstab und Einstellungen](../api/items-wands-settings).
+
+## Aufsummierte Quelle nach dieser Lektion
+
+Dieser Snapshot ergänzt die öffentlichen Item-Helfer, Slider-Metadaten und den
+Zauberstab-Intent:
+
+<CodeFile path="stages/06-items-settings-and-wand.lua" language="lua" />

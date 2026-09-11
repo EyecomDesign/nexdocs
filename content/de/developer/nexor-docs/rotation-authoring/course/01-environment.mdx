@@ -1,0 +1,49 @@
+# 1. Umgebung und Dateiaufbau
+
+Eine Rotation ist ein Lua-Chunk, der mit einer `RotationEnv` geladen wird. Die
+öffentliche Umgebung wird am Anfang benannt:
+
+```lua
+---@type RotationEnv
+local NX = ...
+
+local spells = NX.SpellBook:GetGlobal()
+
+return {
+    EngagementPulse = function() return false end,
+    CombatPulse = function() return false end,
+    OutOfCombatPulse = function() return false end,
+}
+```
+
+Der Chunk gibt eine Tabelle zurück. Der normale Loader liefert `NX`; eine Rotation
+darf nicht auf den internen Namespace `NEX` zugreifen. Verwende zuerst `NX.*`.
+Ein rohes WoW-Global ist nur ein dokumentierter Kompatibilitäts-Fallback und wird
+über `_G` angesprochen, wenn die API dies erlaubt.
+
+## Zuerst das globale Zauberbuch
+
+`NX.SpellBook:GetGlobal()` liefert den zusammengeführten Flavor- und Klassenkatalog.
+Verwende Katalognamen wie `spells.Corruption`, nicht numerische IDs. Der Katalog
+löst Rang und Flavor auf. Ein Handle kann existieren, obwohl der Charakter den
+Zauber nicht kennt; `Execute()` übernimmt diese Prüfung.
+
+Benutzerdefinierte Zauberbücher sind fortgeschritten. Lies zuerst die
+[Zauberbuch-API](../api/spellbooks), bevor du ein eigenes Handle registrierst.
+
+## Einheiten sind Live-Wrapper
+
+`NX.UnitManager.Get("player")` und `NX.UnitManager.Get("target")` liefern Live-
+Wrapper. `NX.Player` ist eine Klassenbeschreibung und nicht die Live-Spielereinheit:
+
+```lua
+local function Player()
+    return NX.UnitManager.Get("player")
+end
+
+local function Target()
+    return NX.UnitManager.Get("target")
+end
+```
+
+Die [Umgebungs-API](../api/environment) listet die öffentlichen Dienste.

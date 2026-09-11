@@ -1,0 +1,56 @@
+# 2. Units and targets
+
+There are three separate choices:
+
+- Look up a live unit with `NX.UnitManager.Get`.
+- Select an enemy or friend with a UnitManager selector.
+- Tell a spell which unit owns its cast with `SetTarget` or `Cast(target)`.
+
+Do not combine those choices into a second combat-target system. The engine owns
+the normal combat target. A rotation can ask for a live wrapper when it needs to
+inspect a unit, then let the spell attachment own a special target.
+
+## Target forms
+
+`SetTarget` accepts a live wrapper, a token string, a resolver function, or a
+selector object. A resolver that returns `nil` means “do nothing”; it does not
+silently become self. The `objects.none` sentinel is the explicit empty result
+for selectors.
+
+```lua
+local target = NX.UnitManager.Get("target")
+local Corruption = NX.SpellBook:GetGlobal().Corruption
+
+Corruption:CastableIf(function()
+    return NX.Toggles["Damage"] ~= false and target:IsEnemy()
+end)
+Corruption:SetTarget(function()
+    return NX.UnitManager.Get("target")
+end)
+```
+
+The predicate states policy: damage is enabled and the current target is hostile.
+It does not repeat `IsAlive`, range, cooldown, or spell usability checks. The
+spell gate does those checks when `Execute()` runs.
+
+## Select a bounded group
+
+Selectors use callbacks. Returning `true` stops enumeration, which makes a cap
+visible in the rotation:
+
+```lua
+local selected = {}
+NX.UnitManager.EnumActiveEnemies(function(enemy)
+    if enemy:IsEnemy() then
+        selected[#selected + 1] = enemy
+    end
+    return #selected >= 3
+end)
+```
+
+Use `CreateCustomUnit` only when a documented selector cannot express the unit.
+Its callback must return a live wrapper or `NX.UnitManager.Get("none");` returning
+`nil` changes the meaning of the selection.
+
+See the [units and targets API](../api/units-and-targets) before adding a new
+selector.

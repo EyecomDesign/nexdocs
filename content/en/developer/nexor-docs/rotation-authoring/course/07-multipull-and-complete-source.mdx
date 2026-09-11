@@ -1,0 +1,36 @@
+# 7. Multipull and complete source
+
+The tutorial has an explicit `MultiPullPulse`. It selects at most three active
+enemies, applies only the available instant DoTs, and then reports that the work
+is done. The normal engine still owns navigation and combat state.
+
+The gather transition is edge-triggered:
+
+1. Stop the pet and set it passive once when gathering starts.
+2. Select no more than three active enemies.
+3. Use `Corruption:Cast(enemy)` and `CurseOfAgony:Cast(enemy)` when their own DoT
+   is absent. `Cast(target)` keeps the full spell gate.
+4. Restore the pet to defensive when no selected target needs work. The next
+   combat pulse uses `NX.Pet.Assist()` again.
+
+The multipull path does not add a hardcast to every target, redesign mana policy,
+or tell movement how to enter wand range. Optional and talent spells are guarded
+by their handles and the normal execute gate.
+
+## Canonical source
+
+The canonical file lives in the NexorBot repository. The code block below is the
+checked-in snapshot used by this docs build; compare it with the source link when
+updating the tutorial:
+
+<CodeFile path="Warlock_TBC_Authoring_Tutorial.lua" language="lua" />
+
+[Open the canonical source in NexorBot](https://github.com/NexorSystem/NexorBot/blob/Development/Rotations/ClassicTBC/WARLOCK/Warlock_TBC_Authoring_Tutorial.lua).
+
+The source includes the full `OutOfCombatPulse`, `EngagementPulse`,
+`CombatPulse`, and `MultiPullPulse` implementation. It is the simple canonical
+Warlock TBC leveling tutorial; the existing V2 production rotation remains
+separate.
+
+Continue to [audit and validation](./08-audit-and-validation) before calling the
+course complete.

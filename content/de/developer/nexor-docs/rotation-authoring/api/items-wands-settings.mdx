@@ -1,0 +1,13 @@
+# Items, Zauberstab und Einstellungen
+
+Für Item-Policy `NX.Item.GetItemCount(item)` und `NX.Item.UseItemByID(item)`
+verwenden. `CreateHealthstone` ist der Katalogzauber. Interne Item-Tabellen sind
+keine Rotations-API.
+
+Bei einem Bruch-Slider `Step` und `Precision` setzen; `Precision` ist das Raster.
+`NX.Options[name]` wird live gelesen.
+
+`NX.Wand.Maintain()` registriert die Zauberstab-Absicht des Combat-Pulses und gibt
+nichts zurück. Die Engine besitzt Shoot, Dauerfeuer, Cooldown, Queue-Grenze und
+Disarm. Nie `Shoot:Cast()` oder `Shoot:Execute()` aufrufen und keine Consumer-
+Liste, OOM-Reserve oder Reichweiten-Navigation ergänzen.

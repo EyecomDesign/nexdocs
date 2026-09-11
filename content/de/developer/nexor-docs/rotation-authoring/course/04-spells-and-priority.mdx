@@ -1,0 +1,47 @@
+# 4. Zauber und Priorität
+
+Zauber-Policy wird einmal am Anfang angehängt. Ein Pulse bleibt dann eine kurze,
+lesbare Prioritätsleiter:
+
+```lua
+Corruption:CastableIf(function()
+    local target = NX.UnitManager.Get("target")
+    return NX.Toggles["Damage"] ~= false
+        and target:IsEnemy()
+        and not target:HasMyDebuff(Corruption)
+end)
+Corruption:SetTarget(function()
+    return NX.UnitManager.Get("target")
+end)
+
+if Corruption:Execute() then
+    return true
+end
+```
+
+`CastableIf` beschreibt Absicht. `Execute()` prüft den vollständigen Gate: bekannter
+Zauber, Cooldown/GCD, Nutzbarkeit, Reichweite, Sichtlinie, Blickrichtung,
+Bewegung, Cast-Zustand und gültiges Ziel. Wiederhole diese Mechanik nicht im
+Predicate.
+
+## Zielmodell wählen
+
+Selbst-Buffs und Ressourcen können das Standardziel verwenden. Schadenszauber
+sollen Feindlichkeit klar prüfen und das Live-Ziel anhängen. Für eine einmalige
+Abweichung gibt es `spell:Cast(target)`; das verwendet weiterhin das vollständige
+Gate, aber nicht das angehängte Predicate.
+
+`Behavior(name, condition, targetResolver)` ist für seltene benannte Varianten.
+Registriere es einmal und rufe `Execute("name")` auf. Ein unbekannter Name ist ein
+No-op.
+
+Optionale Zauber werden vor Attach oder Execute geprüft. Nutze `:IsKnown()` nur für
+eine Verfügbarkeitsverzweigung. Intrinsische Flags wie `isPetSpell`, `ignoreFacing`
+und `allowDead` gehören in den Katalog. Siehe [Zauber](../api/spells) und
+[Zauberbücher](../api/spellbooks).
+
+## Aufsummierte Quelle nach dieser Lektion
+
+Dieser Snapshot enthält Umgebung, drei Pulse und die angehängten Schadenszauber:
+
+<CodeFile path="stages/04-spells.lua" language="lua" />

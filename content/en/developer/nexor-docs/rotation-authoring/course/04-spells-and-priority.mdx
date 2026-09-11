@@ -1,0 +1,54 @@
+# 4. Spells and priority
+
+Attach spell policy once, near the top of the file. A pulse should then be a
+short, readable priority ladder:
+
+```lua
+Corruption:CastableIf(function()
+    local target = NX.UnitManager.Get("target")
+    return NX.Toggles["Damage"] ~= false
+        and target:IsEnemy()
+        and not target:HasMyDebuff(Corruption)
+end)
+Corruption:SetTarget(function()
+    return NX.UnitManager.Get("target")
+end)
+
+-- Later, in CombatPulse:
+if Corruption:Execute() then
+    return true
+end
+```
+
+`CastableIf` is intent. `Execute()` applies the full gate: known spell,
+cooldown/GCD, usable state, range, line of sight, facing, movement, casting, and
+valid target. Repeating those mechanical checks in a predicate creates stale or
+conflicting policy.
+
+## Choose the right target model
+
+Self buffs and self resources can use the default self target. Harmful spells
+should make hostility explicit and attach the live target. For one-off target
+variation, `spell:Cast(target)` is the escape hatch. It still uses the full gate,
+but it does not run the attached predicate.
+
+`Behavior(name, condition, targetResolver)` is for a rare named variation. Register
+it once and call `Execute("name")`; an unregistered name is a no-op. Prefer the
+ordinary attachment when one policy is enough.
+
+## Optional and rank-dependent spells
+
+Guard optional handles before attaching or executing them. Use `:IsKnown()` only
+when the rotation needs to choose between branches. Do not put numeric IDs in the
+rotation. Intrinsic facts such as `isPetSpell`, `ignoreFacing`, or `allowDead`
+belong in the spell catalog, not in a rotation predicate.
+
+Read [spells](../api/spells) and [spellbooks](../api/spellbooks) for the exact
+public methods.
+
+## Accumulated source after this lesson
+
+This snapshot includes the environment, three pulses, and the attached damage
+spells from the earlier lessons:
+
+<CodeFile path="stages/04-spells.lua" language="lua" />

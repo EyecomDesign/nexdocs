@@ -1,0 +1,60 @@
+# 8. Audit and validation
+
+`rotation-audit` is a manual, read-only check. It never edits a rotation and never
+runs automatically when a file changes. Give it an explicit path, or choose a
+named existing set:
+
+```text
+python -m tools.rotation_authoring.audit Rotations/ClassicTBC/WARLOCK/Warlock_TBC_Authoring_Tutorial.lua
+python -m tools.rotation_authoring.audit --existing warlock-tbc
+```
+
+The matching [Claude skill](https://github.com/NexorSystem/NexorBot/blob/Development/.claude/skills/rotation-audit/SKILL.md)
+is kept with the NexorBot source. The generated agent copy is also available in
+the [NexorBot agent skills](https://github.com/NexorSystem/NexorBot/blob/Development/.agents/skills/rotation-audit/SKILL.md).
+
+## Finding categories
+
+Every finding includes a file location, the reason, a corrected pattern, and a
+course link.
+
+- **Must fix** — a required pulse is missing, a direct raw cast bypasses the
+  public wrapper, or wand ownership is violated.
+- **Should fix** — the code is likely to work but repeats a gate or leaves a
+  documented authoring rule unclear.
+- **Note** — useful context that does not make the rotation wrong.
+- **Passed** — a rule was checked and no finding was produced.
+- **Unknown** — static inspection cannot prove the runtime fact. Keep it visible
+  for a human review.
+
+Run it on the tutorial first. Then run it on an intentionally incorrect existing
+rotation to make sure it reports a real finding without changing that file.
+
+## Validation workflow
+
+From the repository root:
+
+```text
+python -m unittest tests.rotation_authoring_test
+python -m tools.rotation_authoring.validate --root .
+```
+
+The tests supply a small `RotationEnv` at the normal Lua chunk seam, dispatch
+the tutorial pulses, and load the real `src/machines/rotation.lua` to check
+state-to-pulse mapping. They do not claim to simulate a WoW client.
+
+Build both published locales from the NexDocs repository:
+
+```text
+pnpm install --frozen-lockfile
+pnpm typecheck
+pnpm build
+```
+
+The NexorBot validator checks that the English and German course paths match,
+staged snapshots map to their lessons, and the canonical source contains the
+required concepts. The final manual check is client-dependent: load the tutorial
+in the normal rotation loader, confirm the pulse transitions, pet handoff,
+Healthstone item use, and wand intent in a TBC client. Record that result in the
+[NexorBot smoke-test record](https://github.com/NexorSystem/NexorBot/blob/Development/Docs/rotation-authoring/SMOKE_TEST.md)
+separately from automated evidence.

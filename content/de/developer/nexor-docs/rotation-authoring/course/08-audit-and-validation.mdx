@@ -1,0 +1,58 @@
+# 8. Audit und Prüfung
+
+`rotation-audit` ist eine manuelle, schreibgeschützte Prüfung. Sie ändert keine
+Rotation und startet nicht automatisch bei Dateiänderungen. Übergib einen Pfad
+oder wähle eine benannte vorhandene Menge:
+
+```text
+python -m tools.rotation_authoring.audit Rotations/ClassicTBC/WARLOCK/Warlock_TBC_Authoring_Tutorial.lua
+python -m tools.rotation_authoring.audit --existing warlock-tbc
+```
+
+Die [Claude-Quelle](https://github.com/NexorSystem/NexorBot/blob/Development/.claude/skills/rotation-audit/SKILL.md)
+liegt im NexorBot-Repository. Die erzeugte [Agent-Kopie](https://github.com/NexorSystem/NexorBot/blob/Development/.agents/skills/rotation-audit/SKILL.md)
+liegt ebenfalls dort.
+
+## Kategorien
+
+Jeder Fund enthält Ort, Grund, korrigiertes Muster und einen Kurs-Link:
+
+- **Must fix** — Pflicht-Pulse fehlen, ein roher Cast umgeht den Wrapper oder der
+  Zauberstab-Vertrag wird verletzt.
+- **Should fix** — wahrscheinlich lauffähig, aber eine Gate-Prüfung wird wiederholt
+  oder eine Regel bleibt unklar.
+- **Note** — nützlicher Kontext ohne Fehler.
+- **Passed** — die Regel wurde geprüft und hat keinen Fund.
+- **Unknown** — die statische Prüfung kann die Runtime-Tatsache nicht beweisen.
+
+Zuerst das Tutorial prüfen. Danach eine bewusst falsche bestehende Rotation
+prüfen und sicherstellen, dass sie einen Fund erzeugt und unverändert bleibt.
+
+## Prüfablauf
+
+Im Repository-Root:
+
+```text
+python -m unittest tests.rotation_authoring_test
+python -m tools.rotation_authoring.validate --root .
+```
+
+Die Tests geben dem Lua-Chunk eine kleine `RotationEnv` am normalen Loader-Seam,
+dispatchen die Tutorial-Pulse und laden die echte `src/machines/rotation.lua`,
+um die Zustandszuordnung zu prüfen. Sie simulieren keinen WoW-Client.
+
+Das NexDocs-Repository baut beide Sprachen:
+
+```text
+pnpm install --frozen-lockfile
+pnpm typecheck
+pnpm build
+```
+
+Der NexorBot-Validator vergleicht die Kursseiten, prüft die Zuordnung der
+Quell-Snapshots und die Pflichtkonzepte der kanonischen Quelle. Die abschließende
+manuelle Prüfung ist clientabhängig: Tutorial im normalen Loader laden,
+Pulse-Übergänge, Pet-Handoff, Healthstone-Nutzung und Zauberstab-Intent in einem
+TBC-Client prüfen. Dieses Ergebnis getrennt von automatischen Belegen im
+[Smoke-Test-Eintrag von NexorBot](https://github.com/NexorSystem/NexorBot/blob/Development/Docs/rotation-authoring/SMOKE_TEST.md)
+dokumentieren.

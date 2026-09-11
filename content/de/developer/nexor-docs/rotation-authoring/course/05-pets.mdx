@@ -1,0 +1,49 @@
+# 5. Verantwortung für das Pet
+
+Das Pet Module übernimmt allgemeine Pet-Wartung. Klassenspezifische Entscheidungen
+bleiben in der Rotation:
+
+```lua
+local function MaintainPetOutOfCombat()
+    return NX.Toggles["Pet"] ~= false and NX.Pet.Maintain()
+end
+
+local function AssistPetInCombat()
+    return NX.Toggles["Pet"] ~= false and NX.Pet.Assist()
+end
+```
+
+`Maintain` gehört in `OutOfCombatPulse`, `Assist` in den Engage-/Combat-Pfad.
+Eine erfolgreiche Aktion gibt `true` zurück, damit OOC die Arbeit abarbeiten kann.
+
+## Health Funnel gehört zur Rotation
+
+Generische Pet-Heilung und Warlocks Health Funnel sind zwei verschiedene
+Entscheidungen. Das Modul kann allgemeine Health-Policy anbieten; die Warlock-
+Rotation entscheidet, wann Spielerleben und Mana dafür eingesetzt werden:
+
+```lua
+HealthFunnel:CastableIf(function()
+    local pet = NX.UnitManager.Get("pet")
+    return NX.Pet.IsPetActive()
+        and (pet:GetHP() or 100) < 50
+        and (NX.UnitManager.Get("player"):GetHP() or 100) > 40
+end)
+HealthFunnel:SetTarget(function()
+    return NX.UnitManager.Get("pet")
+end)
+```
+
+Beim Multipull-Sammeln wird das Pet einmal gestoppt und auf passiv gesetzt. Nach
+dem Ende geht es auf defensiv zurück; der nächste Combat-Pulse ruft wieder
+`Assist` auf. Diese Befehle nicht in jedem Tick senden.
+
+Für eigene Pet-Logik nur dokumentierte Pet-Einstellungen und Befehle verwenden,
+niemals private `NEX`-Helfer. Siehe die [Pet-API](../api/pets).
+
+## Aufsummierte Quelle nach dieser Lektion
+
+Der Snapshot behält die Zauber-Attachments und ergänzt Pet-Intent sowie das
+Warlock-eigene Health-Funnel-Verhalten:
+
+<CodeFile path="stages/05-pets.lua" language="lua" />

@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation"
 import { generateStaticParamsFor, importPage } from "nextra/pages"
-import { useMDXComponents } from "@/mdx-components"
+import { useMDXComponents as getMDXComponents } from "@/mdx-components"
 
 const LOCALES = new Set(["en", "de"])
 
@@ -21,7 +21,7 @@ export async function generateMetadata(props: PageProps) {
   return metadata
 }
 
-const Wrapper = useMDXComponents().wrapper as React.ComponentType<{
+const Wrapper = getMDXComponents().wrapper as React.ComponentType<{
   toc: unknown
   metadata: unknown
   sourceCode: string

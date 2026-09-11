@@ -1,0 +1,42 @@
+# Build a Rotation
+
+This course teaches the Nexor rotation-authoring standard by building one small
+Warlock TBC leveling rotation for levels 1–20. The file is a teaching example,
+not a migration plan for the existing rotations.
+
+The course has two layers:
+
+1. The course explains the decisions in small lessons.
+2. The API pages give short, searchable reference entries for the same decisions.
+
+The complete, loadable source lives in
+[`Warlock_TBC_Authoring_Tutorial.lua`](https://github.com/NexorSystem/NexorBot/blob/Development/Rotations/ClassicTBC/WARLOCK/Warlock_TBC_Authoring_Tutorial.lua).
+Later lessons render that file directly, so the example and the course have one
+source of truth.
+
+## Follow this order
+
+- [Environment and file shape](./course/01-environment) — receive `RotationEnv`,
+  use the global spellbook, and return a rotation table.
+- [Units and targets](./course/02-units-and-targets) — separate live unit lookup,
+  target selection, and spell target ownership.
+- [Pulses and the first load](./course/03-pulses) — make the three required pulses
+  loadable before adding policy.
+- [Spells and priority](./course/04-spells-and-priority) — attach intent and keep
+  the pulse ladder small.
+- [Pet ownership](./course/05-pets) — use the Pet Module for generic work and keep
+  Health Funnel in the Warlock rotation.
+- [Items, settings, and wands](./course/06-items-settings-and-wands) — use public
+  item APIs, explicit fractional sliders, and framework-owned wand maintenance.
+- [Multipull and complete source](./course/07-multipull-and-complete-source) —
+  cap the target set at three and read the final source.
+- [Audit and validation](./course/08-audit-and-validation) — run the read-only
+  audit, loader check, bilingual build, and client smoke test.
+
+## What is deliberately out of scope
+
+This example does not migrate `Warlock_Leveling_TBC.lua`, redesign the runtime,
+implement Hunter logic, or cover Retail. If a production rotation needs a new
+runtime API, document that as a separate design and implementation task.
+
+Start with [lesson 1](./course/01-environment), or jump to the [API map](./api).

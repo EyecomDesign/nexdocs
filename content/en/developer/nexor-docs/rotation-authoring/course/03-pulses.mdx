@@ -1,0 +1,52 @@
+# 3. Pulses and the first load
+
+The engine maps live states to pulse names. A rotation must provide
+`EngagementPulse`, `CombatPulse`, and `OutOfCombatPulse`. `MultiPullPulse` is
+optional; when it is absent, the engine falls back to `CombatPulse`.
+
+| State | Pulse | Meaning |
+| --- | --- | --- |
+| Engage | `EngagementPulse` | Open the first action window. |
+| Pulling or killing | `CombatPulse` | Run the normal priority ladder. |
+| Moving, waiting, searching, or map movement | `OutOfCombatPulse` | Drain buffs, pet work, and other OOC tasks. |
+| MultiPull | `MultiPullPulse` | Apply an explicit gather policy when the rotation has one. |
+
+## The out-of-combat drain contract
+
+`OutOfCombatPulse` returns `true` while it still has work. It returns `false` when
+the pulse is done. The engine uses that result to decide whether to keep asking
+for out-of-combat work. Returning `nil` or `true` forever can strand the state.
+
+The first loadable checkpoint is intentionally boring:
+
+```lua
+local Rotation = {
+    OutOfCombatPulse = function()
+        if NX.Pet.Maintain() then
+            return true
+        end
+        return false
+    end,
+
+    EngagementPulse = function()
+        return false
+    end,
+
+    CombatPulse = function()
+        return false
+    end,
+}
+
+return Rotation
+```
+
+The complete checkpoint is also kept as a source snapshot:
+
+<CodeFile path="stages/03-skeleton.lua" language="lua" />
+
+Build that checkpoint before adding a priority ladder. Early fragments in this
+course are conceptual. From this skeleton onward, each lesson keeps the complete
+source loadable; the final source is rendered in [lesson 7](./07-multipull-and-complete-source).
+
+The [pulse API](../api/pulses) explains dispatch details and the one exception for
+movement substates.
