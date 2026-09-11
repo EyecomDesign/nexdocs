@@ -1,0 +1,106 @@
+# Movement
+
+Use `NX.Movement` for movement policy that genuinely belongs to a rotation. The
+framework owns navigation, waypoint progress, directional key holds, and facing.
+Do not use the private `NEX` namespace or raw directional bindings from a rotation.
+
+## Public methods
+
+| Method | Purpose |
+| --- | --- |
+| `MoveTo(x, y, z, mapId)` | Pathfind to a coordinate using ordinary forward movement. |
+| `MoveBackwardTo(x, y, z, mapId)` | Pathfind while holding backward and facing away from travel. |
+| `MoveStrafeTo(x, y, z, mapId)` | Pathfind while using the left strafe binding. |
+| `RequestPath(x, y, z, callback, opts)` | Request a path asynchronously without starting movement. |
+| `FollowPath(path, style, mapId)` | Install a supplied same-map path and begin following it. |
+| `SetRotationMovementOverride(enabled)` | Claim or release a short route while combat is active. |
+| `StopMovement()` | Cancel the active route and movement keys. |
+| `FaceToPosition(x, y, z, immediate)` | Hand facing back to a position, smoothly by default. |
+
+`MoveTo`, `MoveBackwardTo`, and `MoveStrafeTo` are destination helpers. Call them
+when the destination changes, not on every pulse. Calling `StopMovement()` every
+tick cancels navigation and can keep the character stationary.
+
+## RequestPath and FollowPath
+
+`RequestPath` is asynchronous and invokes its callback exactly once. The callback
+receives a result with the fields most rotations need:
+
+| Field | Meaning |
+| --- | --- |
+| `ok` | The router returned a usable result. |
+| `path` | Ordered `{x, y, z}` points, or `nil` on failure. |
+| `isComplete` | `false` means the route is partial and did not reach the goal. |
+| `mapId` | Map on which the route was generated. |
+| `reason` | Failure or result explanation for diagnostics. |
+| `source` | Router source, such as cache, HTTP, or unlocker fallback. |
+
+Accept a route only when `result.ok == true`, `result.isComplete ~= false`, and
+`result.path` is a non-empty table. A partial path is not a successful retreat;
+it ends at a mesh edge and must be rejected or handled by an explicit policy.
+
+```lua
+NX.Movement.RequestPath(x, y, z, function(result)
+    if result.ok and result.isComplete ~= false
+        and type(result.path) == "table" and #result.path > 0
+    then
+        local accepted, reason = NX.Movement.FollowPath(
+            result.path, "strafe-inward", result.mapId)
+        if not accepted then
+            -- Try another candidate or release the movement owner.
+        end
+    end
+end)
+```
+
+`FollowPath` copies and validates the supplied points. Invalid input returns
+`false, reason` and leaves the active route unchanged. A valid route cancels the
+previous navigation request and follows the supplied points without asking the
+router for a replacement.
+
+## Movement styles
+
+| Style | Facing and directional binding |
+| --- | --- |
+| `forward` | Normal forward movement; the default. |
+| `backward` | Backward binding; facing opposite the travel direction. |
+| `strafe` | Left strafe; facing perpendicular to travel. |
+| `strafe-inward` | Left strafe with a 20-degree inward facing bias. |
+| `strafe-right` | Right strafe; facing perpendicular to travel. |
+| `strafe-inward-right` | Right strafe with a 20-degree inward facing bias. |
+
+The inward styles keep a nearby threat closer to the forward-facing cone while
+the character continues to drift away. They do not turn the camera or track a mob
+automatically.
+
+## Owning a short route during combat
+
+Combat may normally finish approach and clear navigation while a target is in
+range. A rotation-owned retreat must claim the route before the request and release
+it in every exit path:
+
+```lua
+NX.Movement.SetRotationMovementOverride(true)
+
+NX.Movement.RequestPath(x, y, z, function(result)
+    if result.ok and result.isComplete ~= false and result.path and #result.path > 0 then
+        NX.Movement.FollowPath(result.path, "backward", result.mapId)
+    end
+end)
+
+-- On target loss, pause, timeout, style change, or route completion:
+NX.Movement.StopMovement()
+NX.Movement.SetRotationMovementOverride(false)
+NX.Movement.FaceToPosition(targetX, targetY, targetZ, false)
+```
+
+Keep the normal combat priority running while the route is pending or active. A
+movement helper should not turn an asynchronous path request into a pulse-wide
+early return. Use a generation counter and target identity check before installing
+a late callback result. For a point that may be unwalkable, try a bounded list of
+nearby radial candidates sequentially; the [custom movement lesson](../course/09-custom-movement)
+contains the complete pattern.
+
+`FaceToPosition(..., false)` starts the existing smooth facing handoff. Pass
+`true` only when an immediate turn is required. `StopMovement()` cancels the route;
+it is not a pulse maintenance call.

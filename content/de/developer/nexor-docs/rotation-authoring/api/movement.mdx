@@ -1,0 +1,109 @@
+# Bewegung
+
+Verwende `NX.Movement` für Bewegungs-Policy, die wirklich in eine Rotation
+gehört. Die Engine besitzt Navigation, Wegpunktfortschritt, Richtungs-Tasten und
+Blickrichtung. Verwende aus einer Rotation weder den privaten `NEX`-Namespace noch
+rohe Richtungsbindungen.
+
+## Öffentliche Methoden
+
+| Methode | Zweck |
+| --- | --- |
+| `MoveTo(x, y, z, mapId)` | Zu einer Koordinate mit normaler Vorwärtsbewegung navigieren. |
+| `MoveBackwardTo(x, y, z, mapId)` | Rückwärts laufen und entgegen der Bewegungsrichtung schauen. |
+| `MoveStrafeTo(x, y, z, mapId)` | Mit der linken Strafe-Bindung navigieren. |
+| `RequestPath(x, y, z, callback, opts)` | Asynchron einen Pfad anfordern, ohne Bewegung zu starten. |
+| `FollowPath(path, style, mapId)` | Einen vorgegebenen Pfad derselben Map installieren und verfolgen. |
+| `SetRotationMovementOverride(enabled)` | Eine kurze Route während des Kampfes übernehmen oder freigeben. |
+| `StopMovement()` | Aktive Route und Bewegungstasten abbrechen. |
+| `FaceToPosition(x, y, z, immediate)` | Blickrichtung an eine Position zurückgeben, standardmäßig weich. |
+
+`MoveTo`, `MoveBackwardTo` und `MoveStrafeTo` sind Ziel-Helfer. Rufe sie auf,
+wenn sich das Ziel ändert, nicht in jedem Pulse. Ein `StopMovement()` in jedem
+Tick bricht Navigation ab und kann den Charakter anhalten.
+
+## RequestPath und FollowPath
+
+`RequestPath` ist asynchron und ruft den Callback genau einmal auf. Der Callback
+erhält ein Ergebnis mit den wichtigsten Feldern:
+
+| Feld | Bedeutung |
+| --- | --- |
+| `ok` | Die Navigation hat ein verwendbares Ergebnis geliefert. |
+| `path` | Geordnete `{x, y, z}`-Punkte oder bei Fehler `nil`. |
+| `isComplete` | `false` bedeutet, dass der Pfad das Ziel nicht erreicht hat. |
+| `mapId` | Map, auf der der Pfad erzeugt wurde. |
+| `reason` | Erklärung für Ergebnis oder Fehler. |
+| `source` | Quelle, zum Beispiel Cache, HTTP oder Unlocker-Fallback. |
+
+Akzeptiere einen Pfad nur bei `result.ok == true`, `result.isComplete ~= false`
+und einer nicht leeren `result.path`-Tabelle. Ein Teilpfad ist kein erfolgreiches
+Retreat; er endet an einer Mesh-Kante und muss abgelehnt oder durch eine eigene
+Policy behandelt werden.
+
+```lua
+NX.Movement.RequestPath(x, y, z, function(result)
+    if result.ok and result.isComplete ~= false
+        and type(result.path) == "table" and #result.path > 0
+    then
+        local accepted, reason = NX.Movement.FollowPath(
+            result.path, "strafe-inward", result.mapId)
+        if not accepted then
+            -- Einen anderen Kandidaten versuchen oder die Verantwortung freigeben.
+        end
+    end
+end)
+```
+
+`FollowPath` kopiert und prüft die gelieferten Punkte. Ungültige Eingaben geben
+`false, reason` zurück und lassen die aktive Route unverändert. Eine gültige Route
+bricht die vorherige Navigation ab und verfolgt die gelieferten Punkte, ohne den
+Router nach einem Ersatzpfad zu fragen.
+
+## Bewegungsstile
+
+| Stil | Blickrichtung und Richtungsbindung |
+| --- | --- |
+| `forward` | Normale Vorwärtsbewegung; Standard. |
+| `backward` | Rückwärtsbindung; Blick entgegen der Bewegungsrichtung. |
+| `strafe` | Linke Strafe; Blick quer zur Bewegung. |
+| `strafe-inward` | Linke Strafe mit 20 Grad nach innen gerichteter Blickrichtung. |
+| `strafe-right` | Rechte Strafe; Blick quer zur Bewegung. |
+| `strafe-inward-right` | Rechte Strafe mit 20 Grad nach innen gerichteter Blickrichtung. |
+
+Die Inward-Stile halten ein nahes Ziel näher am vorderen Sichtkegel, während der
+Charakter weiter driftet. Sie drehen weder die Kamera noch verfolgen sie ein Mob
+automatisch.
+
+## Eine kurze Route im Kampf besitzen
+
+Der Kampf kann Navigation normalerweise beenden und löschen, sobald ein Ziel in
+Reichweite ist. Ein Retreat der Rotation muss die Route vor der Anfrage übernehmen
+und die Verantwortung auf jedem Ausgang freigeben:
+
+```lua
+NX.Movement.SetRotationMovementOverride(true)
+
+NX.Movement.RequestPath(x, y, z, function(result)
+    if result.ok and result.isComplete ~= false and result.path and #result.path > 0 then
+        NX.Movement.FollowPath(result.path, "backward", result.mapId)
+    end
+end)
+
+-- Bei Zielverlust, Pause, Timeout, Stilwechsel oder Routenende:
+NX.Movement.StopMovement()
+NX.Movement.SetRotationMovementOverride(false)
+NX.Movement.FaceToPosition(targetX, targetY, targetZ, false)
+```
+
+Lass die normale Kampf-Priorität weiterlaufen, während der Pfad aussteht oder
+aktiv ist. Ein Bewegungshelfer darf eine asynchrone Pfadanfrage nicht in einen
+frühen Pulse-Abbruch verwandeln. Verwende einen Generation-Zähler und eine
+Zielidentitätsprüfung, bevor ein verspäteter Callback installiert wird. Wenn ein
+Punkt eventuell nicht begehbar ist, versuche eine begrenzte Liste naher radialer
+Kandidaten nacheinander. Das [Beispiel für eigene Bewegung](../course/09-custom-movement)
+zeigt das vollständige Muster.
+
+`FaceToPosition(..., false)` startet die vorhandene weiche Facing-Übergabe. `true`
+verwendest du nur für eine sofortige Drehung. `StopMovement()` beendet die Route;
+es ist kein Wartungsaufruf für jeden Pulse.

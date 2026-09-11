@@ -1,0 +1,275 @@
+# 9. Eigene Bewegung und Pfad-Fallback
+
+Die meisten Rotationen sollten keine Navigation übernehmen. Verwende die normale
+Bewegungslogik für Kampf und Profile, wenn sie das benötigte Verhalten bereits
+bereitstellt. Eine Rotation kann trotzdem ein kurzes Bewegungsmanöver benötigen,
+zum Beispiel um nach der Übernahme des Aggros durch das Pet wieder Distanz für
+Fernangriffe herzustellen. In diesem Fall besitzt die Rotation die Policy; die
+öffentliche Bewegungs-API besitzt Pfadfindung, Tasten, Blickrichtung und Cleanup.
+
+Siehe die [Bewegungs-API](../api/movement) für die kurze Referenz. Das vollständige
+Beispiel unten zeigt den wichtigen Lebenszyklus an einer Stelle.
+
+## Erst den Pfad anfordern, dann bewegen
+
+`RequestPath` ist asynchron. Die Navigation erhält eine Anfrage und ruft den
+Callback genau einmal auf. Starte keine Bewegung zum Rohziel, solange der Callback
+noch aussteht. Akzeptiere nur einen vollständigen, nicht leeren Pfad:
+
+```lua
+local function UsablePath(result)
+    return type(result) == "table"
+        and result.ok == true
+        and result.isComplete ~= false
+        and type(result.path) == "table"
+        and #result.path > 0
+end
+```
+
+`isComplete ~= false` lehnt absichtlich Teilpfade ab. Ein Teilpfad endet an der
+Kante eines Navmesh-Korridors und nicht am angeforderten Punkt. Wenn er als
+vollständiger Pfad gelaufen wird, kann der Charakter direkt neben dem Hindernis
+stehen bleiben, das den Fehler verursacht hat.
+
+## Verantwortung ausdrücklich halten
+
+Der Kampf ersetzt oder löscht Navigation normalerweise, sobald ein Ziel erreicht
+wird. Ein eigenes Retreat muss die kurze Route vor der Anfrage übernehmen und die
+Verantwortung beim Ende wieder freigeben:
+
+```lua
+NX.Movement.SetRotationMovementOverride(true)
+-- RequestPath(...) und FollowPath(...) passieren hier.
+
+NX.Movement.StopMovement()
+NX.Movement.SetRotationMovementOverride(false)
+NX.Movement.FaceToPosition(targetX, targetY, targetZ, false)
+```
+
+Das letzte `false` lässt den vorhandenen Facing-Controller weich drehen. `true`
+verwendest du nur, wenn die Blickrichtung sofort gesetzt werden muss. Rufe
+`StopMovement()` nicht am Anfang jedes Pulses auf; dadurch wird der Pfad
+abgebrochen und der Charakter kann stehen bleiben.
+
+Halte benutzerseitige Policy-Namen getrennt von den Framework-Stilen. Eine typische
+Hunter-Zuordnung ist `Backpedal` zu `backward`, `Strafe` zu `strafe-inward` und
+`Random` zu einer einmaligen Wahl zwischen beiden pro Retreat. Würfle nicht in
+jedem Pulse neu, sonst wird ein aktiver Pfad ungültig.
+
+## Ein begrenzter radialer Fallback
+
+Ein einzelnes Ziel kann nicht begehbar sein, obwohl nahe Punkte erreichbar sind.
+Ein sicherer Fallback versucht zuerst den direkten Retreat-Punkt, danach Punkte auf
+der hinteren Halbkreisfläche und anschließend weitere Ringe. Das Beispiel nutzt
+sieben Winkel und drei Radien. Ein Retreat führt damit höchstens 21 sequenzielle
+Pfadanfragen aus. Bewegung beginnt erst, wenn ein Kandidat einen verwendbaren Pfad
+liefert.
+
+```lua
+local Retreat = {
+    active = false,
+    pathReady = false,
+    generation = 0,
+    target = nil,
+    targetGuid = nil,
+    startedAt = nil,
+    candidates = nil,
+    index = 0,
+}
+
+local ANGLE_OFFSETS = { 0, 30, -30, 60, -60, 90, -90 }
+local RADIUS_OFFSETS = { 0, 4, 8 }
+local STOP_RANGE = 10
+local MAX_MOVEMENT_SECONDS = 3
+
+local function Now()
+    return GetTime()
+end
+
+local function Position(unit)
+    if not unit or type(unit.GetPosition) ~= "function" then return nil end
+    local ok, x, y, z = pcall(function() return unit:GetPosition() end)
+    if not ok or type(x) ~= "number" or type(y) ~= "number" or type(z) ~= "number" then
+        return nil
+    end
+    return x, y, z
+end
+
+local function Guid(unit)
+    if not unit or type(unit.GUID) ~= "function" then return nil end
+    local ok, value = pcall(function() return unit:GUID() end)
+    return ok and value or nil
+end
+
+local function BuildCandidates(player, target)
+    local px, py, pz = Position(player)
+    local tx, ty = Position(target)
+    if not px or not py or not pz or not tx or not ty then return nil end
+
+    local awayX, awayY = px - tx, py - ty
+    local distance = math.sqrt(awayX * awayX + awayY * awayY)
+    if distance < 0.01 then return nil end
+    awayX, awayY = awayX / distance, awayY / distance
+
+    local baseDistance = math.max(4, STOP_RANGE - distance + 1.5)
+    local awayAngle = math.atan2(awayY, awayX)
+    local candidates = {}
+
+    for _, radiusOffset in ipairs(RADIUS_OFFSETS) do
+        local radius = math.max(4, baseDistance + radiusOffset)
+        for _, angleOffset in ipairs(ANGLE_OFFSETS) do
+            local angle = awayAngle + math.rad(angleOffset)
+            candidates[#candidates + 1] = {
+                x = px + math.cos(angle) * radius,
+                y = py + math.sin(angle) * radius,
+                z = pz,
+            }
+        end
+    end
+    return candidates
+end
+
+local function StopRetreat()
+    if not Retreat.active then return false end
+    Retreat.generation = Retreat.generation + 1
+
+    NX.Movement.StopMovement()
+    NX.Movement.SetRotationMovementOverride(false)
+
+    local x, y, z = Position(Retreat.target)
+    if x then NX.Movement.FaceToPosition(x, y, z, false) end
+
+    Retreat.active = false
+    Retreat.pathReady = false
+    Retreat.target = nil
+    Retreat.targetGuid = nil
+    Retreat.startedAt = nil
+    Retreat.candidates = nil
+    Retreat.index = 0
+    return true
+end
+
+local function StartRetreat(player, target)
+    local candidates = BuildCandidates(player, target)
+    if not candidates or #candidates == 0 then return false end
+
+    Retreat.generation = Retreat.generation + 1
+    local generation = Retreat.generation
+    Retreat.active = true
+    Retreat.pathReady = false
+    Retreat.target = target
+    Retreat.targetGuid = Guid(target)
+    Retreat.startedAt = Now()
+    Retreat.candidates = candidates
+    Retreat.index = 1
+
+    NX.Movement.ResumeNavigation()
+    if not NX.Movement.SetRotationMovementOverride(true) then
+        StopRetreat()
+        return false
+    end
+
+    local RequestNext
+    RequestNext = function()
+        if not Retreat.active or Retreat.generation ~= generation then return end
+        local candidate = Retreat.candidates[Retreat.index]
+        if not candidate then
+            StopRetreat()
+            return
+        end
+
+        NX.Movement.RequestPath(candidate.x, candidate.y, candidate.z, function(result)
+            if not Retreat.active or Retreat.generation ~= generation then return end
+
+            if not UsablePath(result)
+                or not NX.Movement.FollowPath(result.path, "strafe-inward", result.mapId)
+            then
+                Retreat.index = Retreat.index + 1
+                RequestNext()
+                return
+            end
+
+            Retreat.pathReady = true
+            Retreat.startedAt = Now()
+        end)
+    end
+
+    RequestNext()
+    return true
+end
+
+-- Diese Funktion aus EngagementPulse und CombatPulse aufrufen. Nicht vorzeitig
+-- zurückkehren, nur weil ein Pfad aktiv ist; der normale Combat-Pulse muss weiterlaufen.
+local function MaintainRetreat(player, target, shouldRetreat)
+    if Retreat.active then
+        local targetChanged = Retreat.target ~= target
+            or (Retreat.targetGuid ~= nil and Guid(target) ~= Retreat.targetGuid)
+        local timedOut = Retreat.pathReady
+            and Now() - (Retreat.startedAt or Now()) >= MAX_MOVEMENT_SECONDS
+
+        if targetChanged or timedOut or not shouldRetreat then
+            StopRetreat()
+        end
+        return
+    end
+
+    if shouldRetreat then StartRetreat(player, target) end
+end
+```
+
+Die Policy, die `shouldRetreat` setzt, gehört in die Rotation. Ein Hunter kann zum
+Beispiel ein gültiges Ziel, ein lebendes Pet, Pet-Aggro auf dem Mob und fehlende
+Spieler-Aggro verlangen, bevor `MaintainRetreat` aufgerufen wird. Die Bewegungs-
+hilfe darf diese Policy nicht stillschweigend ersetzen.
+
+Rufe den Helfer vor der offensiven Priorität auf, aber verbrauche nicht den ganzen
+Pulse:
+
+```lua
+EngagementPulse = function()
+    local player = NX.UnitManager.Get("player")
+    local target = NX.UnitManager.Get("target")
+    MaintainRetreat(player, target, ShouldRetreat(player, target))
+
+    if ArcaneShot:Execute() then return true end
+    if SerpentSting:Execute() then return true end
+    return NX.Pet.Assist()
+end
+```
+
+Verwende denselben Helfer in `CombatPulse`, wenn das Manöver in den normalen
+Kampfzustand hineinreichen darf. Stoppe ihn bei Pause, Zielverlust, Zielwechsel,
+Bewegungsstilwechsel und Timeout. Ein Callback kann nach jedem dieser Ereignisse
+ankommen. Deshalb ist die Generation-Prüfung vor `FollowPath` erforderlich.
+
+Auch die Ausgangspfade müssen die Verantwortung freigeben:
+
+```lua
+CombatPulse = function()
+    local player = NX.UnitManager.Get("player")
+    local target = NX.UnitManager.Get("target")
+    if NX.Toggles["Pause"] or not target:IsValid() then
+        StopRetreat()
+        return false
+    end
+
+    MaintainRetreat(player, target, ShouldRetreat(player, target))
+    if ArcaneShot:Execute() then return true end
+    return NX.Pet.Assist()
+end
+
+OutOfCombatPulse = function()
+    StopRetreat()
+    return NX.Pet.Maintain()
+end
+```
+
+Rufe aus einer Rotation keine rohen Richtungsbindungen, privaten `NEX`-Objekte oder
+synchrone Pfadgeneratoren auf. Die Rotation entscheidet Policy und Kandidaten;
+`NX.Movement` besitzt Routing, Wegpunktfortschritt, Tasten, Blickrichtung und
+Cleanup.
+
+## Nächster Schritt
+
+Die [Bewegungs-API-Referenz](../api/movement) listet die öffentlichen Methoden,
+Routen-Ergebnisfelder und Bewegungsstile ohne das längere Lebenszyklus-Beispiel.

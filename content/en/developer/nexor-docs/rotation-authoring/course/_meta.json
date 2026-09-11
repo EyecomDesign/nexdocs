@@ -6,5 +6,6 @@
   "05-pets": "5. Pet ownership",
   "06-items-settings-and-wands": "6. Items, settings, and wands",
   "07-multipull-and-complete-source": "7. Multipull and complete source",
-  "08-audit-and-validation": "8. Audit and validation"
+  "08-audit-and-validation": "8. Audit and validation",
+  "09-custom-movement": "9. Custom movement and path fallback"
 }

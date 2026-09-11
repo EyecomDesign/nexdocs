@@ -6,5 +6,6 @@
   "05-pets": "5. Verantwortung für das Pet",
   "06-items-settings-and-wands": "6. Items, Einstellungen und Zauberstab",
   "07-multipull-and-complete-source": "7. Multipull und vollständige Quelle",
-  "08-audit-and-validation": "8. Audit und Prüfung"
+  "08-audit-and-validation": "8. Audit und Prüfung",
+  "09-custom-movement": "9. Eigene Bewegung und Pfad-Fallback"
 }
