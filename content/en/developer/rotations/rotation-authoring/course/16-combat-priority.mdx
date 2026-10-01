@@ -1,0 +1,26 @@
+# 16. Build the combat priority
+
+Only after spell policy and target ownership are attached should the pulse state
+the action order. `Execute()` performs the full gate:
+
+```lua
+CombatPulse = function()
+    if Corruption:Execute() then
+        return true
+    end
+    if ShadowBolt:Execute() then
+        return true
+    end
+    return false
+end
+```
+
+Order the most important action first and stop after the first successful
+action. Do not move `CastableIf` logic into this ladder and do not repeat
+cooldown, range, or usability checks here.
+
+This checkpoint includes the attached damage spells:
+
+<CodeFile path="stages/04-spells.lua" language="lua" />
+
+Next: [add out-of-combat pet maintenance](./17-pet-maintenance).

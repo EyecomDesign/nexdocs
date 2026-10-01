@@ -1,0 +1,13 @@
+# Environment
+
+The chunk receives `---@type RotationEnv` as `local NX = ...`. Public services
+include `NX.SpellBook`, `NX.UnitManager`, `NX.Item`, `NX.Pet`, `NX.Combat`,
+`NX.Movement`, `NX.Wand`, `NX.Toggles`, and `NX.Options`.
+
+Use `NX.UnitManager.Get("player")` for the live player wrapper. `NX.Player` is a
+class and does not represent an Object Manager token. Use `NX.*` before a raw WoW
+global. A raw fallback must be explicit and documented.
+
+`NX.Toggles[name]` is the current toggle value. `NX.Options[name]` is the current
+option value. The rotation reads both at decision time. The catalog, not the
+rotation, owns intrinsic spell flags.

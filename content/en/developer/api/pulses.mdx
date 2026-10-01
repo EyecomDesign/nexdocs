@@ -1,0 +1,13 @@
+# Pulses
+
+The required rotation table fields are `EngagementPulse`, `CombatPulse`, and
+`OutOfCombatPulse`. `MultiPullPulse` is optional and falls back to
+`CombatPulse`.
+
+`OutOfCombatPulse` is special: return `true` while work remains and `false` when
+the state is drained. The other pulse return values are action results and are not
+used as an OOC drain signal. The engine maps Engage, Pulling, Killing, Moving,
+Waiting, Searching, MapMovement, and MultiPull states to these names.
+
+Keep pulse bodies cheap. Attach spell policy once, then use an early-return
+priority ladder.

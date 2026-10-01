@@ -1,0 +1,20 @@
+# Spells
+
+The authoring seam is:
+
+```lua
+spell:CastableIf(function() return policy end)
+spell:SetTarget(targetOrResolver)
+spell:Behavior(name, policy, targetResolver)
+spell:Execute()
+```
+
+`CastableIf` expresses intent. `Execute()` applies known-spell, cooldown/GCD,
+range, line of sight, facing, movement, cast-state, usability, and valid-target
+gates. Do not repeat those checks in a predicate. `CastableIf` can be omitted for
+a normal always-policy spell. `Cast(target)` is the one-off full-gate escape hatch
+when the target changes per call.
+
+Use catalog names and `:IsKnown()` only for an availability branch. Optional
+handles must be guarded. Intrinsic options such as `isPetSpell`, `ignoreFacing`,
+and `allowDead` belong in the catalog.

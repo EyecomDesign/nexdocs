@@ -1,0 +1,8 @@
+export default {
+  overview: "🌍 Overview",
+  access: "🔑 Access",
+  deployment: "🚀 Deployment",
+  monitoring: "📊 Monitoring",
+  operations: "🛠️ Operations",
+  reference: "📑 Reference",
+};

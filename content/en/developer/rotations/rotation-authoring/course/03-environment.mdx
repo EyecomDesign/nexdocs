@@ -1,0 +1,15 @@
+# 3. Receive the rotation environment
+
+The rotation loader executes the Lua file as a chunk and passes the public
+`RotationEnv` as its vararg. Capture it at the top of the file:
+
+```lua
+---@type RotationEnv
+local NX = ...
+```
+
+`NX` is provided by the loader. Do not construct it yourself, and do not reach
+into the private `NEX` namespace. Use a documented raw WoW global only when the
+API reference explicitly allows that compatibility fallback.
+
+Next: [define the file shape](./04-file-shape).

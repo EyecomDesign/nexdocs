@@ -1,0 +1,18 @@
+# 6. Declare user toggles
+
+Use `Toggles` for boolean policy switches that the player can change while the
+rotation runs:
+
+```lua
+Toggles = {
+    ["Pause"] = { Description = "Pause the rotation", Default = false },
+    ["Buffs"] = { Description = "Maintain self buffs", Default = true },
+    ["Damage"] = { Description = "Use damage and mana priorities", Default = true },
+    ["Pet"] = { Description = "Use the Pet Module", Default = true },
+}
+```
+
+Read the live value through `NX.Toggles[name]` when making a decision. Do not
+copy a toggle into a permanent local value during file load.
+
+Next: [declare numeric options](./07-options).

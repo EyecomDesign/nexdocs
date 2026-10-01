@@ -1,0 +1,12 @@
+# Spellbooks
+
+`NX.SpellBook:GetGlobal()` is the default authoring path. It merges the class and
+flavor catalog and resolves named rank chains. A missing learned spell is handled
+by the normal execute gate.
+
+`NX.SpellBook:New()` and registration helpers are for advanced custom spellbooks.
+Use them when a rotation has a real custom behavior or alias to expose. Do not
+copy catalog IDs into the rotation and do not hand-edit generated spellbook data.
+
+The simple Warlock tutorial uses the global book. Its custom-book path is linked
+here so beginner lessons can stay small.

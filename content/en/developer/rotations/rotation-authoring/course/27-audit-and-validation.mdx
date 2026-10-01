@@ -1,0 +1,24 @@
+# 27. Audit and validate the file
+
+Run the read-only audit with an explicit rotation path:
+
+```text
+python -m tools.rotation_authoring.audit Rotations/ClassicTBC/WARLOCK/Warlock_TBC_Authoring_Tutorial.lua
+```
+
+Then run the repository checks:
+
+```text
+python -m unittest tests.rotation_authoring_test
+python -m tools.rotation_authoring.validate --root .
+pnpm typecheck
+pnpm build
+```
+
+The audit reports missing required pulses, direct raw casts, repeated gates, and
+other authoring findings. It never edits the rotation. Client-side pulse
+transitions, pet handoff, item use, and wand intent still require a manual smoke
+test in the target game client.
+
+Next: [claim movement ownership](./28-movement-ownership) if the rotation truly
+needs a short custom maneuver.

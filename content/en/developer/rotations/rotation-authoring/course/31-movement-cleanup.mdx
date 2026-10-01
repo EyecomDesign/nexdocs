@@ -1,0 +1,20 @@
+# 31. Clean up movement ownership
+
+Release a custom maneuver on target loss, pause, timeout, style change, and
+route completion:
+
+```lua
+NX.Movement.StopMovement()
+NX.Movement.SetRotationMovementOverride(false)
+
+local x, y, z = Position(target)
+if x then
+    NX.Movement.FaceToPosition(x, y, z, false)
+end
+```
+
+`StopMovement()` cancels the active route; it is not a maintenance call for
+every pulse. Use a generation counter and target identity check so a late path
+callback cannot reinstall a route after cleanup.
+
+Next: [add a bounded path fallback](./32-movement-fallback).

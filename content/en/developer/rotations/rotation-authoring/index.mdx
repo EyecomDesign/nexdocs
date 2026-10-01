@@ -1,0 +1,24 @@
+# Build a Rotation
+
+This course teaches the Nexor rotation-authoring standard by building one small
+Warlock TBC leveling rotation for levels 1–20. The file is a teaching example,
+not a migration plan for existing production rotations.
+
+The course now follows the actual authoring order: create the folders, create the
+Lua file, establish the runtime contract, add one policy at a time, and validate
+the result. Topics that used to share a page—such as spell policy and priority—
+are separate lessons with separate checkpoints.
+
+Start with [step 1: folder setup](./course/01-folder-setup), or open the
+[complete step-by-step course](./course). The searchable [NX API reference](../../api)
+is available alongside the lessons.
+
+The complete loadable source is rendered in [step 26](./course/26-complete-source)
+and maintained in
+[NexorBot](https://github.com/NexorSystem/NexorBot/blob/Development/Rotations/ClassicTBC/WARLOCK/Warlock_TBC_Authoring_Tutorial.lua).
+
+## Scope
+
+This example does not migrate `Warlock_Leveling_TBC.lua`, redesign the runtime,
+implement Hunter logic, or cover Retail. A new runtime API is a separate design
+and implementation task.

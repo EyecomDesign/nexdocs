@@ -1,0 +1,22 @@
+# 17. Add pet maintenance
+
+Use the Pet Module for generic out-of-combat maintenance. Keep the result in the
+same drain contract as the pulse:
+
+```lua
+local function MaintainPetOutOfCombat()
+    return NX.Toggles["Pet"] ~= false and NX.Pet.Maintain() == true
+end
+
+OutOfCombatPulse = function()
+    if MaintainPetOutOfCombat() then
+        return true
+    end
+    return false
+end
+```
+
+The rotation decides whether pet policy is enabled; the module owns the generic
+maintenance action.
+
+Next: [add pet combat assist](./18-pet-assist).

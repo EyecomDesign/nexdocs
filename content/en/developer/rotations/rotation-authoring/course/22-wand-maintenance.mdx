@@ -1,0 +1,20 @@
+# 22. Add wand maintenance
+
+Wand use is an intent owned by the rotation and a cadence owned by the
+framework:
+
+```lua
+CombatPulse = function()
+    if NX.Toggles["Wand"] ~= false then
+        NX.Wand.Maintain()
+    end
+
+    -- Continue with the normal priority ladder.
+    return false
+end
+```
+
+Call `Maintain()` once per combat pulse that wants wand behavior. Do not call
+`Shoot:Execute()`, create a consumer list, or take over movement into range.
+
+Next: [cap multipull targets](./23-multipull-target-cap).

@@ -1,0 +1,18 @@
+# 5. Add rotation information
+
+Add human-readable metadata to the returned table. It identifies the file in
+the rotation list without changing runtime behavior:
+
+```lua
+local Rotation = {
+    Info = {
+        Name = "Warlock TBC Authoring Tutorial",
+        Title = "Warlock TBC — Level 1-20 Authoring Tutorial",
+    },
+}
+```
+
+Keep metadata descriptive and stable. Behavior belongs in callbacks and helper
+functions, not in `Info`.
+
+Next: [declare user toggles](./06-toggles).

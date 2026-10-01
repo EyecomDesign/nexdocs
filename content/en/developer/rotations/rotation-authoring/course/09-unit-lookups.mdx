@@ -1,0 +1,23 @@
+# 9. Create live unit lookups
+
+Keep live unit resolution in small helpers. `NX.Player` is a class description;
+the live player is returned by `NX.UnitManager.Get("player")`:
+
+```lua
+local function Player()
+    return NX.UnitManager.Get("player")
+end
+
+local function Target()
+    return NX.UnitManager.Get("target")
+end
+
+local function Pet()
+    return NX.UnitManager.Get("pet")
+end
+```
+
+Call these helpers when a pulse or predicate needs current state. Do not hold a
+live wrapper as if it were a permanent snapshot.
+
+Next: [define the pulse contract](./10-pulse-contract).

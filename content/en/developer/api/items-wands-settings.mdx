@@ -1,0 +1,14 @@
+# Items, wands, and settings
+
+Use `NX.Item.GetItemCount(item)` and `NX.Item.UseItemByID(item)` for item policy.
+Use catalog `CreateHealthstone` for creation. Internal item tables are not a
+rotation API.
+
+For a fractional slider, set `Step` and `Precision` explicitly. `Precision` is
+the snap increment. Read `NX.Options[name]` live.
+
+`NX.Wand.Maintain()` registers the current combat pulse’s wand intent and returns
+nothing. The framework owns Shoot, continuous cadence, cooldown arbitration,
+queue-boundary rescans, and disarm. Never call `Shoot:Cast()` or
+`Shoot:Execute()` from a rotation. Do not add a wand consumer list, OOM fallback,
+or movement-into-range claim.

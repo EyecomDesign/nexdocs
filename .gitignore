@@ -61,5 +61,7 @@ nexdocs-*.png
 nexdocs-*.jpeg
 
 # claude code internals
-.agents/
 .claude/
+
+# retired German documentation source (kept locally, not published)
+/content-de-disabled/

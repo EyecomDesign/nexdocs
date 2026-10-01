@@ -1,0 +1,22 @@
+# 13. Implement the combat pulse
+
+`CombatPulse` is the action window for the normal priority ladder. Add the
+pause guard first:
+
+```lua
+CombatPulse = function()
+    if NX.Toggles["Pause"] then
+        return false
+    end
+
+    -- The priority ladder is added after spell policy is attached.
+    return false
+end
+```
+
+At this point the file has a complete pulse contract and can be loaded without
+doing work. The first checkpoint is available here:
+
+<CodeFile path="stages/03-skeleton.lua" language="lua" />
+
+Next: [attach spell policy](./14-spell-policy).

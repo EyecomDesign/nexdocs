@@ -1,0 +1,25 @@
+# 21. Use or create a Healthstone
+
+Use the public item boundary when the player is below the configured threshold:
+
+```lua
+local function UseHealthstone()
+    local threshold = tonumber(NX.Options["Healthstone Percent"] or 35) or 35
+    if (Player():GetHP() or 100) > threshold then
+        return false
+    end
+
+    for _, itemID in ipairs(HEALTHSTONE_ITEM_IDS) do
+        if NX.Item.GetItemCount(itemID) > 0 then
+            return NX.Item.UseItemByID(itemID) == true
+        end
+    end
+    return false
+end
+```
+
+If no stone exists, the rotation can execute the catalog `CreateHealthstone`
+spell according to its own item toggle and priority. Item IDs and spell IDs are
+different contracts.
+
+Next: [add wand maintenance](./22-wand-maintenance).

@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "start": "node scripts/start.mjs",
     "build": "next build",
     "build:cf": "next build && pagefind --site .next/server/app --output-path public/_pagefind && opennextjs-cloudflare build --skipNextBuild",
     "preview": "pnpm run build:cf && opennextjs-cloudflare preview",
