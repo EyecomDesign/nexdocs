@@ -1,0 +1,6 @@
+export default {
+  "buy-nexor": "🛒 Buy Nexor",
+  "get-trial": "🧪 Get Trial",
+  "buy-unlocker": "🔐 Buy Unlocker",
+  "download-and-install": "📥 Download and Install",
+};

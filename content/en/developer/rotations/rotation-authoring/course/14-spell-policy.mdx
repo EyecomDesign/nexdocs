@@ -1,0 +1,19 @@
+# 14. Attach spell policy
+
+Attach a predicate once near the top of the file. It expresses rotation intent;
+it should not repeat mechanical spell gates:
+
+```lua
+Corruption:CastableIf(function()
+    local target = Target()
+    return NX.Toggles["Damage"] ~= false
+        and target:IsEnemy()
+        and not target:HasMyDebuff(Corruption)
+end)
+```
+
+The predicate answers whether the rotation wants the spell. `Execute()` later
+checks known-spell state, cooldown/GCD, range, line of sight, facing, movement,
+cast state, usability, and target validity.
+
+Next: [assign spell targets](./15-spell-targets).

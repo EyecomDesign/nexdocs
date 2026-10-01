@@ -11,6 +11,9 @@ const eslintConfig = defineConfig([
     ".next/**",
     "out/**",
     "build/**",
+    ".open-next/**",
+    "public/_pagefind/**",
+    "content-de-disabled/**",
     "next-env.d.ts",
   ]),
 ]);

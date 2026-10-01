@@ -2,7 +2,7 @@
 
 Documentation site for **Nexor** — a bot built in Lua 5.1.
 
-Live at **https://docs.nexor.app**. Pushes to `master` auto-deploy to Cloudflare Workers via a GitHub Actions workflow.
+Live at **https://docs.nexor.app**. Pushes to `main` auto-deploy to Cloudflare Workers via a GitHub Actions workflow.
 
 ## Stack
 
@@ -24,21 +24,23 @@ The dev server runs on http://localhost:3000. The search box won't work in `pnpm
 
 ## Writing docs
 
-Content lives under `content/<locale>/` as MDX. Nextra 4 uses **directory-based locales** (not the `.en.mdx` / `.de.mdx` filename suffix from Nextra 2.x), so a typical layout is:
+Published content lives under `content/en/` as MDX. Nextra 4 uses a
+**directory-based locale** (not the `.en.mdx` / `.de.mdx` filename suffix from
+Nextra 2.x), so a typical layout is:
 
 ```
 content/
 ├── en/
-│   ├── _meta.json
+│   ├── _meta.ts
 │   ├── index.mdx
 │   └── server/
-│       ├── _meta.json
+│       ├── _meta.ts
 │       └── overview.mdx
-└── de/
-    └── (same shape)
 ```
 
-`_meta.json` in each directory controls sidebar order and labels for that locale. Keep both `en/` and `de/` in parity — add or translate every page in both.
+`_meta.ts` in each directory controls sidebar order and labels. The former
+German source is kept outside Nextra at `content-de-disabled/` and is
+not published or built while the site is English-only.
 
 See the in-site guides for the full flow:
 - [Creating a new page](https://docs.nexor.app/en/guides/creating-a-page)
@@ -46,7 +48,7 @@ See the in-site guides for the full flow:
 
 ## Deployment
 
-`.github/workflows/deploy.yml` runs on every push to `master`:
+`.github/workflows/deploy.yml` runs on every push to `main`:
 
 1. `pnpm install --frozen-lockfile`
 2. `pnpm run build:cf` — runs `next build`, then Pagefind (against `.next/server/app`), then `opennextjs-cloudflare build --skipNextBuild` to bundle everything into a Worker
@@ -59,6 +61,7 @@ End-to-end takes ~2 minutes from `git push` to live update.
 | Command | What it does |
 |---|---|
 | `pnpm dev` | Next.js dev server (no Worker simulation, no search index) |
+| `pnpm start` | Run the standalone production server after `pnpm build` |
 | `pnpm build` | Plain `next build` — used by CI for typecheck/build verification |
 | `pnpm build:cf` | Full Cloudflare build: `next build` → `pagefind` → `opennextjs-cloudflare build --skipNextBuild` |
 | `pnpm preview` | Build then run the Worker locally via `opennextjs-cloudflare preview` (search works here) |

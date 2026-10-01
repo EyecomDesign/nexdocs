@@ -1,0 +1,26 @@
+# 29. Request and validate a path
+
+`RequestPath` is asynchronous. Accept only a complete, non-empty result before
+installing movement:
+
+```lua
+local function UsablePath(result)
+    return type(result) == "table"
+        and result.ok == true
+        and result.isComplete ~= false
+        and type(result.path) == "table"
+        and #result.path > 0
+end
+
+NX.Movement.RequestPath(x, y, z, function(result)
+    if not UsablePath(result) then
+        -- Try another candidate or release ownership.
+        return
+    end
+end)
+```
+
+The callback runs later and exactly once. A partial path ends at a mesh edge; it
+is not proof that the requested destination was reached.
+
+Next: [follow the accepted path](./30-movement-path-following).

@@ -1,0 +1,21 @@
+# 30. Follow an accepted path
+
+Install a validated path with a documented movement style:
+
+```lua
+NX.Movement.RequestPath(x, y, z, function(result)
+    if UsablePath(result) then
+        local accepted, reason = NX.Movement.FollowPath(
+            result.path, "strafe-inward", result.mapId)
+        if not accepted then
+            -- Select another bounded candidate.
+        end
+    end
+end)
+```
+
+`FollowPath` copies and validates the points. Styles such as `forward`,
+`backward`, `strafe`, and `strafe-inward` describe directional policy; they do
+not replace target or retreat policy.
+
+Next: [clean up movement ownership](./31-movement-cleanup).

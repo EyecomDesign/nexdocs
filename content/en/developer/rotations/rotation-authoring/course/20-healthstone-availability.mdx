@@ -1,0 +1,22 @@
+# 20. Check item availability
+
+Healthstone IDs are item IDs, not spell IDs. Keep the supported list local and
+use the public item count helper:
+
+```lua
+local HEALTHSTONE_ITEM_IDS = { 5512, 5511, 5510, 5509 }
+
+local function HasHealthstone()
+    for _, itemID in ipairs(HEALTHSTONE_ITEM_IDS) do
+        if NX.Item.GetItemCount(itemID) > 0 then
+            return true
+        end
+    end
+    return false
+end
+```
+
+Do not read internal item tables from the rotation. Catalog spells such as
+`CreateHealthstone` remain spell handles and are handled separately.
+
+Next: [use or create the item](./21-healthstone-use).

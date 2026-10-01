@@ -1,0 +1,20 @@
+# 12. Implement the engagement pulse
+
+`EngagementPulse` owns the first action window after a target becomes relevant.
+Start with a pause guard and an explicit completed result:
+
+```lua
+EngagementPulse = function()
+    if NX.Toggles["Pause"] then
+        return false
+    end
+
+    -- Add the first engagement action in a later step.
+    return false
+end
+```
+
+Keep the callback focused on engagement work. The normal priority ladder belongs
+in `CombatPulse`.
+
+Next: [implement the combat pulse](./13-combat-pulse).

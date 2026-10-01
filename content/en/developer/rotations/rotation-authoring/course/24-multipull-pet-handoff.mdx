@@ -1,0 +1,27 @@
+# 24. Define the multipull pet handoff
+
+Pet commands at a multipull transition are edge-triggered. Send them once when
+gathering starts and once when it ends:
+
+```lua
+local petHeldForGather = false
+
+local function HoldPetForGather()
+    if petHeldForGather then return end
+    NX.Pet.CommandPetStopAttack()
+    NX.Pet.CommandPetPassive()
+    NX.Pet.CommandPetFollow()
+    petHeldForGather = true
+end
+
+local function RestorePetAfterGather()
+    if not petHeldForGather then return end
+    NX.Pet.CommandPetDefensive()
+    petHeldForGather = false
+end
+```
+
+Do not issue these commands on every pulse. The handoff owns only the temporary
+pet state; target selection and DoT policy remain separate.
+
+Next: [wire the multipull pulse](./25-multipull-pulse).

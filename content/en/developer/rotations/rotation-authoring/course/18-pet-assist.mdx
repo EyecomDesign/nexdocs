@@ -1,0 +1,21 @@
+# 18. Add pet combat assist
+
+Use a separate helper for the pet’s normal combat assist intent:
+
+```lua
+local function AssistPetInCombat()
+    return NX.Toggles["Pet"] ~= false and NX.Pet.Assist() == true
+end
+
+EngagementPulse = function()
+    if AssistPetInCombat() then
+        return true
+    end
+    return false
+end
+```
+
+Call assist from the engagement or combat path when the rotation wants the pet
+to act. Do not turn generic assist into a class-specific healing decision.
+
+Next: [add class-specific pet policy](./19-pet-specific-policy).

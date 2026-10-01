@@ -1,0 +1,64 @@
+# NX API
+
+This section is the inventory of the public objects and functions exposed to a
+Nexor rotation through the `NX` scope. Use the pages below as the searchable
+reference; the rotation course explains how to combine the same contracts.
+
+## Public NX objects
+
+| NX object | Covers | Reference |
+| --- | --- | --- |
+| `NX.UnitManager` | Live unit wrappers and bounded selectors | [Units and targets](./units-and-targets) |
+| `NX.SpellBook` | Global and custom spellbooks | [Spellbooks](./spellbooks) |
+| `NX.Item` | Item counts, use, and item policy | [Items, wands, and settings](./items-wands-settings) |
+| `NX.Pet` | Pet state, maintenance, and commands | [Pets](./pets) |
+| `NX.Combat` | Combat service exposed to the rotation environment | [Environment](./environment) |
+| `NX.Movement` | Paths, movement styles, and route ownership | [Movement](./movement) |
+| `NX.Wand` | Framework-owned wand maintenance intent | [Items, wands, and settings](./items-wands-settings) |
+| `NX.Toggles` | Live user toggle values | [Environment](./environment) |
+| `NX.Options` | Live user option values | [Environment](./environment) |
+| `NX.Player` | Player class description, not a live unit wrapper | [Units and targets](./units-and-targets) |
+
+## Public NX functions
+
+| Function | Purpose | Reference |
+| --- | --- | --- |
+| `NX.UnitManager.Get(token)` | Resolve a live unit wrapper | [Units and targets](./units-and-targets) |
+| `NX.UnitManager.EnumFriends(callback)` | Enumerate a bounded set of friendly units | [Units and targets](./units-and-targets) |
+| `NX.UnitManager.EnumEnemies(callback)` | Enumerate a bounded set of enemy units | [Units and targets](./units-and-targets) |
+| `NX.UnitManager.EnumActiveEnemies(callback)` | Enumerate active enemy units | [Units and targets](./units-and-targets) |
+| `NX.UnitManager.CreateCustomUnit(token, callback)` | Create a controlled custom-unit selector | [Units and targets](./units-and-targets) |
+| `NX.SpellBook:GetGlobal()` | Resolve the merged class and flavor spell catalog | [Spellbooks](./spellbooks) |
+| `NX.SpellBook:New()` | Create an advanced custom spellbook | [Spellbooks](./spellbooks) |
+| `NX.Item.GetItemCount(item)` | Read an item count | [Items, wands, and settings](./items-wands-settings) |
+| `NX.Item.UseItemByID(item)` | Request item use through item policy | [Items, wands, and settings](./items-wands-settings) |
+| `NX.Pet.Maintain()` | Register out-of-combat pet maintenance intent | [Pets](./pets) |
+| `NX.Pet.Assist()` | Register combat pet-assist intent | [Pets](./pets) |
+| `NX.Pet.IsPetActive()` | Read whether the player has an active pet | [Pets](./pets) |
+| `NX.Wand.Maintain()` | Register framework-owned wand intent | [Items, wands, and settings](./items-wands-settings) |
+| `NX.Movement.MoveTo(...)` | Follow a route to a destination | [Movement](./movement) |
+| `NX.Movement.MoveBackwardTo(...)` | Follow a route while moving backward | [Movement](./movement) |
+| `NX.Movement.MoveStrafeTo(...)` | Follow a route with left strafe movement | [Movement](./movement) |
+| `NX.Movement.RequestPath(...)` | Request a route asynchronously | [Movement](./movement) |
+| `NX.Movement.FollowPath(...)` | Install and follow a validated route | [Movement](./movement) |
+| `NX.Movement.ResumeNavigation()` | Resume framework-owned navigation | [Movement](./movement) |
+| `NX.Movement.StopMovement()` | Cancel the active route | [Movement](./movement) |
+| `NX.Movement.FaceToPosition(...)` | Hand facing back to a position | [Movement](./movement) |
+| `NX.Movement.SetRotationMovementOverride(...)` | Claim or release a short route | [Movement](./movement) |
+
+## Rotation entry points
+
+These functions are fields on the rotation table rather than methods on an NX
+object:
+
+| Function | Purpose | Reference |
+| --- | --- | --- |
+| `EngagementPulse` | Prepare the next engagement action | [Pulses](./pulses) |
+| `CombatPulse` | Run the combat priority ladder | [Pulses](./pulses) |
+| `OutOfCombatPulse` | Drain out-of-combat work | [Pulses](./pulses) |
+| `MultiPullPulse` | Optional multi-target combat policy | [Pulses](./pulses) |
+
+The authoritative declarations are in
+[`Public/RotationAPIs.lua`](https://github.com/NexorSystem/NexorBot/blob/Development/Public/RotationAPIs.lua).
+The course adds authoring patterns around those declarations; it does not create
+a second runtime API.

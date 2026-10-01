@@ -1,0 +1,19 @@
+# 8. Load the global spellbook
+
+Resolve the merged class and flavor catalog once near the top of the file:
+
+```lua
+local spells = NX.SpellBook:GetGlobal()
+
+local Corruption = spells.Corruption
+local ShadowBolt = spells.ShadowBolt
+```
+
+Use catalog names instead of numeric spell IDs. The catalog handles rank and
+flavor resolution; the later execute gate handles whether a learned spell can
+actually be used.
+
+Custom spellbooks are an advanced topic. Start with the global book and consult
+the [spellbook API](../../../api/spellbooks) before registering custom handles.
+
+Next: [create live unit lookups](./09-unit-lookups).

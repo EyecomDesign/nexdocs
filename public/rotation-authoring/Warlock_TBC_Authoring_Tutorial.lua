@@ -1,7 +1,7 @@
 ---@type RotationEnv
 local NX = ...
 
--- This file is the canonical source used by the bilingual authoring course.
+-- This file is the canonical source used by the English authoring course.
 -- It is intentionally small: levels 1-20, TBC, global spellbook, no class
 -- framework changes. Keep the examples here aligned with the course pages.
 

@@ -1,0 +1,23 @@
+# 7. Declare numeric options
+
+Use `Options` for values rather than on/off policy. A fractional slider needs
+both `Step` and `Precision` so the UI and runtime use the same increment:
+
+```lua
+Options = {
+    {
+        Name = "Healthstone Percent",
+        Type = "Slider",
+        Min = 1,
+        Max = 100,
+        Step = 0.1,
+        Precision = 0.1,
+        Default = 35.0,
+    },
+}
+```
+
+Read the current value through `NX.Options[name]` at decision time. `Precision`
+is the snap increment; it is not a display-only decimal setting.
+
+Next: [load the global spellbook](./08-spellbook).

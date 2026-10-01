@@ -1,0 +1,17 @@
+# 15. Assign spell targets
+
+Keep target ownership on the spell attachment. A harmful spell can resolve the
+current live target with a resolver:
+
+```lua
+Corruption:SetTarget(function()
+    return NX.UnitManager.Get("target")
+end)
+```
+
+`SetTarget` also accepts a live wrapper, a token, or a selector object. For a
+one-off target variation, `spell:Cast(target)` keeps the full spell gate while
+using the target supplied for that call. A resolver returning `nil` is a no-op;
+it does not silently become self.
+
+Next: [build the combat priority](./16-combat-priority).

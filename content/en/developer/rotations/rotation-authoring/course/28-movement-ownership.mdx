@@ -1,0 +1,18 @@
+# 28. Claim movement ownership
+
+Most rotations should leave navigation to the profile and framework. A custom
+retreat is appropriate only when the rotation owns a short combat maneuver:
+
+```lua
+NX.Movement.SetRotationMovementOverride(true)
+-- Request a route and install it here.
+
+NX.Movement.StopMovement()
+NX.Movement.SetRotationMovementOverride(false)
+```
+
+Claim before requesting a route and release on every exit path. Keep the policy
+that decides *when* to retreat in the rotation; `NX.Movement` owns pathing,
+directional keys, facing, and cleanup.
+
+Next: [request and validate a path](./29-movement-path-request).

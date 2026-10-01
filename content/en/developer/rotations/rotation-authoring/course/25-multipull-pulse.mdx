@@ -1,0 +1,27 @@
+# 25. Wire the multipull pulse
+
+The pulse composes the bounded selection, the temporary pet handoff, and the
+rotation’s instant-DoT policy:
+
+```lua
+MultiPullPulse = function()
+    if NX.Toggles["Pause"] or NX.Toggles["Multipull"] == false then
+        RestorePetAfterGather()
+        return false
+    end
+
+    HoldPetForGather()
+    local targets = SelectMultipullTargets()
+    if ApplyInstantDots(targets) then
+        return true
+    end
+
+    RestorePetAfterGather()
+    return false
+end
+```
+
+The normal engine still owns navigation and combat state. The multipull pulse
+only declares its target cap, temporary pet policy, and action result.
+
+Next: [review the complete source](./26-complete-source).

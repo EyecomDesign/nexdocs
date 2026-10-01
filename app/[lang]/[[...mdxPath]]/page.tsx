@@ -2,7 +2,7 @@ import { notFound } from "next/navigation"
 import { generateStaticParamsFor, importPage } from "nextra/pages"
 import { useMDXComponents as getMDXComponents } from "@/mdx-components"
 
-const LOCALES = new Set(["en", "de"])
+const LOCALES = new Set(["en"])
 
 export const generateStaticParams = generateStaticParamsFor("mdxPath")
 

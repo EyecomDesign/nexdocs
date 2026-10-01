@@ -1,0 +1,19 @@
+# 10. Define the pulse contract
+
+The loader calls named fields on the returned table. A rotation must provide
+`EngagementPulse`, `CombatPulse`, and `OutOfCombatPulse`; `MultiPullPulse` is
+optional:
+
+```lua
+local Rotation = {
+    EngagementPulse = function() return false end,
+    CombatPulse = function() return false end,
+    OutOfCombatPulse = function() return false end,
+    MultiPullPulse = function() return false end,
+}
+```
+
+`MultiPullPulse` falls back to `CombatPulse` when it is absent. Define the
+callbacks before adding policy so the file has a known loading boundary.
+
+Next: [implement the out-of-combat pulse](./11-out-of-combat-pulse).

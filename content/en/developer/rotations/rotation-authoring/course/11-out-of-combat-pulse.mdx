@@ -1,0 +1,20 @@
+# 11. Implement the out-of-combat pulse
+
+`OutOfCombatPulse` drains work outside combat. Return `true` while work remains
+and `false` once the state is drained:
+
+```lua
+OutOfCombatPulse = function()
+    if NX.Toggles["Pause"] then
+        return false
+    end
+
+    -- Add one out-of-combat action here at a time.
+    return false
+end
+```
+
+Returning `true` forever can strand the rotation in an out-of-combat state.
+Returning `nil` also does not communicate a completed drain.
+
+Next: [implement the engagement pulse](./12-engagement-pulse).

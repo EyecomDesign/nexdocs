@@ -1,0 +1,22 @@
+# 32. Add a bounded path fallback
+
+One destination can be unwalkable while nearby points are reachable. Try the
+direct retreat point first, then a bounded set of points over the rear
+half-circle:
+
+```lua
+local ANGLE_OFFSETS = { 0, 30, -30, 60, -60, 90, -90 }
+local RADIUS_OFFSETS = { 0, 4, 8 }
+
+-- Build at most 7 × 3 candidates and request them one at a time.
+for _, radiusOffset in ipairs(RADIUS_OFFSETS) do
+    for _, angleOffset in ipairs(ANGLE_OFFSETS) do
+        -- Add one candidate and call RequestPath only after the previous
+        -- candidate failed or returned an unusable result.
+    end
+end
+```
+
+Keep the candidate count bounded, reject partial routes, and never start
+movement while the callback is pending. The [movement API](../../../api/movement)
+contains the full route-result contract and style reference.
