@@ -69,10 +69,33 @@ order and destination map. Use the bot's Stop control to interrupt a run.
 ## Phase order and completion
 
 `Executecodeorder.questid` is the server's quest ID. `PickUp` and `TurnIn` are
-optional top-level blocks. `Objectives` runs in **array order**;
-`objectiveIndex` identifies the corresponding 1-based quest-log objective,
-not the execution order. Already accepted, credited or turned-in work is skipped
-from live quest state.
+optional top-level blocks. The full runner selects unfinished `Objectives` in
+**array order**, subject to the phase-identity limit below. `objectiveIndex`
+identifies the corresponding 1-based quest-log objective, not the execution
+order. Already accepted, credited or turned-in work is skipped from live quest
+state.
+
+### Current phase-identity limit
+
+The runner passes only `(type, objectiveIndex)` from selection to loading. The
+loader resolves the first matching row; an omitted index selects the first row
+of that type. It does not retain the selected array position. **Do not repeat
+the same phase type with omitted or duplicate indices in one file.** Two
+unindexed `MoveTo` rows can stay on the completed first block instead of
+starting the second. Repeated `CustomCode` or another duplicate type/index
+pair has the same identity ambiguity. This is a
+[tracked runtime defect](https://github.com/NexorSystem/NexorBot/issues/1194),
+not a guarantee that the later row will run.
+
+For credit-driven phases, use real quest-log indices; do not invent indices
+to separate steps. If several actions must share one objective, put each
+ambiguous phase in a separate quest-profile file and chain explicit
+[Run Quest Phase tasks](/en/developer/tasks/task-routines#profile-actions) that
+select one unambiguous block per file. For multiple travel-only steps, separate
+files with one `MoveTo` each avoid the duplicate identity without tying travel
+to quest credit. An empty Objective Index does not mean “run every matching
+row.” Verify the active block/destination and completion of each task before
+running the whole chain.
 
 In the table, **objective credit** means the specified `objectiveIndex` is
 finished. Without an index, ordinary objective phases wait for all objectives.
@@ -95,8 +118,8 @@ cast or interaction alone does not prove objective credit.
 | `UseItemOnPosition` | `itemid`, first point, `objectiveIndex` | Objective credit. Walks to the point, then uses the item **on the player**. Does not place an item's ground-target reticle. |
 | `UseSpellOnPosition` | `spellid`, first point, `objectiveIndex` | Objective credit. Approaches, casts, then clicks that world position if a ground reticle appears. Requires a suitable spell and world-click support. |
 | `TalkTo` / `InteractWithUnit` | `npcid` or mob `WhitelistIDs`, search `Points`, `objectiveIndex` | Objective credit. Approaches/interacts with a matching unit. Does not implement a configurable gossip conversation tree. |
-| `MoveTo` | First point with arrival radius and destination `MapID` | Arrival within that radius **on that map**. Ignores later points; needs no quest credit. No point leaves it blocked. |
-| `CustomCode` | `customcode = function(NX, phase, substate) ... end` | In full runs: returns exactly `true`, or its real quest objective completes. Missing code warns and marks this standalone phase done. The single-phase task has the separate behavior below. |
+| `MoveTo` | First point with arrival radius and destination `MapID`; an unambiguous phase identity | Arrival within that radius **on that map**. Ignores later points; needs no quest credit. Repeated unindexed rows can stall as explained above. No point leaves it blocked. |
+| `CustomCode` | `customcode = function(NX, phase, substate) ... end`; an unambiguous phase identity | In full runs: returns exactly `true`, or its real quest objective completes. Missing code warns and marks this standalone phase done. The single-phase task has the separate behavior below. |
 
 The normal self/position/spell/interaction handlers allow a three-second grace
 between attempts while waiting for server credit. They cannot make an
