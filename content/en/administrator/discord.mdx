@@ -1,0 +1,176 @@
+# Discord setup and product roles
+
+This guide describes the existing integration on the Discord service's default
+`dev` branch at
+[`8e8f36e`](https://github.com/NexorSystem/NexorDiscordBotApp/tree/8e8f36ecd56ae3a55d04a0cc34ea5746c337fcd4),
+checked on 20 October 2026. A deployed service version was not verified for this
+guide. Confirm the deployed revision with its operator before treating these
+capabilities as available in your server.
+
+## Prerequisites and permissions
+
+You and the bot must both belong to the Discord server. Your Discord member must
+have **Administrator** permission: **Manage Server** alone does not pass the
+implemented setup check. Start `/setup` in a **direct message to the bot**; a
+server-channel invocation answers “This command can only be used in a private
+channel.” The bot checks your current administrator status again when you select
+a server and save.
+
+Give the bot the permissions required for the features you use:
+
+| Feature | Required access |
+| --- | --- |
+| Broadcast, log, and welcome delivery | **View Channel** and **Send Messages** in each destination. Setup offers text and announcement channels where the bot can send; it does not offer voice, forum, or thread destinations. |
+| Welcome message or a broadcast containing embeds | **Embed Links** in that destination as well. |
+| Product role reconciliation | **Manage Roles**, with the bot's highest role above the product roles it must assign or remove. |
+
+Channel permission overwrites and Discord's role hierarchy still apply. See
+[Discord's permission reference](https://docs.discord.com/developers/topics/permissions)
+for visibility and role-position rules. These features do not require granting
+the bot Administrator.
+
+`/setup` configures **three message channels**. It does not choose which roles a
+product grants. Product-to-server/role mappings come from the Nexor App's product
+configuration and must be checked by an authorized product manager. A Discord
+role is not a NexorBot license.
+
+## Configure and verify a server
+
+Use a server and test member you are authorized to administer. For example, plan
+three destinations named `bot-announcements`, `bot-log`, and `bot-welcome`; these
+are example names, not required channel names. Restrict the log destination to
+the people who need its operational messages.
+
+1. Open a direct message with the bot and run `/setup`.
+2. At **Please select a server:** choose the intended server. Use **Next servers**
+   / **Previous servers** when needed. If it is missing, check both memberships
+   and your Administrator permission.
+3. Choose the **channel for broadcast messages**, then the **channel for log
+   messages**, then the **channel for welcome messages**. Use **Next channels** /
+   **Previous channels** to find a destination.
+4. At **Do you want to save the changes?**, choose **Save**. Wait for
+   **Saved successfully.** A selection alone has not saved the configuration.
+   **Cancel** ends the draft. If it expired, start `/setup` again.
+5. In a direct message, run `/getWelcomePost`, choose the same configured server,
+   and check for **Welcome message sent.** Verify that the welcome post actually
+   appears in the chosen welcome channel with its **Claim Roles** button.
+6. Have your test member use **Claim Roles**. It asks the bot to reconcile that
+   member's purchase roles. Check the actual intended role on the member and,
+   if needed, the operator's reconciliation outcome. The response alone does not
+   prove an entitlement exists or that every role change succeeded.
+
+If setup says **No text or announcement channels found where the bot may post.**,
+fix the bot's destination permissions and start again. A deleted or no-longer
+offered channel can produce **That channel can't be chosen. Run /setup again.**
+If welcome delivery fails, check the saved channel, the bot's current permissions,
+and the operator's logs; rerunning the command is a real new post attempt.
+
+This verification path checks configured delivery and roles. It does not send
+expiry reminders or create a developer application.
+
+## How product roles stay in sync
+
+The bot fetches the Nexor App's current desired role state. It reconciles all
+guilds after connection, reconnection, joining a guild, and on a five-minute
+schedule. A member joining or losing a role can trigger a member-only check;
+**Claim Roles** requests one explicitly. Connection problems and Discord limits
+can delay these checks, so five minutes is a schedule rather than a delivery
+guarantee.
+
+Only a role the bot actually **adds** is recorded as a managed assignment. If the
+member already has that role, the result is **AlreadyPresent** and it does not
+become managed just because the member also owns a product. A pre-existing manual
+assignment is therefore not removed solely because that entitlement ends.
+Roles previously added and recorded by the bot can be removed when the app no
+longer grants them. This protection is about the recorded assignment; it is not
+a blanket promise to keep every role an administrator later edits.
+
+The reconciler uses fresh desired state each run. A role still granted by another
+current entitlement is not removed. An unavailable guild or a permission failure
+is reported without stopping other guilds. Unlike notification DMs, a later role
+run can try again from current state after the cause is fixed.
+
+## Diagnose a missing or unexpected product role
+
+Check the entitlement and the guild separately:
+
+1. Ask the member to check the correct Nexor account and its linked Discord
+   identity privately. Confirm the product's license is eligible; use
+   [Account and Sessions](/en/introduction/getting-started/account-and-sessions)
+   for account access, in-use licenses, expiry, and credential recovery.
+2. Have the authorized product manager check that the product maps to this server
+   and the intended existing role. Re-running `/setup` changes message channels,
+   not product mappings.
+3. Check that the member and bot are in the server and that the bot can manage the
+   target role. Restore **Manage Roles** or role ordering if needed.
+4. Ask the member to use **Claim Roles**, then inspect the real role. If it still
+   fails, have the service operator examine the current reconciliation result:
+
+| Outcome or symptom | Interpretation |
+| --- | --- |
+| **Added** / **AlreadyPresent** | The role was added, or the member already held it. AlreadyPresent does not create a new managed assignment. |
+| **MemberNotInGuild** | The mapped Discord member is not in that server. Check membership and account linkage. |
+| **RoleNotFound** | The configured role no longer exists or its mapping is invalid. The product manager must correct it. |
+| **MissingPermission** | Discord refused the change. Check Manage Roles, role ordering, and whether the target role can be managed. |
+| **GuildUnavailable** | The guild is unavailable to the bot. Check bot membership and connection before changing licenses. |
+| Desired state could not be fetched / results could not be reported | The app-to-bot integration needs operator attention. Do not paste service credentials into a report. |
+| A role remains after entitlement loss | Check whether it was manually assigned, still granted by another entitlement, or waiting for a successful reconciliation run. |
+
+Record a sanitized result: the deployed revision, approximate time, operation,
+and outcome category. Keep member identity, license records, raw logs, and
+environment access details in the authorized private support process. Never
+publish the bot token, service key, Connection Token, or personal key file.
+
+## Missing expiry or developer-request DMs
+
+The existing background delivery run checks two separate queues while the bot is
+connected, on a five-minute schedule:
+
+- **NexorBot expiry reminders:** the app supplies due reminders, including the
+  expiry time and renewal link. This is not a reminder guarantee for every
+  optional product.
+- **Developer requests:** the app supplies a request-to-review message for its
+  administrator recipients, or an accept/reject decision for the applicant.
+  `/setup` does not select those recipients.
+
+For either type, check the correct linked Discord identity, a server shared with
+the bot, the recipient's DM settings, and whether the app actually had a due
+message. Ask an authorized operator to inspect the recorded **Delivered**,
+**DmClosed**, or **Failed** outcome and any claim/report failure privately.
+A missing DM alone does not establish that a license expired or that an
+application was rejected; check the account or application on the website.
+
+**These claimed DMs are not retried.** Opening DMs after a failed attempt does not
+resend that message. The bot can retry reporting an earlier outcome to the app;
+that is separate from sending the DM again. Do not promise that a restart,
+channel reconfiguration, or another five-minute tick will redeliver it. Failure
+of one queue is isolated from the other.
+
+Product authors can start in the [Developer section](/en/developer). The full
+developer-product journey is tracked in
+[NexDocs #9](https://github.com/EyecomDesign/nexdocs/issues/9) and has separate
+release checks. Customers can review
+[product choices](/en/introduction/getting-started/product-loading) and
+[account/license recovery](/en/introduction/getting-started/account-and-sessions).
+
+## Version limits
+
+Broadcast role-toggle buttons are separate from entitlement roles. The inspected
+implementation allows those buttons only on the configured official Nexor guild
+and refuses product roles, privileged roles, integration-managed roles,
+`@everyone`, and roles the bot cannot manage. They do not replace product role
+reconciliation.
+
+The unfinished ticket platform in
+[#50](https://github.com/NexorSystem/NexorDiscordBotApp/issues/50) and
+[#52](https://github.com/NexorSystem/NexorDiscordBotApp/issues/52), referral-message
+features, and future branch designs are outside this guide. Their existence is
+not evidence of deployment or release.
+
+The [default-branch README](https://github.com/NexorSystem/NexorDiscordBotApp/blob/8e8f36ecd56ae3a55d04a0cc34ea5746c337fcd4/README.md),
+[slash commands](https://github.com/NexorSystem/NexorDiscordBotApp/blob/8e8f36ecd56ae3a55d04a0cc34ea5746c337fcd4/Services/Application/Bot/NexorDiscordBotSlashCommands.cs),
+[setup steps](https://github.com/NexorSystem/NexorDiscordBotApp/blob/8e8f36ecd56ae3a55d04a0cc34ea5746c337fcd4/Services/Application/Bot/Extensions/SetupChannelStep.cs),
+[role reconciler](https://github.com/NexorSystem/NexorDiscordBotApp/blob/8e8f36ecd56ae3a55d04a0cc34ea5746c337fcd4/Services/Application/Bot/Roles/RoleReconciler.cs),
+[reminder delivery](https://github.com/NexorSystem/NexorDiscordBotApp/blob/8e8f36ecd56ae3a55d04a0cc34ea5746c337fcd4/Services/Application/Bot/Reminders/NexorBotReminderDelivery.cs),
+and [developer-request delivery](https://github.com/NexorSystem/NexorDiscordBotApp/blob/8e8f36ecd56ae3a55d04a0cc34ea5746c337fcd4/Services/Application/Bot/DeveloperRequests/DeveloperRequestDmDelivery.cs)
+are the source basis. No new live Discord acceptance test is claimed here.
