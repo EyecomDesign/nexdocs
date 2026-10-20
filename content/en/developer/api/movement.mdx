@@ -24,8 +24,11 @@ tick cancels navigation and can keep the character stationary.
 
 ## RequestPath and FollowPath
 
-`RequestPath` is asynchronous and invokes its callback exactly once. The callback
-receives a result with the fields most rotations need:
+`RequestPath(x, y, z, callback, opts)` returns a numeric request ID, or `0` when
+the request cannot be set up. Its result comes through `callback(result)`.
+Prepare callback state before calling: cache hits and invalid input can call
+back inline. The router normally resolves once; author logic must still guard
+late results after its own timeout or cancellation.
 
 | Field | Meaning |
 | --- | --- |
@@ -35,24 +38,19 @@ receives a result with the fields most rotations need:
 | `mapId` | Map on which the route was generated. |
 | `reason` | Failure or result explanation for diagnostics. |
 | `source` | Router source, such as cache, HTTP, or unlocker fallback. |
+| `status` | Numeric router PathStatus value; it is not a pollable request state. |
+| `requestId` | ID of the request that produced this result. |
+| `attempts` | Router attempts used for this result. |
 
 Accept a route only when `result.ok == true`, `result.isComplete ~= false`, and
 `result.path` is a non-empty table. A partial path is not a successful retreat;
 it ends at a mesh edge and must be rejected or handled by an explicit policy.
 
-```lua
-NX.Movement.RequestPath(x, y, z, function(result)
-    if result.ok and result.isComplete ~= false
-        and type(result.path) == "table" and #result.path > 0
-    then
-        local accepted, reason = NX.Movement.FollowPath(
-            result.path, "strafe-inward", result.mapId)
-        if not accepted then
-            -- Try another candidate or release the movement owner.
-        end
-    end
-end)
-```
+Use `ok` and `isComplete` for acceptance and retain `status`, `reason`, `source`
+and `attempts` for diagnostics. Failure can arrive immediately (for example
+`invalid_input` or `player_unavailable`) or after router work. The
+[complete bounded example](../rotations/rotation-authoring/course/32-movement-fallback)
+checks the request ID and target identity as well as the result shape.
 
 `FollowPath` copies and validates the supplied points. Invalid input returns
 `false, reason` and leaves the active route unchanged. A valid route cancels the
@@ -77,31 +75,42 @@ automatically.
 ## Owning a short route during combat
 
 Combat may normally finish approach and clear navigation while a target is in
-range. A rotation-owned retreat must claim the route before the request and release
-it in every exit path:
-
-```lua
-NX.Movement.SetRotationMovementOverride(true)
-
-NX.Movement.RequestPath(x, y, z, function(result)
-    if result.ok and result.isComplete ~= false and result.path and #result.path > 0 then
-        NX.Movement.FollowPath(result.path, "backward", result.mapId)
-    end
-end)
-
--- On target loss, pause, timeout, style change, or route completion:
-NX.Movement.StopMovement()
-NX.Movement.SetRotationMovementOverride(false)
-NX.Movement.FaceToPosition(targetX, targetY, targetZ, false)
-```
+range. A rotation-owned retreat claims with
+`SetRotationMovementOverride(true)` before requesting and releases with
+`StopMovement()`, `SetRotationMovementOverride(false)` and `ResumeNavigation()`
+on every exit. The override is global movement ownership, not an owner token.
 
 Keep the normal combat priority running while the route is pending or active. A
 movement helper should not turn an asynchronous path request into a pulse-wide
 early return. Use a generation counter and target identity check before installing
 a late callback result. For a point that may be unwalkable, try a bounded list of
-nearby radial candidates sequentially; the [bounded movement fallback lesson](../rotations/rotation-authoring/course/32-movement-fallback)
-contains the complete pattern.
+nearby radial candidates sequentially. The
+[bounded movement fallback lesson](../rotations/rotation-authoring/course/32-movement-fallback)
+renders the single authoritative
+[downloadable example](/rotation-authoring/Bounded_Movement_Example.lua),
+including cancellation, request/route/total deadlines, target loss, a pulse-loss
+lease for pause and endpoint arrival checks. Its real Warlock priority keeps
+running while movement waits.
+
+The current public API has no standalone `CancelRequest`, rotation pause getter
+or route-completed event. `StopMovement()` clears the movement machine's route
+and its own pending request; it does not cancel a separately issued
+`RequestPath`. The example invalidates that callback and keeps its in-flight
+slot occupied until it settles, so retries cannot overlap. A timed-out request
+that never settles requires ending/reloading the demo rather than creating an
+unbounded queue. No future path-distance API is needed.
+
+Before switching or unloading this demo rotation, turn its `Retreat` toggle off
+and wait for the cleanup diagnostic (or a completed maneuver). A short pulse-loss
+watchdog handles pauses conservatively, but cannot identify a new rotation's
+route. Do not carry its timer across an arbitrary replacement: the present API
+does not provide script disposal or isolated route ownership.
 
 `FaceToPosition(..., false)` starts the existing smooth facing handoff. Pass
 `true` only when an immediate turn is required. `StopMovement()` cancels the route;
 it is not a pulse maintenance call.
+
+Source contract:
+[`Public/PublicAPIs.lua`](https://github.com/NexorSystem/NexorBot/blob/9f373eaa9bd3d65581fc5ad6c52a417b87c71a89/Public/PublicAPIs.lua#L978),
+[`PathRouter`](https://github.com/NexorSystem/NexorBot/blob/9f373eaa9bd3d65581fc5ad6c52a417b87c71a89/src/api/navigation/Core/PathRouter.lua#L673)
+and [`FollowPath`](https://github.com/NexorSystem/NexorBot/blob/9f373eaa9bd3d65581fc5ad6c52a417b87c71a89/src/machines/movement.lua#L2672).

@@ -1,20 +1,23 @@
 # 31. Clean up movement ownership
 
-Release a custom maneuver on target loss, pause, timeout, style change, and
-route completion:
+The `Finish(reason)` function in the [complete example](./32-movement-fallback)
+uses the same cleanup for exhaustion, cancellation, target loss/change,
+request/route/total timeout, pulse loss during pause, and arrival near the final
+path point. It invalidates the generation first, cancels its watchdog, stops
+the route, releases the override and resumes ordinary navigation. Only successful
+completion hands facing back to the current target, using the defined `Context`
+and `Position` helpers in that file.
 
-```lua
-NX.Movement.StopMovement()
-NX.Movement.SetRotationMovementOverride(false)
+`StopMovement()` is an exit action, not a maintenance call on every pulse. An
+independent router request is still allowed to settle; its old callback cannot
+install a route. The example prevents a replacement request until that callback
+has returned because public NX has no request-cancel operation.
 
-local x, y, z = Position(target)
-if x then
-    NX.Movement.FaceToPosition(x, y, z, false)
-end
-```
-
-`StopMovement()` cancels the active route; it is not a maintenance call for
-every pulse. Use a generation counter and target identity check so a late path
-callback cannot reinstall a route after cleanup.
+Pulses do not run while the rotation is paused. The example therefore uses a
+0.5-second pulse lease and a 0.1-second game timer to end a maneuver when pulses
+stop. This also aborts on other long pulse gaps, rather than guessing why the
+pulse stopped. Cancel and wait for the cleanup message before switching or
+unloading the rotation; the API does not expose a disposal callback or scoped
+movement owner.
 
 Next: [add a bounded path fallback](./32-movement-fallback).

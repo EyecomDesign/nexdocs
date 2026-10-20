@@ -18,4 +18,10 @@ end)
 `backward`, `strafe`, and `strafe-inward` describe directional policy; they do
 not replace target or retreat policy.
 
+The snippet illustrates installation only; `UsablePath` is the predicate from
+lesson 29. Use the [complete example](./32-movement-fallback) for a copyable file
+with its target/generation checks, failure fallback, endpoint detection and
+cleanup. `FollowPath` can reject a map mismatch or invalid numeric point even
+after a router result passed the basic predicate.
+
 Next: [clean up movement ownership](./31-movement-cleanup).
