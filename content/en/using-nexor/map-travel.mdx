@@ -1,0 +1,45 @@
+# Travel from the World Map
+
+Open the normal World Map. Nexor's **Travel Shortcuts** lists the two implemented gestures:
+
+| Gesture | Result |
+| --- | --- |
+| Shift+left-click, without Ctrl/Alt | **Move To**: resolve a destination and request travel |
+| Ctrl+left-click, without Shift/Alt | **Show Position**: print the mesh-snapped coordinates and map ID without moving |
+
+## Take a first trip
+
+1. Choose a nearby road or open ground on the current zone map. Ctrl-click it first and confirm a mesh position is printed.
+2. Shift-click the destination. The navigation service finds nearby walkable ground; a map click is not a direct world-coordinate/Z value.
+3. Watch the travel/path indicator and chat feedback. A valid request can start the bot even without a loaded world profile.
+4. Let the character arrive. **Arrived at destination** stops the travel order and bot, handing control back to you; it does not resume a loaded grind automatically.
+
+Travel can defend against combat and continue toward its destination afterward. An unreachable destination produces a reason and ends the trip. Check the visible state before issuing more orders.
+
+## Replace or cancel an order
+
+A valid new destination replaces the active goal. However, the immediate-stop behavior requested in [NexorBot #1098](https://github.com/NexorSystem/NexorBot/issues/1098) is still open: the character can continue moving while the new destination/path is resolved. If the new lookup fails, the current implementation retains the old active trip. New requests/cancel tokens prevent an older asynchronous lookup from later taking over.
+
+If you need the character to stand still before choosing a new goal, use the bot's Pause/Stop control first, then Ctrl-click to inspect the new point and issue a fresh Shift-click order. Pause/Stop cancels both the active order and pending lookup; resuming does not restore that canceled destination. Avoid testing replacement during a flight/boat ride: the pending #1098 work also covers preserving committed rides. Wait until disembarked.
+
+## Routes between zones and continents
+
+A click on another continent is allowed when the map resolves to a real world position. The route planner needs populated world-graph links, usable flight/transport/portal connections and navigation data for the involved maps. A graph entry is not proof that the particular route is currently usable or has been tested.
+
+If you see **no route to the destination**, distinguish a missing graph connection from a local ground/path problem. For a missing boat, border or portal record, see [navigation data recording](/en/using-nexor/navigation-recording).
+
+## Map display
+
+**Home → Maps** controls World Map presentation and content, including POI pins, Spirit Healers, Zone Crossings and unexplored-area display. A zone-crossing pin can hand its location to the same map-travel pipeline. Display controls do not create missing world routes. A third-party map addon can make Nexor stand down and disable its map controls.
+
+## If the bot does not move
+
+- No map/world position: choose a zone map with a real world projection and valid ground.
+- No walkable ground: inspect the clicked point and the navigation service response; try known nearby walkable ground rather than repeated distant clicks.
+- Ground resolves but no cross-zone route: collect origin/destination map IDs and the exact route failure.
+- Service/path failure: follow the current [unlocker navigation setup](/en/introduction/getting-started/download-and-install/noname-windows) for your installed version. The nav-server-only change in [#1076](https://github.com/NexorSystem/NexorBot/issues/1076) remains open, so legacy fallback/setup requirements have not been removed here.
+- Attach a short [diagnostic report](/en/using-nexor/diagnostics) with timestamps, current action and sanitized logs.
+
+These are the shipped map gestures. A nearest-service Fast Travel tab remains outside the implemented flow.
+
+Sources checked on 20 October 2026: [map clicks](https://github.com/NexorSystem/NexorBot/blob/9f373eaa9bd3d65581fc5ad6c52a417b87c71a89/src/modules/travel_worldmap.lua), [travel state](https://github.com/NexorSystem/NexorBot/blob/9f373eaa9bd3d65581fc5ad6c52a417b87c71a89/src/machines/status/travel.lua) and [Maps controls](https://github.com/NexorSystem/NexorBot/blob/9f373eaa9bd3d65581fc5ad6c52a417b87c71a89/UI/Frames/BotInterface/Menus/Home/Maps.lua).
