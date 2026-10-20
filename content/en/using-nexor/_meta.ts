@@ -3,6 +3,7 @@ const meta = {
   recovery: "Recovery and supplies",
   "vendors": "Buying and repair",
   "item-rules": "Sell Keep and Delete",
+  "scheduled-breaks": "Scheduled Breaks",
 };
 
 export default meta;
