@@ -1,0 +1,34 @@
+# Optional imports
+
+`NX.Import(name)` opts the loading rotation into an optional framework module
+and returns its public functions. In the current API, the supported import is
+`PetModule`:
+
+```lua
+---@type NX
+local NX = ...
+local PetModule = NX.Import("PetModule")
+```
+
+Write this once at the top of the rotation file. A call from a pulse or timer
+fails because imports are available only while the rotation file loads. An
+unknown name also raises an error and the rotation is not loaded. Although
+every script receives the same NX table, this activation contract belongs to
+the rotation loader; it is not a general file-import or plugin-loading API.
+
+The import itself activates the module for that rotation, even when no pulse
+calls `PetModule.Maintain()` or `PetModule.Assist()`. In the pet case that includes
+stance ownership, pre-pull behavior, eating protection and pet-food restocking.
+Without an import the framework does none of that pet-module work for the
+rotation. See [Pets: two names, one rule](./pets) for the basic API, pulse calls,
+settings and toggle behavior.
+
+A successful replacement rotation uses its own imports; unloading removes the
+old activation and overrides. A failed load leaves the running rotation's
+imports in place. Calls to module functions through their retired `NX.Pet`
+location are detected at load and refused with a message naming the import and
+replacement call.
+
+This describes the merged contract in
+[`Public/PublicAPIs.lua`](https://github.com/NexorSystem/NexorBot/blob/9f373eaa9bd3d65581fc5ad6c52a417b87c71a89/Public/PublicAPIs.lua#L336)
+and the [rotation-import decision](https://github.com/NexorSystem/NexorBot/blob/9f373eaa9bd3d65581fc5ad6c52a417b87c71a89/Docs/adr/0002-rotation-imports.md).

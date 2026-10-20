@@ -1,366 +1,226 @@
 ---@type NX
 local NX = ...
+local PetModule = NX.Import("PetModule")
 
--- This file is the canonical source used by the English authoring course.
--- It is intentionally small: levels 1-20, TBC, global spellbook, no class
--- framework changes. Keep the examples here aligned with the course pages.
-
+-- ============================================================
+-- Spell definitions
+-- ============================================================
 local spells = NX.SpellBook:GetGlobal()
 
-local DemonSkin        = spells.DemonSkin
-local Corruption       = spells.Corruption
-local CurseOfAgony     = spells.CurseOfAgony
-local Immolate         = spells.Immolate
-local ShadowBolt       = spells.ShadowBolt
-local LifeTap          = spells.LifeTap
-local HealthFunnel      = spells.HealthFunnel
-local CreateHealthstone = spells.CreateHealthstone
+local DemonSkin       = spells.DemonSkin
+local Corruption      = spells.Corruption
+local CurseOfAgony    = spells.CurseOfAgony
+local Immolate        = spells.Immolate
+local ShadowBolt      = spells.ShadowBolt
+local LifeTap         = spells.LifeTap
+local HealthFunnel    = spells.HealthFunnel
+local CreateSoulstone = spells.CreateSoulstone
 
 -- ============================================================
 -- Constants
 -- ============================================================
 local MAX_MULTIPULL_TARGETS = 3
-local HEALTHSTONE_MIN_HEALTH = 35
-local HEALTHSTONE_ITEM_IDS = {
-    -- Item IDs, not spell IDs. The list covers the legacy/TBC healthstones.
-    5512, 5511, 5510, 5509, 9421, 19004, 19005, 19006,
-    19007, 19008, 19009, 19010, 19011, 19012, 19013,
-}
+local SOULSTONES            = NX.Tables.Items.Soulstones
 
-local petHeldForGather = false
+-- ============================================================
+-- Unit definitions
+-- ============================================================
+local Player = NX.UnitManager.Get("player")
+local Target = NX.UnitManager.Get("target")
+local Pet    = NX.UnitManager.Get("pet")
 
-local function Player()
-    return NX.UnitManager.Get("player")
-end
+local CorruptionTarget = NX.UnitManager.CreateCustomUnit("CorruptionTarget", function()
+    if Target:IsEnemy() and Target:MyDebuff(Corruption):GetRemainingTime() <= Corruption:GetCastTime() then
+        return Target
+    end
 
-local function Target()
-    return NX.UnitManager.Get("target")
-end
-
-local function Pet()
-    return NX.UnitManager.Get("pet")
-end
-
-local function DamageEnabled()
-    return NX.Toggles["Damage"] ~= false
-end
-
-local function ItemsEnabled()
-    return NX.Toggles["Items"] ~= false
-end
-
-local function PetEnabled()
-    return NX.Toggles["Pet"] ~= false
-end
-
-local function HasHealthstone()
-    for _, itemID in ipairs(HEALTHSTONE_ITEM_IDS) do
-        if NX.Item.GetItemCount(itemID) > 0 then
-            return true
+    local enemies = NX.UnitManager.GetActiveEnemies()
+    for index = 1, math.min(#enemies, MAX_MULTIPULL_TARGETS) do
+        local enemy = enemies[index]
+        if enemy:IsEnemy() and enemy:MyDebuff(Corruption):GetRemainingTime() <= Corruption:GetCastTime() then
+            return enemy
         end
     end
 
-    return false
-end
-
-local function UseHealthstone()
-    local threshold = tonumber(NX.Options["Healthstone Percent"] or HEALTHSTONE_MIN_HEALTH)
-        or HEALTHSTONE_MIN_HEALTH
-    if not ItemsEnabled() or (Player():GetHP() or 100) > threshold then
-        return false
-    end
-
-    for _, itemID in ipairs(HEALTHSTONE_ITEM_IDS) do
-        if NX.Item.GetItemCount(itemID) > 0 then
-            return NX.Item.UseItemByID(itemID) == true
-        end
-    end
-
-    return false
-end
-
-local function Execute(spell)
-    if spell and spell.Execute then
-        return spell:Execute() == true
-    end
-
-    return false
-end
-
-local function AttachDamageSpell(spell, refresh)
-    if not spell then
-        return
-    end
-
-    spell:CastableIf(function()
-        local target = Target()
-        return DamageEnabled() and target:IsEnemy() and refresh(target)
-    end)
-    spell:SetTarget(Target)
-end
-
--- Target selection belongs to the spell attachment. The pulse only expresses
--- priority; Execute() supplies the normal known/cooldown/range/LOS gates.
-AttachDamageSpell(Corruption, function(target)
-    return not target:HasMyDebuff(Corruption)
-end)
-AttachDamageSpell(CurseOfAgony, function(target)
-    return not target:HasMyDebuff(CurseOfAgony)
-end)
-AttachDamageSpell(Immolate, function(target)
-    return not target:HasMyDebuff(Immolate)
-end)
-AttachDamageSpell(ShadowBolt, function()
-    return true
+    return NX.UnitManager.Get("none")
 end)
 
-if DemonSkin then
-    DemonSkin:CastableIf(function()
-        return NX.Toggles["Buffs"] ~= false and not Player():HasMyBuff(DemonSkin)
-    end)
+local CurseOfAgonyTarget = NX.UnitManager.CreateCustomUnit("CurseOfAgonyTarget", function()
+    if Target:IsEnemy() and not Target:HasMyDebuff(CurseOfAgony) then
+        return Target
+    end
+
+    local enemies = NX.UnitManager.GetActiveEnemies()
+    for index = 1, math.min(#enemies, MAX_MULTIPULL_TARGETS) do
+        local enemy = enemies[index]
+        if enemy:IsEnemy() and not enemy:HasMyDebuff(CurseOfAgony) then
+            return enemy
+        end
+    end
+
+    return NX.UnitManager.Get("none")
+end)
+
+-- ============================================================
+-- Shared functions
+-- ============================================================
+local function FindSoulstoneInBags()
+    for index = #SOULSTONES, 1, -1 do
+        local soulstone = SOULSTONES[index]
+        if NX.Item.GetItemCount(soulstone.itemID) > 0 then
+            return soulstone
+        end
+    end
+
+    return nil
 end
 
-if HealthFunnel then
-    -- Health Funnel remains Warlock rotation policy. Generic pet healing is a
-    -- different concern and belongs to the Pet Module's documented API.
-    HealthFunnel:CastableIf(function()
-        local pet = Pet()
-        return PetEnabled()
-            and NX.Pet.IsPetActive()
-            and (pet:GetHP() or 100) < 50
-            and (Player():GetHP() or 100) > 40
-    end)
-    HealthFunnel:SetTarget(Pet)
-end
-
-if LifeTap then
-    LifeTap:CastableIf(function()
-        local healthstonePercent = tonumber(NX.Options["Healthstone Percent"] or HEALTHSTONE_MIN_HEALTH)
-            or HEALTHSTONE_MIN_HEALTH
-        return DamageEnabled()
-            and (Player():GetPP() or 100) < 25
-            and (Player():GetHP() or 100) > healthstonePercent
-    end)
-end
-
-if CreateHealthstone then
-    CreateHealthstone:CastableIf(function()
-        return ItemsEnabled() and not HasHealthstone()
-    end)
-end
-
-local function MaintainPetOutOfCombat()
-    if PetEnabled() and NX.Pet.Maintain() then
-        return true
+local function HasAnySoulstoneBuff()
+    for _, soulstone in ipairs(SOULSTONES) do
+        if Player:HasBuff(soulstone.spellID) then return true end
     end
 
     return false
 end
 
-local function AssistPetInCombat()
-    if PetEnabled() and NX.Pet.Assist() then
-        return true
-    end
+local function UseSoulstoneOnPlayer()
+    local soulstone = FindSoulstoneInBags()
 
-    return false
+    return soulstone
+        and not HasAnySoulstoneBuff()
+        and not Player:IsMoving()
+        and NX.Spell.GetCooldownRemaining(soulstone.spellID) <= 0
+        and NX.Item.UseItemByID(soulstone.itemID, "player")
 end
 
-local function HoldPetForGather()
-    if not PetEnabled() or petHeldForGather then
-        return
-    end
+-- ============================================================
+-- Spell conditions
+-- ============================================================
+Corruption:CastableIf(function()
+    return NX.Toggles["Damage"]
+end):SetTarget(CorruptionTarget)
 
-    -- These are edge-triggered commands. Do not repeat them every pulse.
-    NX.Pet.CommandPetStopAttack()
-    NX.Pet.CommandPetPassive()
-    NX.Pet.CommandPetFollow()
-    petHeldForGather = true
-end
+CurseOfAgony:CastableIf(function()
+    return NX.Toggles["Damage"]
+end):SetTarget(CurseOfAgonyTarget)
 
-local function RestorePetAfterGather()
-    if not petHeldForGather then
-        return
-    end
+Immolate:CastableIf(function()
+    return NX.Toggles["Damage"] and not Target:HasMyDebuff(Immolate)
+end):SetTarget(Target)
 
-    NX.Pet.CommandPetDefensive()
-    petHeldForGather = false
-end
+ShadowBolt:CastableIf(function()
+    return NX.Toggles["Damage"]
+end):SetTarget(Target)
 
-local function SelectMultipullTargets()
-    local selected = {}
-    NX.UnitManager.EnumActiveEnemies(function(enemy)
-        if enemy:IsEnemy() then
-            selected[#selected + 1] = enemy
-        end
-        return #selected >= MAX_MULTIPULL_TARGETS
-    end)
-    return selected
-end
+DemonSkin:CastableIf(function()
+    return NX.Toggles["Buffs"] and not Player:HasMyBuff(DemonSkin)
+end)
 
-local function ApplyInstantDots(targets)
-    if not DamageEnabled() then
-        return false
-    end
+HealthFunnel:CastableIf(function()
+    return NX.Toggles["Pet"]
+        and NX.Pet.IsPetActive()
+        and Pet:GetHP() < NX.Options["Health Funnel Pet Health Percent"]
+        and Player:GetHP() > NX.Options["Minimum Health Percent"]
+end):SetTarget(Pet)
 
-    for _, enemy in ipairs(targets) do
-        if Corruption
-            and not enemy:HasMyDebuff(Corruption)
-            and Corruption:Cast(enemy)
-        then
-            return true
-        end
+LifeTap:CastableIf(function()
+    return NX.Toggles["Damage"]
+        and Player:GetPP() < NX.Options["Life Tap Mana Percent"]
+        and Player:GetHP() > NX.Options["Minimum Health Percent"]
+end)
 
-        if CurseOfAgony
-            and not enemy:HasMyDebuff(CurseOfAgony)
-            and CurseOfAgony:Cast(enemy)
-        then
-            return true
-        end
-    end
+CreateSoulstone:CastableIf(function()
+    return NX.Options["Use Soulstone"] and not FindSoulstoneInBags()
+end)
 
-    return false
-end
-
+-- ============================================================
+-- Rotation
+-- ============================================================
 local Rotation = {
     Toggles = {
-        ["Pause"] = { Description = "Pause the rotation", Default = false },
-        ["Buffs"] = { Description = "Maintain self buffs", Default = true },
-        ["Damage"] = { Description = "Use damage and mana priorities", Default = true },
-        ["Items"] = { Description = "Create and use Healthstones", Default = true },
-        ["Pet"] = { Description = "Use the Pet Module", Default = true },
-        ["Wand"] = { Description = "Allow framework wand maintenance", Default = true },
-        ["Multipull"] = { Description = "Use the explicit three-target pulse", Default = true },
+        ["Buffs"] = { Description = "Keep Demon Skin up.", Default = true },
+        ["Damage"] = { Description = "Cast damage spells and Life Tap.", Default = true },
+        ["Pet"] = { Description = "Summon and heal your pet and send it to attack.", Default = true },
     },
 
     Options = {
-        { Name = "Mana and health" },
         {
-            Name = "Healthstone Percent",
-            Type = "Slider",
-            Min = 1,
-            Max = 100,
-            Step = 0.1,
-            Precision = 0.1,
-            Default = 35.0,
-            Description = "Use a Healthstone at or below this player health percentage.",
+            Name = "Mana and health",
+            {
+                Name = "Life Tap Mana Percent",
+                Type = "Slider",
+                Min = 1,
+                Max = 100,
+                Default = 25,
+                Description = "Use Life Tap when your mana is below this percent.",
+            },
+            {
+                Name = "Minimum Health Percent",
+                Type = "Slider",
+                Min = 1,
+                Max = 100,
+                Default = 35,
+                Description = "Use Life Tap and Health Funnel only when your health is above this percent.",
+            },
+            {
+                Name = "Health Funnel Pet Health Percent",
+                Type = "Slider",
+                Min = 1,
+                Max = 100,
+                Default = 50,
+                Description = "Use Health Funnel when your pet's health is below this percent.",
+            },
         },
         {
-            Name = "Dot Refresh Seconds",
-            Type = "Slider",
-            Min = 0,
-            Max = 10,
-            Step = 0.1,
-            Precision = 0.1,
-            Default = 1.5,
-            Description = "Example fractional slider used by later rotation policy.",
+            Name = "Items",
+            {
+                Name = "Use Soulstone",
+                Type = "Checkbox",
+                Default = true,
+                Description = "Create a Soulstone and use it on yourself.",
+            },
         },
+        PetModule.SettingsBlock(),
     },
 
-    -- The OOC pulse drains work. true means keep asking for OOC work;
-    -- false lets the engine leave this state.
     OutOfCombatPulse = function()
-        if NX.Toggles["Pause"] then
-            return false
-        end
+        if NX.Toggles["Pet"] and PetModule.Maintain() then return true end
 
-        if MaintainPetOutOfCombat() then
-            return true
-        end
+        if DemonSkin:Execute() then return true end
 
-        if Execute(DemonSkin) then
-            return true
-        end
-
-        if ItemsEnabled() and not HasHealthstone() and Execute(CreateHealthstone) then
-            return true
-        end
+        if CreateSoulstone:Execute() then return true end
+        if NX.Options["Use Soulstone"] and UseSoulstoneOnPlayer() then return true end
 
         return false
     end,
 
     EngagementPulse = function()
-        if NX.Toggles["Pause"] then
-            return false
-        end
+        if NX.Toggles["Pet"] and PetModule.Assist() then return true end
 
-        if AssistPetInCombat() then
-            return true
-        end
-
-        if Execute(Corruption) then
-            return true
-        end
-        if Execute(CurseOfAgony) then
-            return true
-        end
-        if Execute(Immolate) then
-            return true
-        end
-        if Execute(ShadowBolt) then
-            return true
-        end
-
-        return false
+        if Corruption:Execute() then return true end
+        if CurseOfAgony:Execute() then return true end
+        if Immolate:Execute() then return true end
+        if ShadowBolt:Execute() then return true end
     end,
 
     CombatPulse = function()
-        if NX.Toggles["Pause"] then
-            return false
-        end
+        NX.Wand.Maintain()
 
-        -- Maintain is intent only. The framework owns the continuous wand
-        -- cadence and re-checks the running priority ladder after this pulse.
-        if NX.Toggles["Wand"] ~= false then
-            NX.Wand.Maintain()
-        end
+        if HealthFunnel:Execute() then return true end
+        if NX.Toggles["Pet"] and PetModule.Assist() then return true end
 
-        if UseHealthstone() then
-            return true
-        end
-        if Execute(HealthFunnel) then
-            return true
-        end
-        if AssistPetInCombat() then
-            return true
-        end
-        if Execute(DemonSkin) then
-            return true
-        end
-        if Execute(Corruption) then
-            return true
-        end
-        if Execute(CurseOfAgony) then
-            return true
-        end
-        if Execute(Immolate) then
-            return true
-        end
-        if Execute(LifeTap) then
-            return true
-        end
-        if Execute(ShadowBolt) then
-            return true
-        end
+        if DemonSkin:Execute() then return true end
 
-        return false
+        if Corruption:Execute() then return true end
+        if CurseOfAgony:Execute() then return true end
+        if Immolate:Execute() then return true end
+        if LifeTap:Execute() then return true end
+        if ShadowBolt:Execute() then return true end
     end,
 
-    -- MultiPull is explicit so a rotation can state its own target cap and
-    -- temporary pet policy. The normal engine still owns navigation.
     MultiPullPulse = function()
-        if NX.Toggles["Pause"] or NX.Toggles["Multipull"] == false then
-            RestorePetAfterGather()
-            return false
-        end
-
-        HoldPetForGather()
-        local targets = SelectMultipullTargets()
-        if ApplyInstantDots(targets) then
-            return true
-        end
-
-        RestorePetAfterGather()
-        return false
+        if Corruption:Execute() then return true end
+        if CurseOfAgony:Execute() then return true end
     end,
 }
 

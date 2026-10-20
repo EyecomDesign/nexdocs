@@ -5,6 +5,7 @@ export default {
   pulses: "Pulses",
   spells: "Spells",
   spellbooks: "Spellbooks",
+  imports: "Optional imports",
   pets: "Pets",
   "items-wands-settings": "Items, wands, and settings",
   movement: "Movement",

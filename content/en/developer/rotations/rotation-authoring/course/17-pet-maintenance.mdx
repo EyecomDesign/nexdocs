@@ -1,11 +1,21 @@
 # 17. Add pet maintenance
 
-Use the Pet Module for generic out-of-combat maintenance. Keep the result in the
-same drain contract as the pulse:
+Add the Pet Module import once at the top of the rotation file, after `NX`.
+Do not put the import inside a helper or pulse:
+
+```lua
+---@type NX
+local NX = ...
+local PetModule = NX.Import("PetModule")
+```
+
+That line activates module behavior, including stance ownership, even before a
+pulse calls a wrapper. A `Pet` toggle switches the imported module off and returns
+the stance when disabled. Use its maintenance result in the OOC drain contract:
 
 ```lua
 local function MaintainPetOutOfCombat()
-    return NX.Toggles["Pet"] ~= false and NX.Pet.Maintain() == true
+    return NX.Toggles["Pet"] and PetModule.Maintain()
 end
 
 OutOfCombatPulse = function()
@@ -17,6 +27,9 @@ end
 ```
 
 The rotation decides whether pet policy is enabled; the module owns the generic
-maintenance action.
+maintenance action. Add `PetModule.SettingsBlock(),` as the last entry in
+`Options` to expose module settings; otherwise the defaults apply. Basic reads
+such as `NX.Pet.GetPetState()` still need no import. See
+[the full pet contract](../../../api/pets).
 
 Next: [add pet combat assist](./18-pet-assist).
