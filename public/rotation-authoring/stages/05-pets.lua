@@ -1,5 +1,6 @@
 ---@type NX
 local NX = ...
+local PetModule = NX.Import("PetModule")
 
 local spells = NX.SpellBook:GetGlobal()
 local Corruption = spells.Corruption
@@ -29,7 +30,8 @@ AttachDot(Corruption)
 AttachDot(CurseOfAgony)
 if HealthFunnel then
     HealthFunnel:CastableIf(function()
-        return NX.Pet.IsPetActive()
+        return NX.Toggles["Pet"]
+            and NX.Pet.IsPetActive()
             and (Pet():GetHP() or 100) < 50
             and (NX.UnitManager.Get("player"):GetHP() or 100) > 40
     end)
@@ -37,19 +39,26 @@ if HealthFunnel then
 end
 
 return {
+    Toggles = {
+        ["Damage"] = { Description = "Use damage priorities", Default = true },
+        ["Pet"] = { Description = "Let the framework handle the pet", Default = true },
+    },
+    Options = {
+        PetModule.SettingsBlock(),
+    },
     OutOfCombatPulse = function()
-        if NX.Pet.Maintain() then return true end
+        if NX.Toggles["Pet"] and PetModule.Maintain() then return true end
         return false
     end,
     EngagementPulse = function()
-        if NX.Pet.Assist() then return true end
+        if NX.Toggles["Pet"] and PetModule.Assist() then return true end
         if Corruption and Corruption:Execute() then return true end
         if CurseOfAgony and CurseOfAgony:Execute() then return true end
         return false
     end,
     CombatPulse = function()
         if HealthFunnel and HealthFunnel:Execute() then return true end
-        if NX.Pet.Assist() then return true end
+        if NX.Toggles["Pet"] and PetModule.Assist() then return true end
         if Corruption and Corruption:Execute() then return true end
         if CurseOfAgony and CurseOfAgony:Execute() then return true end
         return false

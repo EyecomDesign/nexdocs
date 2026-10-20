@@ -12,6 +12,10 @@ return Rotation
 Keep the returned value as the public boundary. Helpers, constants, and local
 state can stay above it; the loader consumes the table returned at the end.
 
+As later lessons add modules, keep imports in the header above this table. For
+example, pet-enabled rotations add `local PetModule = NX.Import("PetModule")`
+immediately after `local NX = ...`; see [lesson 17](./17-pet-maintenance).
+
 The rotation list displays the file name. An old `Info` table is ignored; do not
 add one to identify the rotation. Lesson numbers after 4 keep their existing
 URLs, so the course continues at 6.

@@ -1,14 +1,101 @@
-# Pets
+# Pets: two names, one rule
 
-`NX.Pet.Maintain()` is the generic out-of-combat maintenance intent. A successful
-action can keep `OutOfCombatPulse` returning `true`. `NX.Pet.Assist()` is the
-normal combat assist intent.
+Use **`NX.Pet`** when the rotation reads pet state or gives a manual order.
+Use **`PetModule`** when the framework handles pet maintenance and combat assist.
+The second name exists only after an [optional import](./imports):
 
-Use `NX.Pet.IsPetActive()` when a rotation needs to branch on current pet state.
+```lua
+---@type NX
+local NX = ...
+local PetModule = NX.Import("PetModule")
+```
 
-The module also exposes state, settings, summon, heal, and command helpers such as
-`CommandPetPassive`, `CommandPetDefensive`, `CommandPetFollow`, and
-`CommandPetStopAttack`. Use command helpers on state edges, not every pulse.
-Class-specific behavior remains rotation-owned: the
-Warlock tutorial decides when to cast `HealthFunnel`; it does not ask a generic
-pet healer to make that class decision.
+## Basic NX.Pet API
+
+These functions need no import. Calling them does not opt the rotation into the
+framework's Pet Module.
+
+| Function | Result or action |
+| --- | --- |
+| `NX.Pet.IsPetActive()` | Whether a pet is out and alive |
+| `NX.Pet.GetPetState()` | `"active"`, `"dead"` or `"missing"` |
+| `NX.Pet.GetAggroOwner(mob)` | `"pet"`, `"player"`, `"other"` or `"unknown"` |
+| `NX.Pet.GetPlayerPets()` | Player pet list |
+| `NX.Pet.CommandPetAttack()` | Attack order |
+| `NX.Pet.CommandPetStopAttack()` | Stop attacking |
+| `NX.Pet.CommandPetFollow()`, `NX.Pet.CommandPetStay()` | Follow or stay order |
+| `NX.Pet.CommandPetPassive()`, `NX.Pet.CommandPetDefensive()`, `NX.Pet.CommandPetAggressive()` | Stance order |
+
+`GetPetState()` is only on `NX.Pet`, not on the imported table. For example, a
+manual rotation can branch on `NX.Pet.GetPetState() == "missing"` and choose its
+own summon spell. Send manual commands on state changes, rather than repeating
+them every pulse. An imported rotation may still use these basic functions.
+
+## Imported PetModule API
+
+The top-level import activates the module even if neither wrapper is called.
+It owns the pet's stance while the rotation runs and restores it on stop. A
+toggle named exactly `Pet`, when false, pauses the imported module and returns
+stance control. Without the import the framework does not take the stance,
+pre-pull with the pet, block a pet attack while the pet eats, or restock pet food.
+
+Call `PetModule.Maintain()` in `OutOfCombatPulse`. Its boolean result lets the
+pulse keep returning `true` while maintenance acts. Call `PetModule.Assist()` in
+engagement/combat priority for attack orders, instant healing and pet abilities.
+Warlock demon abilities and Health Funnel remain rotation-owned spell policy.
+
+```lua
+---@type NX
+local NX = ...
+local PetModule = NX.Import("PetModule")
+
+return {
+    Toggles = {
+        ["Pet"] = { Description = "Let the framework handle the pet", Default = true },
+    },
+    Options = {
+        PetModule.SettingsBlock(),
+    },
+    OutOfCombatPulse = function()
+        if NX.Toggles["Pet"] and PetModule.Maintain() then return true end
+        return false
+    end,
+    EngagementPulse = function()
+        if NX.Toggles["Pet"] and PetModule.Assist() then return true end
+    end,
+    CombatPulse = function()
+        if NX.Toggles["Pet"] and PetModule.Assist() then return true end
+    end,
+}
+```
+
+Keep `PetModule.SettingsBlock()` as the **last** entry in `Options`; the rotation
+must declare it itself. Without it, the module uses defaults rather than
+inserting its own UI. Append later sections deliberately so saved section
+positions are not shifted.
+
+For an author composing a custom priority, the imported functions also include:
+
+| Functions | Purpose |
+| --- | --- |
+| `ShouldSummon()`, `EnsurePet()` | Read summon need, then perform the summon piece |
+| `ShouldRevive()`, `Revive()` | Read revive need, then halt/cast as required |
+| `ShouldFeed()`, `Feed()` | Read feed need, then feed |
+| `ShouldHeal()`, `Heal()` | Read heal need, then act at the author's chosen priority |
+| `ShouldAssist()` | Read assist decision, reason and snapshot |
+| `ShouldUseAbility()`, `UseAbility()` | Read and perform the pet ability decision |
+| `ResolveDiet(localizedTypes)` | Canonical and unknown diet names |
+| `SelectFood(petLevel, localizedTypes, bagItems)` | Selected food and candidates; omit `bagItems` to scan bags |
+| `IsPetEating()` | Eating flag, reason and remaining hold time |
+| `Configure(overrides)` | Override module settings; pass `nil` to clear overrides |
+| `GetSetting(name)` | Resolved value and its source (`override`, `block`, `default`) |
+| `IsSupported()` | Supported flag and reason (`ok`, `flavor`, `class`) |
+
+The `Should...` reads do not perform the action. Check actual support instead of
+assuming that every class/flavor has every maintenance action. Importing from a
+pulse or using an unknown import name is an error. A moved module call through
+`NX.Pet` is refused at rotation load, with the replacement named in the message.
+
+The [current pet contract](https://github.com/NexorSystem/NexorBot/blob/9f373eaa9bd3d65581fc5ad6c52a417b87c71a89/Docs/Rotation_API_Guide.md#pets-two-names-one-rule)
+and [public definitions](https://github.com/NexorSystem/NexorBot/blob/9f373eaa9bd3d65581fc5ad6c52a417b87c71a89/Public/PublicAPIs.lua#L1303)
+are the source for these names.

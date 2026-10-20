@@ -24,6 +24,10 @@ AttachDot(Corruption)
 AttachDot(CurseOfAgony)
 
 return {
+    Toggles = {
+        ["Damage"] = { Description = "Use damage priorities", Default = true },
+    },
+    Options = {},
     OutOfCombatPulse = function()
         return false
     end,

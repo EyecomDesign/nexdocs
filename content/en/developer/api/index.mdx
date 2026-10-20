@@ -12,7 +12,7 @@ combines the same contracts into a rotation.
 | `NX.UnitManager` | Live unit wrappers and bounded selectors | [Units and targets](./units-and-targets) |
 | `NX.SpellBook` | Global and custom spellbooks | [Spellbooks](./spellbooks) |
 | `NX.Item` | Item counts, use, and item policy | [Items, wands, and settings](./items-wands-settings) |
-| `NX.Pet` | Pet state, maintenance, and commands | [Pets](./pets) |
+| `NX.Pet` | Basic pet state and manual commands | [Pets](./pets) |
 | `NX.Combat` | Public combat helpers | [Environment](./environment) |
 | `NX.Movement` | Paths, movement styles, and route ownership | [Movement](./movement) |
 | `NX.Wand` | Framework-owned wand maintenance intent | [Items, wands, and settings](./items-wands-settings) |
@@ -36,8 +36,9 @@ combines the same contracts into a rotation.
 | `NX.SpellBook:New()` | Create an advanced custom spellbook | [Spellbooks](./spellbooks) |
 | `NX.Item.GetItemCount(item)` | Read an item count | [Items, wands, and settings](./items-wands-settings) |
 | `NX.Item.UseItemByID(item)` | Request item use through item policy | [Items, wands, and settings](./items-wands-settings) |
-| `NX.Pet.Maintain()` | Register out-of-combat pet maintenance intent | [Pets](./pets) |
-| `NX.Pet.Assist()` | Register combat pet-assist intent | [Pets](./pets) |
+| `NX.Import("PetModule")` | Activate the optional Pet Module at rotation load | [Optional imports](./imports) |
+| `PetModule.Maintain()` | Imported out-of-combat maintenance | [Pets](./pets) |
+| `PetModule.Assist()` | Imported combat pet assist | [Pets](./pets) |
 | `NX.Pet.IsPetActive()` | Read whether the player has an active pet | [Pets](./pets) |
 | `NX.Wand.Maintain()` | Register framework-owned wand intent | [Items, wands, and settings](./items-wands-settings) |
 | `NX.Movement.MoveTo(...)` | Follow a route to a destination | [Movement](./movement) |

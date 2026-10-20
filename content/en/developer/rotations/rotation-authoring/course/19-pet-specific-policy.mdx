@@ -7,7 +7,8 @@ can use live player and pet state while the Pet Module remains generic:
 HealthFunnel:CastableIf(function()
     local pet = NX.UnitManager.Get("pet")
     local player = NX.UnitManager.Get("player")
-    return NX.Pet.IsPetActive()
+    return NX.Toggles["Pet"]
+        and NX.Pet.IsPetActive()
         and (pet:GetHP() or 100) < 50
         and (player:GetHP() or 100) > 40
 end)
