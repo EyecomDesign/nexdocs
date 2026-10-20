@@ -271,7 +271,9 @@ export async function checkContent(root = process.cwd()) {
       const page = lessons[index];
       if (!page.next.length) add(page.file, 1, 'next-missing', 'Add one Next link to the next published numbered lesson.');
       else {
-        const target = localUrl(page.next[0].url, page, true);
+        let target;
+        try { target = localUrl(page.next[0].url, page, true); }
+        catch { continue; } // The reference pass already recorded file/line diagnostics.
         if (page.next.length !== 1 || !target || resolve(target.route).route !== lessons[index + 1].route) {
           add(page.file, page.next[0].line, 'next-order', 'Next must lead to the next published numbered lesson.');
         }
