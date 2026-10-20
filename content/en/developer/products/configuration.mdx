@@ -1,0 +1,48 @@
+# Product configuration: profile files
+
+In `nexor-config.json`, the content type for a profile file is the singular
+`profile`. The type tells the website and bot what kind of content an entry
+contains; `src` is the repository file path.
+
+For example, put this entry in the `contents` list of your existing product or
+module, keeping the surrounding configuration:
+
+```json
+{ "type": "profile", "src": "profiles/farm.lua" }
+```
+
+This is one content entry, not a complete product configuration. The file must
+exist at the path in your repository. The folder in this example is still named
+`profiles`: changing a **type value** does not rename a folder, file or product.
+
+## Updating an existing config
+
+Replace `"type": "profiles"` with `"type": "profile"` in every affected content
+entry, including entries inside modules. Leave `src` paths unchanged. For
+example, `profiles/farm.lua` stays `profiles/farm.lua`.
+
+After the website's singular-type change, adding or syncing a repository whose
+config still uses the plural type is refused with:
+
+> Content type 'profiles' was renamed to 'profile'.
+
+Fix the type values, commit the updated config in your repository and sync
+again. A refused sync leaves the previously published version live; it does
+not publish the invalid config. Translation of older stored/published data is
+handled by the server and does not make the old spelling valid in a new sync.
+
+This guide follows the merged website contract in
+[Nexor #612](https://github.com/EyecomDesign/Nexor/issues/612) and the matching
+bot correction in [NexorBot #980](https://github.com/NexorSystem/NexorBot/issues/980).
+The current [type definitions](https://github.com/EyecomDesign/Nexor/blob/3070af5fb8104690e226f2823c4f869c7d301c92/Data/DataBase/UserDataBase/Models/DeveloperModels/Github/GitHubNexorConfig.cs)
+and [validator](https://github.com/EyecomDesign/Nexor/blob/3070af5fb8104690e226f2823c4f869c7d301c92/Services/Application/Github/Validation/GitHubNexorConfigValidator.cs)
+are the source for the spelling and message. This is a source-version contract;
+an individual deployment can still need its version checked.
+
+For writing the Lua file, see [Profiles](../profiles). For customer choices
+about which products load, see
+[Product loading](/en/introduction/getting-started/product-loading).
+The full product-developer publication workflow remains tracked in
+[#9](https://github.com/EyecomDesign/nexdocs/issues/9). The separate routine and
+flavor-folder migration stays gated by
+[#11](https://github.com/EyecomDesign/nexdocs/issues/11).
