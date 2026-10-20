@@ -4,4 +4,5 @@ export default {
   "buy-unlocker": "🔐 Buy Unlocker",
   "download-and-install": "📥 Download and Install",
   "account-and-sessions": "Account and Sessions",
+  "product-loading": "Choose Products",
 };

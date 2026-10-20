@@ -1,0 +1,152 @@
+# Choose products for a character
+
+Open **Account → Products → Product loading** on the
+[Nexor website](https://nexor.app/) to review a character's saved choices.
+**Website changes apply to a future bot startup; they do not change a running
+bot.** NexorBot is the required base product and always belongs to a startup.
+The choices on this card are optional products.
+
+The website controls below are implemented. The full in-game preference selector
+and automatic-start integration are tracked separately in
+[NexorBot #970](https://github.com/NexorSystem/NexorBot/issues/970), whose release
+and acceptance have not been verified for this guide. The inspected client still
+has a separate startup selection flow. Do not assume that saving a website
+preference makes that client use it: check the selection and actual startup
+result in your installed build.
+
+## Four different states
+
+| State | What it tells you |
+| --- | --- |
+| Owned / licensed | The account has a license for the product. Its expiry, remaining time, and session limits still matter. |
+| Available | The product can currently be offered for loading according to the website's checks. Startup checks availability and compatibility again. |
+| Selected for next startup | The character's saved optional-product choice. A checkmark is not proof that code has run. |
+| Loaded in this session | The bot successfully loaded the product for this particular session. Editing the website does not change this state. |
+
+For example, a purchased product can remain selected even after its license
+expires or its release becomes unavailable. The saved choice is kept; a later
+startup checks whether it can load. It does not automatically retry a failed load
+in the current session.
+
+## Save a character's choices
+
+1. Sign in to the account used by your personal key file or Connection Token.
+2. Open **Account → Products** and find **Product loading**.
+3. Choose **Character**, checking both the name and realm. Choices belong to that
+   registered character, rather than every character on the account.
+4. Review each optional product's **Selected** / **Not selected** and availability
+   status. Check the products you want and clear the ones you do not want.
+5. Set **Start automatically without the product selector** if you want to save
+   that preference. This is a product-selection preference for a client that
+   supports it; it does not press the gameplay Play button. Its in-game behavior
+   remains subject to the #970 release check above.
+6. Choose **Confirm choices** for a character with no saved preference, or
+   **Save choices** for a character already configured. Wait for **Saved** and
+   “Changes apply at the next bot startup.” If saving fails, try again and check
+   the card before relying on the choice.
+7. At the next startup, check the products actually loaded and any skipped-product
+   warnings. The v2 connection can use the saved choice; a client that sends its
+   own explicit selection uses that selection for the launch instead.
+
+Changing character before saving does not save the previous draft. If the website
+reports **Choices changed in game**, it reloads the latest choices: review them
+and save again. This conflict message is part of the website contract, not proof
+that a new in-game selector is released.
+
+### First registration and an empty choice
+
+If the card says **No characters yet**, start the updated bot on the character
+once to register its name and realm, then return to this page. Registration does
+not itself confirm a saved preference.
+
+Before the first confirmation, owned, available optional products are pre-checked
+as a draft. **Nothing is saved until you confirm.** To keep only the base bot,
+clear every optional checkmark and choose **Confirm choices**. An intentionally
+empty selection is a real saved choice; it is preserved instead of being reset
+to “all products.” NexorBot itself is added to the startup and cannot be removed
+through these optional choices.
+
+If startup reports an uninitialized preference, register the character and
+confirm choices on the website. Repeating startup without saving does not create
+the missing choice. An installed client may still ask you to confirm its own
+startup selection until the #970 integration is released and verified.
+
+### Remove a registered character
+
+Choose **Remove**, check the character name and realm in the confirmation, then
+confirm **Remove character**. This deletes the character's website registration
+and saved product choices. The next bot start on that character registers it
+again as a new character.
+
+Remove does not sell a product, refund a purchase, unload running code, or end a
+running bot session. To free a session's licenses, use
+[Account and Sessions](/en/introduction/getting-started/account-and-sessions).
+
+## Understand an unavailable or skipped product
+
+| Website status or startup reason | What to do |
+| --- | --- |
+| **License expired or unavailable** / `entitlement_unavailable` | Check the product's license on the account: it may be missing, expired, or out of usable time. |
+| `license_in_use` at startup | A usable license exists but is held by another session. Find that session or obtain the capacity you need; see account/session recovery. |
+| **Product unavailable** / `product_unavailable` | The product cannot currently be offered for loading. Check its availability with the product's developer or support. Buying another license does not fix an unavailable product. |
+| **No available release** / `release_unavailable` | There is no usable published release for the requested version. The developer must supply a valid release. |
+| **Not compatible with this NexorBot version** / `incompatible_base_api` | The optional product's release does not support the base API version in this startup. Ask the developer for a compatible release. |
+
+The website's **Available** badge is not a reservation of a free license or a
+guarantee that the next launch will succeed. License use, releases, and
+compatibility are checked again at startup.
+
+On a v2 startup with a registered character, an unavailable optional product is
+named in a skipped-product warning while the base bot and other usable products
+can load. **If NexorBot itself cannot load, startup is refused.** An account
+credential failure is also a startup problem; it is different from one optional
+product being skipped. Check [account/session recovery](/en/introduction/getting-started/account-and-sessions)
+before repeatedly reloading or buying another license.
+
+## Example: change tomorrow's selection
+
+Suppose your account owns optional **Product A** and **Product B**. Both are
+already loaded in today's session. On the website you clear B, keep A selected,
+and choose **Save choices**.
+
+The saved next-start choice is now A. Today's session still contains A and B;
+unchecking B does not undo code that has run or release its current license.
+At a new startup that uses the saved preference, NexorBot and A are requested.
+If A then has no usable release or license, the bot reports it as skipped;
+the saved choice remains selected for a later startup. Review any explicit
+selection shown by your installed client as described above.
+
+## Features requiring a separate release check
+
+These are separate follow-ups; they are not prerequisites for reviewing or
+saving the website's choices:
+
+- [#970 — in-game product selection](https://github.com/NexorSystem/NexorBot/issues/970):
+  verify the released startup selector, saved-choice synchronization, and
+  automatic-start behavior before following an in-game tutorial.
+- [#972 — live add](https://github.com/NexorSystem/NexorBot/issues/972): verify the
+  released client can add newly selected products to an active session before
+  expecting this from a website save. This page promises neither unloading
+  already-run code nor automatic retries.
+- [#1079 — team preview selection and display](https://github.com/NexorSystem/NexorBot/issues/1079):
+  team members may see **Live version** / **Preview** controls on the website;
+  that does not establish released in-game preview selection or commit display.
+  An end-to-end preview tutorial needs its own release and acceptance evidence.
+
+Product authors can start in the [Developer section](/en/developer). The full
+product publication and release journey is tracked in
+[NexDocs #9](https://github.com/EyecomDesign/nexdocs/issues/9) and still needs its
+separate release checks. Customers should use
+[Account and Sessions](/en/introduction/getting-started/account-and-sessions)
+for license use, crash recovery, and Connection Token renewal.
+
+## Source and version
+
+Checked against website
+[`3070af5`](https://github.com/EyecomDesign/Nexor/tree/3070af5fb8104690e226f2823c4f869c7d301c92):
+the [Products page](https://github.com/EyecomDesign/Nexor/blob/3070af5fb8104690e226f2823c4f869c7d301c92/Pages/Dashboards/Account/Products.razor),
+[Product loading card](https://github.com/EyecomDesign/Nexor/blob/3070af5fb8104690e226f2823c4f869c7d301c92/Shared/Layout/Partials/AccountLayout/Account/_CharacterProductLoading.razor),
+and [v2 product-loading contract](https://github.com/EyecomDesign/Nexor/blob/3070af5fb8104690e226f2823c4f869c7d301c92/docs/nexorbot-product-loading-api.md).
+Client integration was compared with
+[`9f373ea`](https://github.com/NexorSystem/NexorBot/blob/9f373eaa9bd3d65581fc5ad6c52a417b87c71a89/_SessionHandler.lua).
+This is source verification, not a new website or in-game acceptance test.
