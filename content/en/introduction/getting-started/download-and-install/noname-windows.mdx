@@ -1,97 +1,56 @@
-import { Callout } from "nextra/components";
-
 # 🔓 NilName (Windows)
 
-![NilName Logo](/gitbook-assets/logo.png)
+These steps describe the NilName/NoName setup used by the inspected Nexor v2
+client. Confirm the current release's supported game client/build and required
+unlocker version with [official Nexor support](/en/introduction#discord-links)
+before buying or installing. This page is not a confirmed support matrix.
 
-**Official Website:** [https://nilname.com/](https://nilname.com/)
+**Official website:** [NilName](https://nilname.com/)
 
-## 1. Buy and download NilName [#1-pay--download-nilname-from-nilnamecom]
+**Official Discord:** [NilName support](https://discord.gg/qXePhHsasJ)
 
-You need an unlocker to use Nexor Bot.
+## 1. Obtain the current vendor package [#1-pay--download-nilname-from-nilnamecom]
 
-**Official Discord Server:** [https://discord.gg/qXePhHsasJ](https://discord.gg/qXePhHsasJ)
+Follow the vendor's current account, purchase, download, and verification
+instructions for the version Nexor support confirmed. Check the required
+capabilities rather than assuming an old tier name or installer filename still
+applies.
 
-<Callout type="error">
-  You need to register before you can log in.
+## 2. Prepare navigation for your build [#2-download-nilname--mmaps-files]
 
-  Buy **NilName – Advanced Unlocker**.
+Obtain the map data and folder layout required by that unlocker release for your
+exact game build. Use the vendor's current instructions and confirmed download
+destinations; do not select an old mesh archive merely because its expansion
+name resembles your client.
 
-  The Basic Unlocker does **not** work with Nexor.
-</Callout>
+Nexor's inspected path router tries remote navigation and can fall back to the
+unlocker's local path generator when that fallback is enabled. **Keep the
+required local navigation helper and matching map data available for that
+fallback.** A reachable remote service does not make local setup unnecessary.
+If the local helper is unavailable, the client can temporarily skip that
+fallback; restore the helper before relying on it again.
 
----
+## 3. Install the required map data [#3-setup-the-mmaps-files-to-the-nilname-folder]
 
-## 2. Download NilName and mmaps [#2-download-nilname--mmaps-files]
+Extract the confirmed files into the layout specified by the current NilName
+release. Check the directory depth and matching game build. This guide does not
+certify a universal Retail/Classic/TBC folder mapping or a current third-party
+archive; those need release-specific confirmation.
 
-After your payment is confirmed, download NilName:
+## 4. Start the vendor applications [#4-start-the-applications]
 
-![Click on Download NoName](/gitbook-assets/Unbenannt.png)
+Start the unlocker and required navigation helper in the order documented by the
+vendor for your release. Executable names can change. Check the current package
+and vendor diagnostics instead of relying on historical screenshots or filenames.
+If a file is missing or blocked, establish its current vendor verification and
+support guidance before changing security settings.
 
-Download the mmaps files (also called mesh files) for navigation. You do not need them in rotation-only mode.
+## 5. Install Nexor [#5-you-are-ready-to-log-into-nexor-now]
 
-Choose the files for your expansion:
+[Continue with Nexor installation](/en/introduction/getting-started/download-and-install/nexor)
+for the personal package and account/session recovery.
 
-**The Wrath of the Lich King (NilName mmaps)**
-
-[Download WotLK mmaps](https://mega.nz/file/17gD0JYI#yUlZK_mIQ8cEHz-sthMLcqm8KJ2N19lftFcEjuD6uHw)
-
----
-
-**Dragonflight 10.x.x (NilName mmaps)**
-
-[Download Dragonflight mmaps](https://mega.nz/file/ZiZXwDJR#7XAeA4ULE6ERPeTBI5O4WmHVR3aNXZl4u4-JVNH2FeA)
-
----
-
-**Additional Dracthyr Mesh 10.x.x (NilName mmaps)**
-
-[Download Dracthyr Mesh](https://mega.nz/file/waNRnBBY#oddos_T2uH2TAhgr-EViT_Gxq5rlosy8KtyQtE7EIgY)
-
-**Dragonflight Emerald Dream 10.2 (NilName mmaps)**
-
-[Download Emerald Dream mmaps](https://cdn.nilname.com/mmaps/emeraldDream.zip)
-
----
-
-## 3. Add the mmaps to the NilName folder [#3-setup-the-mmaps-files-to-the-nilname-folder]
-
-Extract the mmaps to `xxxxxx\NoNameRelease\mmaps`.
-
-#### Retail:
-
-![Retail mmaps folder](/gitbook-assets/SL.png)
-
-Click the image to view it at full size.
-
----
-
-#### Classic / TBC / WotLK:
-
-![WotLK mmaps folder](/gitbook-assets/WOTLK.png)
-
-Click the image to view it at full size.
-
----
-
-## 4. Start the applications [#4-start-the-applications]
-
-<Callout type="error">
-  The `.exe` files may be renamed, so their names may differ from the examples below.
-</Callout>
-
-Make sure both `Nav.exe` and `tool.exe` are present. If one is missing, your antivirus may have removed it as a false positive.
-
-Add an antivirus exception for the applications, or temporarily disable the antivirus while you complete the setup.
-
-Start `NoNameNavigation_RenameMe.exe`, then start `NnLoader_V1.8a.exe`. After both applications are running, open World of Warcraft.
-
-![Start applications](/gitbook-assets/Unbeasdasdnannt.png)
-
-Click the image to view it at full size.
-
----
-
-## 5. Log in to Nexor [#5-you-are-ready-to-log-into-nexor-now]
-
-[Continue with Nexor installation →](/en/introduction/getting-started/download-and-install/nexor)
+The navigation behavior above was checked in
+[`PathRouter.lua` at client 9f373ea](https://github.com/NexorSystem/NexorBot/blob/9f373eaa9bd3d65581fc5ad6c52a417b87c71a89/src/api/navigation/Core/PathRouter.lua)
+on 20 October 2026. This source comparison does not verify a vendor download,
+game-build support, or a fresh-client installation.
