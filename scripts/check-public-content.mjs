@@ -134,7 +134,7 @@ export function scanText(text, file) {
     }
     const login = line.match(/\b(?:ssh|scp|sftp|rsync)\b[^\r\n]*?([^\s]+@[^\s]+)/i);
     if (login && !login[1].split("@").every(placeholder)) rules.add("operator-login");
-    for (const match of line.matchAll(/(?:[A-Z]:[\\/]+Users[\\/]+|\/home\/)([^\\/\s]+)/gi)) {
+    for (const match of line.matchAll(/(?:[A-Z]:[\\/]+Users[\\/]+|(?<![a-z0-9_\/-])\/home\/)([^\\/\s]+)/gi)) {
       if (!placeholder(match[1])) rules.add("private-home-path");
     }
     if (/-----BEGIN (?:[A-Z]+ )?PRIVATE KEY-----/.test(line)) rules.add("private-key");
