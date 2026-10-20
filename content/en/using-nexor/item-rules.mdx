@@ -1,0 +1,41 @@
+# Sell, Keep and automatic deletion
+
+Use **Settings → Selling** to preview decisions before a vendor visit. Deletion is configured separately under **Settings → Inventory Management → Item Deletion**. A Sell rule and a Delete rule have different priorities.
+
+## How Selling decides
+
+1. Missing, locked, broken or valueless item data produces a skip reason.
+2. A matching personal **Keep** rule wins over a personal Sell rule, including patterns.
+3. Enabled built-in utility/type protections and useful-supply protection still apply. Uncertain consumable data is protected or skipped.
+4. A deliberate **exact item Sell** exception can override category Keep, quality and binding filters.
+5. Category Keep rules apply to everything else. A name pattern or an older Sell entry bypasses only quality/binding; it does not gain the exact-item category override.
+6. Remaining items follow selected quality and binding filters. The final bag preview also applies supply reserves; whole stacks may leave more than the requested reserve.
+
+For example, keep **Crafting Materials**, then add one expendable material by its exact item ID and choose **Sell** in **Custom overrides**. If no stronger protection applies, the preview reason becomes **Explicit item Sell override**. Add the same item to personal Keep and the reason becomes **Always Keep list**. A pattern such as `Example*` cannot override category Keep. Clicking Sell again on an older exact-ID entry upgrades its exception scope.
+
+Use the quality, binding and category controls deliberately. Keep useful food/drinks and minimum drink reserves can protect supplies even from an exact Sell exception. Built-in defaults have their own enabled/disabled controls; removing a personal rule does not remove a built-in protection.
+
+## Try a rule without selling
+
+1. Choose a disposable item already in your bags. Keep automatic selling and automatic deletion off while setting up the example.
+2. **Alt+Right-click** the bag item to open Nexor's four Sell/Delete list choices, or drop it into the Selling page. New entries on that page start on Keep.
+3. Review **Custom overrides** and the Selling preview's decision, quantity and reason. Changes apply immediately to subsequent evaluations; editing a rule does not itself sell the item.
+4. Switch the exact entry between Sell and Keep and confirm the preview changes as expected. The bag menu removes the opposing exact entry when adding a choice; a broader pattern can still match.
+5. Remove the sample rule when finished. Only use **Sell now** if you intend the displayed eligible items to be sold. It starts the normal [vendor workflow](/en/using-nexor/vendors), and its count includes all eligible items, not just the selected preview tab.
+
+## Automatic deletion has a separate order
+
+**Allow Auto Item Delete** off stops automatic deletion and the **Delete Items** button. When enabled, due checks consider each bag item in this order:
+
+1. Missing/locked data waits.
+2. **Delete Whitelist** matches are deleted. This explicit list overrides the delete blacklist, default protections and quality selections.
+3. For other items, built-in protections and **Delete Blacklist** prevent deletion.
+4. Remaining items are deleted only when their grey/white/green quality is selected.
+
+**All quality boxes off does not disable deletion:** whitelist matches can still be deleted. The master switch is the way to stop it. **Delete Timer** sets the minimum automatic-check interval; adding a whitelist entry does not delete immediately. **Delete Items** bypasses the timer, while still requiring the master switch.
+
+To check setup, keep the master switch off, inspect both lists and remove every unintended entry. For an execution test, use only a disposable sample you explicitly intend to destroy, enable the master switch and observe the due check. A Delete Whitelist entry can destroy a whole matching stack. Do not use valuable items to test precedence.
+
+The runtime checks again before a vendor sale, so an item that becomes protected or changes bag slot can be skipped after an earlier preview. [Recovery](/en/using-nexor/recovery) explains useful supplies; [diagnostics](/en/using-nexor/diagnostics) covers an unexpected decision.
+
+Sources checked on 20 October 2026: [selling evaluator](https://github.com/NexorSystem/NexorBot/blob/9f373eaa9bd3d65581fc5ad6c52a417b87c71a89/src/api/states/selling.lua), [Selling controls](https://github.com/NexorSystem/NexorBot/blob/9f373eaa9bd3d65581fc5ad6c52a417b87c71a89/UI/Frames/BotInterface/Menus/Settings/Selling.lua), [deletion evaluator](https://github.com/NexorSystem/NexorBot/blob/9f373eaa9bd3d65581fc5ad6c52a417b87c71a89/src/api/inventory.lua) and [precedence regressions](https://github.com/NexorSystem/NexorBot/blob/9f373eaa9bd3d65581fc5ad6c52a417b87c71a89/tests/selling_keep_rules_regression_test.py).
