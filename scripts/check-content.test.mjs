@@ -186,6 +186,20 @@ test('rejects a Next link to the wrong existing lesson and a missing Next link',
   has(result, 'next-missing');
 });
 
+test('reports malformed Next fragments with file/line diagnostics instead of throwing', async t => {
+  const root = fixture(t, {
+    'content/en/course/01-start.mdx': '# Start\n\nNext: [End](./02-end#%)\n',
+    'content/en/course/02-end.mdx': '# End\n',
+  });
+  const result = await checkContent(root);
+  assert.ok(result.findings.some(f => f.file === 'content/en/course/01-start.mdx'
+    && f.line === 3 && f.rule === 'invalid-reference'));
+  const cli = spawnSync(process.execPath, [script, '--root', root], { encoding: 'utf8' });
+  assert.equal(cli.status, 1);
+  assert.match(cli.stderr, /content\/en\/course\/01-start\.mdx:3 \[invalid-reference\]/);
+  assert.doesNotMatch(cli.stderr, /URIError|at decodeURIComponent/);
+});
+
 test('validates custom heading fragments and rejects absent fragments', async t => {
   const root = fixture(t, { 'content/en/guides/one.mdx': '# One\n\n[Good](./child#custom-id) [Bad](./child#absent)\n' });
   assert.equal((await checkContent(root)).findings.filter(f => f.rule === 'missing-fragment').length, 1);
