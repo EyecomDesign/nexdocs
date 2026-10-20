@@ -1,16 +1,25 @@
 # 🤖 Nexor
 
-Follow the steps for your operating system.
+Install the download offered by your signed-in Dashboard. Your account's
+Connection Token or personal key file signs the loader in; a usable NexorBot
+license is still required to start a bot.
 
 ## Windows
 
 1. Sign in to your account on the Nexor website.
-2. Open the **Dashboard** tab.
-3. Click **Download for Windows**.
-4. Copy the downloaded file to the NilName `scripts` folder.
+2. Open **Dashboard → Download Nexor** when the personal package download is
+   enabled, then choose **Download**.
+3. Unzip the package into NilName's `scripts` folder. Keep the included loader and
+   personal key file in the package's folder structure; copying only the loader
+   leaves the bot without its account credential.
+4. Start the loader with NilName. It reads the personal key file automatically.
 
-![Step 1](/gitbook-assets/Unbendfgdfgdannt%20(1).png)
+The personal package contains account access. Keep it private. If your website
+instead shows a Connection Token and instructs you to enter it in the bot, follow
+that deployed mode's instructions; do not try to extract a hidden token from a
+key file.
 
-![Step 2](/gitbook-assets/Unbenanasdasdnt.png)
-
-![Nexor Dashboard](/gitbook-assets/Nexor1.png)
+After **Renew Connection Token**, the old key file stops working: download the
+package again and replace it on every installation using that account. See
+[Account and Sessions](/en/introduction/getting-started/account-and-sessions)
+for renewal, in-use licenses, and crash recovery.

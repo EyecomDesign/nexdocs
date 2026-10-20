@@ -3,4 +3,5 @@ export default {
   "get-trial": "🧪 Get Trial",
   "buy-unlocker": "🔐 Buy Unlocker",
   "download-and-install": "📥 Download and Install",
+  "account-and-sessions": "Account and Sessions",
 };
