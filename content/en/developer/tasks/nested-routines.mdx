@@ -1,0 +1,175 @@
+# Call, Switch and End Routine
+
+Use **Call Routine** for a reusable helper that returns. Use **Switch Routine**
+to replace the current routine, and **End Routine** to leave it. Read the
+[routine reference](/en/developer/tasks/task-routines) first: these actions use
+the same task fields, but changing frames has special completion behavior.
+
+This guide follows the current
+[nested executor](https://github.com/NexorSystem/NexorBot/blob/9f373eaa9bd3d65581fc5ad6c52a417b87c71a89/src/machines/task.lua#L680)
+and [action definitions](https://github.com/NexorSystem/NexorBot/blob/9f373eaa9bd3d65581fc5ad6c52a417b87c71a89/src/systems/task_organizer.lua#L527).
+Paths still use `Nexor_User/Tasks/Routines/`; the
+[future rename](https://github.com/EyecomDesign/nexdocs/issues/11) is not applied
+ahead of the runtime.
+
+## A complete parent and child
+
+This profile-free example works independently of quest IDs, character level
+and game flavor. It prints local chat-frame messages; it does not send chat to
+other players. Create the `Practice` folder under `Nexor_User/Tasks/Routines/`.
+
+Save **Practice/Parent.lua**:
+
+```lua
+return {
+    Name = "Nested practice parent",
+    Tasks = {
+        {
+            Name = "Before the call", Enabled = true, Mode = "In Row",
+            Condition = { name = "OnLoad", args = {} },
+            Action = { name = "Custom Action", args = {
+                ["Lua Code"] = 'print("Parent: before child")',
+            } },
+            Repeat = 1, DelayBefore = 0, DelayAfter = 0,
+        },
+        {
+            Name = "Call the child", Enabled = true, Mode = "In Row",
+            Condition = { name = "OnLoad", args = {} },
+            Action = { name = "Call Routine", args = {
+                ["Routine"] = "Practice/Child.lua",
+            } },
+            Repeat = 1, DelayBefore = 0, DelayAfter = 0,
+        },
+        {
+            Name = "After the return", Enabled = true, Mode = "In Row",
+            Condition = { name = "OnLoad", args = {} },
+            Action = { name = "Custom Action", args = {
+                ["Lua Code"] = 'print("Parent: child returned")',
+            } },
+            Repeat = 1, DelayBefore = 0, DelayAfter = 0,
+        },
+        {
+            Name = "End parent", Enabled = true, Mode = "In Row",
+            Condition = { name = "OnLoad", args = {} },
+            Action = { name = "End Routine", args = {} },
+            Repeat = 1, DelayBefore = 0, DelayAfter = 0,
+        },
+    },
+}
+```
+
+Save **Practice/Child.lua**:
+
+```lua
+return {
+    Name = "Nested practice child",
+    Tasks = {
+        {
+            Name = "Child work", Enabled = true, Mode = "In Row",
+            Condition = { name = "OnLoad", args = {} },
+            Action = { name = "Custom Action", args = {
+                ["Lua Code"] = 'print("Child: work complete")',
+            } },
+            Repeat = 1, DelayBefore = 1, DelayAfter = 0,
+        },
+        {
+            Name = "Return to caller", Enabled = true, Mode = "In Row",
+            Condition = { name = "OnLoad", args = {} },
+            Action = { name = "End Routine", args = {} },
+            Repeat = 1, DelayBefore = 0, DelayAfter = 0,
+        },
+    },
+}
+```
+
+Load **Parent.lua** from **Tasks → Library**, then start. Expect this sequence:
+
+```text
+Parent: before child
+  Task Overview: Nested practice parent > Nested practice child
+  (child's one-second before-delay)
+Child: work complete
+  Task Overview: Nested practice parent
+Parent: child returned
+  root routine complete; no task work remains
+```
+
+The child name appears after the parent in the Task Overview breadcrumb. With
+no world profile loaded, the launcher/Quickmenu shows the active routine name.
+If a child loads a world profile, that profile's name stays in the launcher;
+the Task Overview still shows the call path.
+
+If the child file is missing or malformed, expect a file/parse warning and the
+parent to advance without the child's message. A successful-looking parent
+message alone does not prove that the child ran: check the child message and
+breadcrumb. A refused call also advances; it is not retried indefinitely.
+
+## What changes on each action
+
+| Action | Exact arguments | Result |
+| --- | --- | --- |
+| `Call Routine` | `{ ["Routine"] = "Practice/Child.lua" }` | Suspends the current row and Always pools, runs a fresh child, then returns to the next parent row. |
+| `Switch Routine` | `{ ["Routine"] = "Practice/Child.lua" }` | Discards the current frame and replaces it with the named routine. No return to that frame. A caller below it remains suspended and receives the replacement's eventual return. |
+| `End Routine` | `{}` | Immediately returns from a nested frame. At root it clears the executor's row/Always work and announces completion. |
+
+`Routine` is relative to `Nexor_User/Tasks/Routines/`, including `.lua`.
+Nested routines must be available locally; server routines cannot be fetched
+as a synchronous nested call. Use Call/Switch on **In Row** tasks. Return
+removes the parent's Call row directly; do not use its `Repeat` or `DelayAfter`
+as a loop or post-return wait. Put a separate following task/delay in the parent.
+
+To try Switch, change only the parent's Call action name to `Switch Routine`.
+The child runs, but **Parent: child returned** never prints. To try natural
+return, remove the child's final End row: exhaustion of its In Row queue returns
+to the parent too. End can also leave early, discarding later child rows.
+
+An In Row End action runs as soon as its row is reached; a future `OnTime`
+condition does not delay it. At root, an Always End can wait for a start trigger.
+Ending a routine is not the UI's full stop: it does not clear a loaded world
+profile, log out, unload the rotation or forget the root routine identity.
+Pause stops execution temporarily. **Shift-click Play/Pause** performs the full
+stop/unload when the session should end.
+
+## Caller conditions and Always tasks
+
+A condition on the parent's **Call** row becomes an abort gate for the child.
+For example, replace that row's `OnLoad` with
+`{ name = "OnTime", args = { ["Time Interval"] = "10" } }` to return early when
+its timer fires. The timer is constructed when the parent routine is loaded,
+not when the child starts. `OnLoad` never fires and therefore lets the child
+finish normally. Level/XP and quest-state gates can also bound child work.
+
+Only the **immediate caller's** abort gate is checked while a child runs. If
+the child calls a grandchild, an outer caller's gate is checked again after
+control returns to its child. The abort uses the same return/profile-restoration
+path as normal child completion.
+
+Caller Always tasks do not run in the child. They resume with their existing
+closures on return; they are not recreated. The active-time clock continues
+during child work, so a caller timer can be due on return. Events cleared during
+child ticks are not replayed to the caller. The child has its own Always pool.
+Once a child's In Row queue empties, it returns even if an Always task remains
+waiting; keep a suitable In Row task active if the helper must keep waiting.
+
+## Profile restoration, bounds and reload
+
+Call saves the caller's profile/quest state. On return or abort, a changed
+profile identity (`Name`, `Type`, `SubType`, `Loaded`) restores that snapshot.
+A restored loaded route is reselected from the character's current location.
+When the identity is unchanged, navigation progress is retained. This is an
+in-memory profile snapshot, not a reversal of movement, inventory changes or
+other game actions. Switch does not add a snapshot for the replaced frame.
+
+Call refuses a routine whose display `Name` (with trailing `.lua` removed)
+matches the current routine or any suspended caller. Give distinct routines
+distinct names: even different files with the same display name can be refused.
+The bound is **16 suspended caller frames**; another push is refused at that
+point. Switch does not add depth and has no equivalent cycle check, so it can
+still form an endless replacement loop.
+
+The stack is never serialized. `/reload` reloads the remembered **root** file
+with fresh callbacks, counters and timers, not the child or a switched frame.
+Live quest/level checks can skip satisfied work, but custom side effects may
+run again. AutoStart controls whether the bot starts after loading. A new
+top-level routine load discards the old stack, and the UI's full stop clears
+the remembered routine.
