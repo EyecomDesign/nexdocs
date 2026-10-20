@@ -1,13 +1,200 @@
 # Environment
 
-The chunk receives `---@type RotationEnv` as `local NX = ...`. Public services
-include `NX.SpellBook`, `NX.UnitManager`, `NX.Item`, `NX.Pet`, `NX.Combat`,
-`NX.Movement`, `NX.Wand`, `NX.Toggles`, and `NX.Options`.
+Every script receives the same public API table. At the top of a rotation,
+profile or plugin file, write:
 
-Use `NX.UnitManager.Get("player")` for the live player wrapper. `NX.Player` is a
-class and does not represent an Object Manager token. Use `NX.*` before a raw WoW
-global. A raw fallback must be explicit and documented.
+```lua
+---@type NX
+local NX = ...
+```
 
-`NX.Toggles[name]` is the current toggle value. `NX.Options[name]` is the current
-option value. The rotation reads both at decision time. The catalog, not the
-rotation, owns intrinsic spell flags.
+The loader provides `NX`; do not construct it yourself. A plugin receives this
+table too, without a second argument containing framework internals or the raw
+unlocker. `NEX` is private and cannot be reached from an authored script.
+The common API is defined in
+[`Public/PublicAPIs.lua`](https://github.com/NexorSystem/NexorBot/blob/9f373eaa9bd3d65581fc5ad6c52a417b87c71a89/Public/PublicAPIs.lua).
+
+## Live units and settings
+
+Resolve live units at decision time:
+
+```lua
+local player = NX.UnitManager.Get("player")
+local target = NX.UnitManager.Get("target")
+```
+
+There is no `NX.Player` or `NX.Target`. `NX.Unit` is the unit class, and `NX.Aura`
+is the aura class; check a live unit with methods such as `unit:HasBuff(spell)`.
+See [Units and targets](./units-and-targets) for nil checks and selectors.
+
+`NX.Toggles["Damage"]` and `NX.Options["Minimum Health"]` read live values by
+name. Both tables are read-only; read each option rather than requesting a whole
+section. `NX.Rotation.Pause(seconds)` and `NX.Rotation.Resume()` control the
+rotation, rather than providing settings getters.
+
+Use the public names in this revision:
+
+| Need | Current call |
+| --- | --- |
+| Time in seconds | The game's `GetTime()` |
+| A diagnostic chat line | The game's `print(...)` |
+| Distance between objects/tokens or two coordinate triples | `NX.Distance.GetDistance(...)` |
+| Current bot substate / action state | `NX.State()` / `NX.ActionState()` |
+| Spell range by ID | `NX.Spell.IsInRange(id, unit)` |
+| Remaining spell cooldown by ID | `NX.Spell.GetCooldownRemaining(id)` |
+| Stop casting | `NX.Spell.SpellStopCasting()` |
+| Construct a spell object | `NX.Spell:New(id, config)` |
+
+There is no `NX.Misc` or author-facing `NX.Print`. A spell object's own
+`spell:GetCooldown()` method still exists; it differs from the function by ID.
+The spell catalog owns intrinsic spell flags. See [Spells](./spells).
+
+## One API, different script contracts
+
+The shared input does not make all files return the same thing.
+
+### Rotation file
+
+The loader wraps the file in an internal factory and passes `NX` to it. Write
+the header and return a rotation table yourself; do not add a factory wrapper.
+`Toggles`, `Options` and these three pulse fields are required, even in a
+diagnostic rotation:
+
+```lua
+---@type NX
+local NX = ...
+
+return {
+    Toggles = {},
+    Options = {},
+    OutOfCombatPulse = function()
+        return false
+    end,
+    EngagementPulse = function()
+        local target = NX.UnitManager.Get("target")
+        if not target then return end
+    end,
+    CombatPulse = function()
+        local player = NX.UnitManager.Get("player")
+        if not player then return end
+    end,
+}
+```
+
+This loads without casting or moving. `OutOfCombatPulse` returns `true` while
+out-of-combat work remains and `false` when drained. Other pulse returns do not
+use that drain contract. `MultiPullPulse` is optional and falls back to
+`CombatPulse`. See [Pulses](./pulses) and the
+[rotation course](../rotations/rotation-authoring/course).
+
+### Profile file
+
+A current profile chunk also captures `NX` at the top and returns a table. A
+returned factory function is rejected. This is a loadable API-entry diagnostic,
+with no route points; capture real points before using it as a grinding route:
+
+```lua
+---@type NX
+local NX = ...
+
+local player = NX.UnitManager.Get("player")
+print("Profile can resolve the live player:", player ~= nil)
+
+return {
+    Name = "NX entry diagnostic",
+    Type = "Grinding",
+    SubType = "Level",
+    Logic = "Path",
+    Points = {},
+    Units = {},
+    NPCs = {},
+}
+```
+
+Use [Profiles](../profiles) for the actual profile fields and route authoring.
+Legacy `Profile = { ... }` files use a separate compatibility loader; new files
+should use the return-table form above.
+
+### Quest-step custom code
+
+The callback receives that same table as its first argument, followed by the
+active phase and current bot substate. This objective belongs inside an existing
+quest profile's `Objectives` list:
+
+```lua
+{
+    type = "CustomCode",
+    customcode = function(NX, phase, substate)
+        local player = NX.UnitManager.Get("player")
+        if not player then return false end
+        print("Quest callback:", NX.State(), substate, phase.type)
+        return true
+    end,
+}
+```
+
+A standalone `CustomCode` phase completes when its callback returns exactly
+`true` (or its real quest objective completes). Attached custom code on other
+phase types does not use that return value. Callbacks run on active ticks,
+including combat; avoid registering a listener on every tick. See
+[Questing profiles](../profiles/questing-profiles).
+
+### Plugin file
+
+A plugin executes its chunk once; it does not return a rotation or profile
+table. This diagnostic registers one listener and removes it after one event:
+
+```lua
+---@type NX
+local NX = ...
+
+local token
+token = NX.Events.RegisterWoWEvent("PLAYER_LEVEL_UP", function(level)
+    print("New level:", level)
+    NX.Events.Unregister(token)
+    token = nil
+end)
+```
+
+This describes the existing plugin loader. Product namespaces, local product
+testing and further sandbox work remain tracked separately in
+[NexorBot #973](https://github.com/NexorSystem/NexorBot/issues/973),
+[#1018](https://github.com/NexorSystem/NexorBot/issues/1018),
+[#1053](https://github.com/NexorSystem/NexorBot/issues/1053) and
+[#1054](https://github.com/NexorSystem/NexorBot/issues/1054).
+
+## Event ownership and cleanup
+
+`NX.Events.RegisterEvent(name, handler)` registers a framework event.
+`NX.Events.RegisterWoWEvent(nameOrNames, handler, sendEvent)` registers game
+events; `sendEvent = true` adds the event name as the handler's first argument.
+Keep the returned token (or token list) and pass it to
+`NX.Events.Unregister(token)` when the listener is no longer needed, as in the
+plugin example above.
+
+| Registration owner | Automatic removal |
+| --- | --- |
+| Rotation | Rotation switch or unload |
+| Profile, quest-step or point custom code | Profile clear |
+| Plugin | No automatic unload during a session |
+
+A profile clear leaves rotation listeners in place. `NX.Events.Clear()` removes
+all listeners owned by the calling script and leaves other scripts' listeners
+alone. Register once at file load, or guard a registration made from a repeated
+callback.
+
+The bot recognizes the running script during rotation file loading, rotation
+pulses, plugin file loading and a registered listener's handler. A listener
+created inside another listener inherits its owner's lifetime. Code running
+outside those contexts, including a timer started by a rotation or plugin,
+defaults to the **profile** owner. Register a rotation/plugin listener in its
+load context and retain its token; moving registration into `C_Timer.After`
+does not retain that ownership. `NX.Events.Clear()` called from such a timer
+also acts on profile listeners. Timers themselves are not event listeners and
+are not cancelled by `NX.Events.Clear()`.
+
+The verified baseline and this lifetime rule come from the
+[shared-NX guide](https://github.com/NexorSystem/NexorBot/blob/9f373eaa9bd3d65581fc5ad6c52a417b87c71a89/Docs/Rotation_API_Guide.md#one-nx-for-every-script).
+For optional framework imports see [Pets](./pets) and
+[#10](https://github.com/EyecomDesign/nexdocs/issues/10). Future regrouping stays
+in [#12](https://github.com/EyecomDesign/nexdocs/issues/12).

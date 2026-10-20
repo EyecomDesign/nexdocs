@@ -1,4 +1,4 @@
----@type RotationEnv
+---@type NX
 local NX = ...
 
 local spells = NX.SpellBook:GetGlobal()

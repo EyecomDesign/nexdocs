@@ -1,15 +1,18 @@
 # 3. Receive the rotation environment
 
 The rotation loader executes the Lua file as a chunk and passes the public
-`RotationEnv` as its vararg. Capture it at the top of the file:
+`NX` table as its vararg, the same API received by profiles, quest custom code
+and plugins. Capture it at the top of the file:
 
 ```lua
----@type RotationEnv
+---@type NX
 local NX = ...
 ```
 
 `NX` is provided by the loader. Do not construct it yourself, and do not reach
-into the private `NEX` namespace. Use a documented raw WoW global only when the
-API reference explicitly allows that compatibility fallback.
+into the private `NEX` namespace. Use the game's `print` for diagnostic output
+and `GetTime()` for time; there is no author-facing Nexor print function.
+The [environment reference](../../../api/environment) explains return contracts
+and script-owned event listeners, including registrations made from timers.
 
 Next: [define the file shape](./04-file-shape).
