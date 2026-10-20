@@ -53,7 +53,9 @@ The same check runs before both production build scripts, in pull-request CI and
 before deployment. Its tests use Node's built-in runner:
 `pnpm test:public-content`.
 
-The check scans `content/en/` and textual files under `public/`. It flags
+The check scans `content/en/` and textual files under `public/`, including UTF-8
+configuration files, shell scripts and extensionless downloads. Known binary
+formats are excluded and require separate review. It flags
 credential assignments and access tables, URLs with credentials, literal host
 addresses, operator logins/home paths, private-key blocks and instructions to put
 replacement credentials into public pages. Explicit placeholders, environment

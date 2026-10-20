@@ -1,12 +1,30 @@
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+import { TextDecoder } from "node:util";
 
 const credentialName = "(?:[a-z][a-z0-9_-]*[_-])?(?:password|passphrase|secret|api[_-]?key|access[_-]?token|admin[_-]?token|connection[_-]?token|private[_-]?key)";
 const assignment = new RegExp("\\b" + credentialName + "\\b[\\x60*\"']*\\s*[:=]\\s*(\"[^\"]*\"|'[^']*'|\\$\\{[^}]+\\}|[^\\s,;}|]+)", "gi");
 const credentialField = new RegExp("^(?:" + credentialName + ")$", "i");
 const inventoryField = /^(?:ssh[ _-]*(?:host|user(?:name)?|port)|vps[ _-]*(?:host|ip|address)|origin[ _-]*(?:host|ip|address)|(?:administrator|admin)[ _-]*(?:user|login)|host|username|ip(?:[ _-]*address)?)$/i;
 const textExtensions = new Set([".md", ".mdx", ".txt", ".json", ".lua", ".csv", ".tsv", ".html", ".css", ".js", ".mjs", ".ts", ".tsx", ".yml", ".yaml", ".xml", ".svg"]);
+const binaryExtensions = new Set([".png", ".jpg", ".jpeg", ".gif", ".webp", ".avif", ".ico", ".bmp", ".tif", ".tiff", ".pdf", ".woff", ".woff2", ".ttf", ".otf", ".eot", ".zip", ".gz", ".br", ".7z", ".rar", ".tar", ".exe", ".dll", ".so", ".dylib", ".wasm", ".pf_fragment", ".pf_index", ".pf_meta"]);
+
+function readPublishedText(full) {
+  const extension = path.extname(full).toLowerCase();
+  if (binaryExtensions.has(extension)) return null;
+  const data = fs.readFileSync(full);
+  if (textExtensions.has(extension)) return data.toString("utf8");
+  // Unknown extensions are scanned when they contain UTF-8 text, including
+  // extensionless scripts and configuration downloads. Binary review is separate.
+  if (data.includes(0)) return null;
+  try {
+    const text = new TextDecoder("utf-8", { fatal: true }).decode(data);
+    return /[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(text) ? null : text;
+  } catch {
+    return null;
+  }
+}
 
 function placeholder(raw) {
   const code = raw.trim().replace(/^\x60+|\x60+$/g, "");
@@ -38,19 +56,77 @@ function publicationInstruction(line) {
   });
 }
 
+function markdownCells(line) {
+  if (!line.includes("|")) return null;
+  return line.trim().replace(/^\||\|$/g, "").split("|").map(cell => cell.replace(/[\x60*]/g, "").trim());
+}
+
+function separatorRow(cells) {
+  return cells?.length > 1 && cells.every(cell => /^:?-{3,}:?$/.test(cell));
+}
+
+function delimitedCells(line, delimiter) {
+  const cells = [""];
+  let quoted = false;
+  for (let index = 0; index < line.length; index++) {
+    const char = line[index];
+    if (char === '"') {
+      if (quoted && line[index + 1] === '"') {
+        cells[cells.length - 1] += '""';
+        index++;
+        continue;
+      }
+      quoted = !quoted;
+    }
+    if (char === delimiter && !quoted) cells.push("");
+    else cells[cells.length - 1] += char;
+  }
+  return cells.map(cell => cell.trim());
+}
+
+function tableValue(rules, field, value) {
+  field = field.replace(/^["']|["']$/g, "");
+  if (credentialField.test(field) && !placeholder(value)) rules.add("credential-value");
+  const host = value.replace(/^["']|["']$/g, "").replace(/:\d+$/, "");
+  const exampleHost = /(?:host|address|ip)$/i.test(field) && (
+    /^localhost$/i.test(host)
+    || (/^(?:\d{1,3}\.){3}\d{1,3}$/.test(host)
+      && host.split(".").every(part => Number(part) <= 255)
+      && publicExampleAddress(host))
+  );
+  if (inventoryField.test(field) && !placeholder(value) && !exampleHost) rules.add("operator-inventory");
+}
+
 export function scanText(text, file) {
   const findings = [];
-  for (const [index, line] of text.split(/\r?\n/).entries()) {
+  const lines = text.split(/\r?\n/);
+  const delimited = /\.(?:csv|tsv)$/i.test(file);
+  let delimiter;
+  let columns = null;
+  let previousRow = null;
+  for (const [index, line] of lines.entries()) {
     const rules = new Set();
     for (const match of line.matchAll(assignment)) {
       if (!placeholder(match[1])) rules.add("credential-value");
     }
-    if (/^\s*\|/.test(line)) {
-      const cells = line.split("|").slice(1).map(cell => cell.replace(/[\x60*]/g, "").trim());
-      if (credentialField.test(cells[0]) && !placeholder(cells[1] ?? "")) rules.add("credential-value");
-      if (inventoryField.test(cells[0]) && !placeholder(cells[1] ?? "")) rules.add("operator-inventory");
+    if (delimited && line.trim()) {
+      delimiter ??= /\.tsv$/i.test(file) ? "\t" : line.includes(",") ? "," : ";";
+      const cells = delimitedCells(line, delimiter);
+      if (columns) columns.forEach((field, column) => tableValue(rules, field, cells[column] ?? ""));
+      else columns = cells;
+    } else if (!delimited) {
+      const cells = markdownCells(line);
+      if (separatorRow(cells)) {
+        columns = previousRow;
+      } else if (cells) {
+        if (columns) columns.forEach((field, column) => tableValue(rules, field, cells[column] ?? ""));
+        if (!separatorRow(markdownCells(lines[index + 1] ?? ""))) tableValue(rules, cells[0], cells[1] ?? "");
+      } else {
+        columns = null;
+      }
+      previousRow = cells;
     }
-    for (const match of line.matchAll(/https?:\/\/([^\s/?#<>]+)@/gi)) {
+    for (const match of line.matchAll(/https?:\/\/([^\s/?#]+)@/gi)) {
       if (!match[1].split(":").every(placeholder)) rules.add("credential-url");
     }
     for (const match of line.matchAll(/\b(?:\d{1,3}\.){3}\d{1,3}\b/g)) {
@@ -83,10 +159,12 @@ export function scanPublished(root) {
         report.findings.push({ file, line: 1, rule: "publication-symlink" });
       } else if (entry.isDirectory()) {
         walk(full, isSource);
-      } else if (entry.isFile() && textExtensions.has(path.extname(entry.name).toLowerCase())) {
+      } else if (entry.isFile()) {
+        const text = readPublishedText(full);
+        if (text === null) continue;
         if (isSource && /\.mdx?$/i.test(entry.name)) documents++;
         report.filesChecked++;
-        report.findings.push(...scanText(fs.readFileSync(full, "utf8"), file));
+        report.findings.push(...scanText(text, file));
       }
     }
   }

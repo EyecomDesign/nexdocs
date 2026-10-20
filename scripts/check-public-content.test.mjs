@@ -135,3 +135,59 @@ test("CLI does not follow publication symlinks without review", (t) => {
   assert.match(result.stderr, /public\/linked:1 \[publication-symlink\]/);
 });
 
+test("rejects credential URLs with only one component redacted", () => {
+  for (const userinfo of ["<user>:fixture-only-value", "fixture-user:<password>", "<user>:fixture-only-value:<suffix>"]) {
+    assert.deepEqual(scanText("https://" + userinfo + "@example.invalid/login", name), finding("credential-url"));
+  }
+});
+
+test("CLI checks shell scripts, configuration files and unrecognized textual downloads", (t) => {
+  const root = fixture(t);
+  const sentinel = "fixture-value-must-not-appear";
+  const names = ["config.env", "config.ini", "setup.sh", "setup.ps1", "unrecognized.download", "credentials"];
+  for (const filename of names) fs.writeFileSync(path.join(root, "public", filename), 'PASSWORD="' + sentinel + '"\n');
+  const result = run(root);
+  assert.equal(result.status, 1);
+  for (const filename of names) assert.ok(result.stderr.includes("public/" + filename + ":1 [credential-value]"));
+  assert.ok(!result.stdout.includes(sentinel) && !result.stderr.includes(sentinel));
+});
+
+test("CLI excludes unknown binary formats from the textual publication scope", (t) => {
+  const root = fixture(t);
+  fs.writeFileSync(path.join(root, "public/data.binary"), Buffer.from([0xff, 0x00, 0xfe]));
+  const result = run(root);
+  assert.equal(result.status, 0);
+  assert.match(result.stdout, /1 published text files/);
+});
+
+test("rejects credentials in Markdown table columns", () => {
+  const text = "| User | Password |\n| --- | --- |\n| fixture-user | fixture-only-value |";
+  assert.deepEqual(scanText(text, name), finding("credential-value", 3));
+});
+
+test("rejects private inventory in Markdown table columns without outer pipes", () => {
+  const text = "Service | SSH Username\n--- | ---\nExample | fixture-operator";
+  assert.deepEqual(scanText(text, name), finding("operator-inventory", 3));
+});
+
+test("rejects credentials in CSV and TSV table columns with quoted values", () => {
+  for (const [file, separator] of [["public/access.csv", ","], ["public/access.csv", ";"], ["public/access.tsv", "\t"]]) {
+    const text = ["User", "Password"].join(separator) + "\n" + ["fixture-user", '"fixture,value"'].join(separator);
+    assert.deepEqual(scanText(text, file), [{ file, line: 2, rule: "credential-value" }]);
+  }
+});
+
+test("accepts placeholder-only Markdown and CSV access tables", () => {
+  assert.deepEqual(scanText("| User | Password |\n| --- | --- |\n| <user> | <password> |", name), []);
+  assert.deepEqual(scanText("| Host | Password |\n| --- | --- |\n| localhost | <password> |", name), []);
+  assert.deepEqual(scanText("Host,Password\nlocalhost,<password>", "public/access.csv"), []);
+});
+
+test("accepts development and documentation hosts in both table layouts", () => {
+  for (const host of ["localhost", "localhost:3000", "127.0.0.1", "0.0.0.0", "192.0.2.10", "198.51.100.10", "203.0.113.10"]) {
+    assert.deepEqual(scanText("| Host | " + host + " |", name), []);
+    assert.deepEqual(scanText("| Service | Host |\n| --- | --- |\n| Example | " + host + " |", name), []);
+  }
+  assert.deepEqual(scanText("| Host | ops.internal |", name), finding("operator-inventory"));
+});
+
