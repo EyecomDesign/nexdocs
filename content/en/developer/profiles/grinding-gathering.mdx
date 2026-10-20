@@ -1,0 +1,205 @@
+# Grinding and Gathering Profiles
+
+Grinding and gathering use ordinary profiles with top-level route `Points`.
+Grinding selects eligible combat targets and enabled gathering work. Gathering
+selects enabled resources while following a route; shared looting, skinning,
+recovery and combat handling still apply. Neither kind stops simply because
+its `SubType` says `Level`, `Gold` or a profession name.
+
+These examples follow the current
+[loader](https://github.com/NexorSystem/NexorBot/blob/9f373eaa9bd3d65581fc5ad6c52a417b87c71a89/src/systems/profile_manager.lua),
+[grinding handler](https://github.com/NexorSystem/NexorBot/blob/9f373eaa9bd3d65581fc5ad6c52a417b87c71a89/src/machines/profiles/grinding.lua),
+[gathering handler](https://github.com/NexorSystem/NexorBot/blob/9f373eaa9bd3d65581fc5ad6c52a417b87c71a89/src/machines/profiles/gathering.lua)
+and [resource scanner](https://github.com/NexorSystem/NexorBot/blob/9f373eaa9bd3d65581fc5ad6c52a417b87c71a89/src/api/states/gathering.lua).
+They are author-owned examples, not bundled-product or tested-farm promises.
+Use the right game flavor and replace sample routes with points you have
+captured and checked on your character.
+
+## Minimal Grinding file
+
+Save as `Nexor_User/Profiles/MyProfiles/Retail/BoarPractice.lua`. These points
+come from the Retail Valley of Trials quest example. Verify the location and
+targets on your server before starting.
+
+```lua
+local NX = ...
+
+return {
+    Name = "Retail boar practice",
+    Type = "Grinding",
+    SubType = "Level",
+    Logic = "Spot",
+    Points = {
+        { X = -471.28, Y = -4270.47, Z = 42.89,
+          Range = 35, MapID = 1, Type = "Checkpoint" },
+        { X = -433.26, Y = -4287.73, Z = 42.86,
+          Range = 35, MapID = 1, Type = "Checkpoint" },
+    },
+    Units = {
+        { Type = "Priority", UnitID = 3098 },
+    },
+    NPCs = {},
+}
+```
+
+With an appropriate loaded combat rotation, the profile travels to a selected
+spot, finds eligible targets and fights/loots. Unit 3098 is preferred, but this
+is **not** an exclusive boar filter. Level, attackability, ignore, blacklist,
+ownership and range rules still apply. The grinding handler does not replace
+a fight/recovery/loot state with a fresh proactive scan; it selects new work
+from Active after pending out-of-combat work finishes.
+
+## Minimal Gathering file
+
+Save as `Nexor_User/Profiles/MyProfiles/ClassicTBC/HerbPractice.lua`. This is a
+**ClassicTBC / Eastern Kingdoms** schema example. Its two map-0 points illustrate
+a short route; they are not verified herb spawn positions or coverage. Capture
+your own reachable circuit before using it as a farm.
+
+```lua
+local NX = ...
+
+return {
+    Name = "ClassicTBC herb practice",
+    Type = "Gathering",
+    SubType = "Herbalism",
+    Logic = "Path",
+    Points = {
+        { X = -9384.5, Y = 68.2, Z = 60.1,
+          Range = 35, MapID = 0, Type = "Checkpoint" },
+        { X = -9250.0, Y = 90.5, Z = 61.0,
+          Range = 35, MapID = 0, Type = "Checkpoint" },
+    },
+    Units = {},
+    NPCs = {},
+}
+```
+
+Enable **Settings → Gathering → Enable Herbing** and confirm that this character
+can manually gather and loot an appropriate nearby herb. Disable mining and
+chests if this run should only seek herbs. The route keeps moving when no
+eligible resource is available. Setting `SubType = "Herbalism"` alone does not
+enable herbing or disable the other resources.
+
+Both examples explicitly include empty `NPCs` arrays: they have no authored
+service locations. Add reachable vendor/repair/mailbox candidates through the
+[Profile Tool](/en/developer/profiles/profile-tool) when the session needs them.
+Existing NPC data may also supply candidates. Settings determine when a service
+trip is needed; a point or subtype does not buy supplies or guarantee a vendor
+visit. Check [vendor controls](/en/using-nexor/vendors) before a longer run.
+
+## File fields and case
+
+| Field | Accepted shape / effect |
+| --- | --- |
+| `Name` | Non-empty display name. The file must return the table; legacy `Profile = { ... }` also loads. |
+| `Type` | Use exact normal-profile names `"Grinding"` or `"Gathering"`. Do not depend on fallback normalization of upper-case or unknown types. |
+| `SubType` | Grinding: `Level`, `Reputation`, `Gold`, `Profession`. Gathering: `Mining`, `Herbalism`, `Skinning`. A metadata classifier, not an action switch or completion condition. The loader also accepts `Goal` as an alias. |
+| `Logic` | `Path`, `Spot` or `Bounce`, case-sensitive. Normal profiles fall back to `Path` for missing/invalid logic; author it explicitly. Quest phases have their own `Spot` default. |
+| `Points` | Ordered points with `Type`, `X`, `Y`, `Z` and `Range`, or a supported compact tuple such as `{ x, y, z, radius, Type = "Checkpoint", MapID = 0 }`. |
+| `Units` | `{ { Type = "Priority" / "Ignore" / "Flee", UnitID = id }, ... }`. These are combat unit rules, not herb/ore IDs. |
+| `NPCs` | Service entries captured by the tool, using `id`, `name`, `types`, `x`, `y`, `z`, `mapId`, `faction`; `{}` is valid for a minimal route. |
+
+Use at least one **Checkpoint**. An array containing only Ignore or Triggerpoint
+records does not provide a patrol destination. Keep world/instance `MapID`,
+including `0`, and actual world Z. Capturing a UI map percentage or replacing
+every Z with zero does not define a usable route. `RestPoint` and other point
+metadata have the [current limits](/en/developer/profiles/profile-tool#2-capture-and-edit-points)
+described in the tool guide.
+
+## Path, Spot and Bounce
+
+Normal profiles start from a nearby route point rather than promising to
+restart at point 1. Multiple points advance in route order. A single point is
+a destination: once there, the bot holds that point and continues scanning.
+
+| Logic | Scan anchor and route behavior |
+| --- | --- |
+| `Path` | Patrol the route; combat scans around the player using `Grinding_ScannerRange`, resources use the shared `Gathering_ScannerRange`. Point `Range` still participates in waypoint arrival/advancement; it is not the resource scan radius here. |
+| `Spot` | Select/approach a point and scan around that point's `Range`. Multiple spots cycle back to the first after the last. Combat has travel and leash rules; it is not a promise to ignore attackers outside the spot. |
+| `Bounce` | Uses the same point-centered scan rules as Spot; reverses the route at an endpoint to travel back and forth. |
+
+Scans use a horizontal radius plus a vertical band, not a sphere. The default
+band is `Spot_ScanHeight` (10 yards above/below the anchor in the inspected
+settings). A Checkpoint's optional handwritten `Height` overrides it for
+point-centered scans; Path uses the global height. A very large arrival range
+can also advance a waypoint early. Start with a small, reachable route and
+check which point is active before widening the scan area.
+
+## Target and resource selection
+
+**Priority** prefers an otherwise eligible combat target; **Ignore** excludes
+proactive targeting while allowing self-defense. **Flee** is persisted legacy
+data with no active flee behavior. A normal profile's top-level `WhitelistIDs`
+is not applied by the normal loader, and the normal resource scanner does not
+use `Units` as a node whitelist. Use correct route bounds, ignore areas,
+resource switches and gathering-object blacklists rather than inventing a
+strict whitelist field.
+
+Grinding compares eligible ore, herb, skin and combat candidates by distance;
+enabled professions can therefore interrupt a grind route. Gathering compares
+enabled ore, herb and lootable chest candidates; shared running logic also
+handles corpse loot/skinning. `SubType = "Skinning"` does not kill animals for
+you: use a grinding route with skinning enabled when kills are required.
+
+Gatherable nodes must be valid, lootable, outside relevant blacklists/ignore
+areas and inside the scan cylinder. The scanner rejects indoor nodes and
+known nodes above the character's profession skill. Path-distance ranking may
+change which eligible candidate is selected; a node visible on screen can
+still be filtered or unreachable.
+
+## Professions, tools and loot
+
+Before automating, gather/loot once manually on this character. Learn the
+required profession and rank, carry any tool required by the flavor, and leave
+bag space for the results. The profile neither grants a profession nor
+guarantees a tool purchase. A server interaction can still fail even when the
+scanner considers a node eligible.
+
+| Current Gathering control | Effect |
+| --- | --- |
+| Enable Mining (`Mining`) | Requires Mining (profession ID 186); enables ore selection. Disabling cancels the active Mine handler. |
+| Enable Herbing (`Herbing`) | Requires Herbalism (182); enables herb selection. Disabling cancels the active Herb handler. |
+| Enable Skinning (`Skinning`) | Requires Skinning (393) and a skinnable corpse, normally after looting. Disabling cancels the active Skin handler. Works through shared running/loot logic and the grinding handler. |
+| Combat Skinning (`Skinning_InCombat`) | Allows the shared skinning path during combat; it does not change a corpse's eligibility. |
+| Only skin own/group kills (`Skinning_OnlyOwnGroupKills`) | Restricts skin candidates to recorded player/group kills. |
+| Gather Lootable Chests (`GatherChests`) | Adds lootable GameObject chests to gathering selection, separate from herbs/ores. |
+
+Enable normal **Looting** for corpse loot; a corpse not yet skinnable is not
+fixed by increasing scan radius. The current unified scan uses the shared
+`Gathering_ScannerRange`, even though the Skinning UI also stores a separate
+`Skinning_ScannerRange` value. Similarly, node grey-skill filtering reads
+`Ignore_Greys`; the per-profession **Ignore Grey Herbs/Nodes** controls write
+different keys that this path does not read. Do not treat those separate
+controls as a verified filter change in this version.
+
+## Capture, load, observe and stop
+
+1. Use **Profiles → Creator-Editor → Grinding/Gathering** to capture your route
+   and service candidates, following the
+   [Profile Tool walkthrough](/en/developer/profiles/profile-tool). Save and
+   reopen to confirm name, points, map and range. Alternatively, place one of
+   the handwritten files above under the user Profiles root. Edit unmarked
+   handwritten scripts in a code editor; they do not automatically round-trip
+   through the Profile Tool.
+2. Set the desired profession, loot and combat preferences; load a suitable
+   rotation. Load the local file in **Profiles → Library** and verify the
+   displayed Type/name. Selecting a profile directly unloads the active routine.
+3. Start nearby. Observe point travel, one eligible fight or gather attempt,
+   and the resulting loot. No gathering attempt: check profession/rank/tools,
+   switches, map/Z, scan radius, ignore areas, blacklists and node availability.
+   Stop to correct a repeated unreachable route or interaction error.
+4. **Pause** to suspend temporarily. **Shift-click Play/Pause** performs a full
+   stop/unload of profile, routine and rotation. Saving an edited draft does
+   not update the loaded run: reload/select the saved file before testing it.
+
+For a bounded session, use an In Row
+[routine](/en/developer/tasks/task-routines) with `Switch Profile` and a level,
+XP, time or quest-state stop gate. The gate advances the task; it does not by
+itself perform the UI's full stop. A world profile can keep running after task
+work ends, so stop/unload it when finished. Neither a saved subtype nor a trip
+around the route is a completion signal.
+
+Fishing, Dungeon and Raid names in a type table or template picker do not
+establish an end-to-end supported workflow. This guide makes no claim of those
+workflows from the presence of enums or example files.
