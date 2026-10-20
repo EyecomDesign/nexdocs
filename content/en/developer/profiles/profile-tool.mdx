@@ -1,0 +1,213 @@
+# Profile Tool: capture, save and reopen
+
+The Profile Tool edits a **world profile**: route points, combat unit rules,
+service NPCs and, for quests, ordered steps. It does not save a settings preset
+or publish a product. A settings preset controls bot preferences; a product
+determines which files the account receives. A local save changes neither.
+
+This walkthrough uses an author-owned **Retail / Valley of Trials** grinding
+practice profile. The same capture controls work for a route you record on
+your own flavor/server. Pause automation while checking the draft. Creating or
+editing a draft does not load it into the running bot.
+
+The schematic below follows the
+[current UI](https://github.com/NexorSystem/NexorBot/blob/9f373eaa9bd3d65581fc5ad6c52a417b87c71a89/UI/Frames/BotInterface/ProfileTool/ProfileTool.lua)
+and its [workspace model](https://github.com/NexorSystem/NexorBot/blob/9f373eaa9bd3d65581fc5ad6c52a417b87c71a89/UI/Frames/BotInterface/ProfileTool/ProfileToolWorkspaceModel.lua);
+it is a diagram, not an in-game screenshot.
+
+```text
+Profile | Points | Units | NPCs | Quest Steps (Questing only)
++--------------------------+--------------------------------------+
+| List / category pane     | Detail pane for the selected row     |
+| Capture/add controls     | Coordinates, IDs and contextual data |
+| Select a row             | Change that row here                 |
+| Reorder where supported  |                                      |
++--------------------------+--------------------------------------+
+| Saved / Unsaved changes | validation | Clear Profile | Save Profile |
+```
+
+**Profile** uses General / Behavior / Notes & Code sections. **Points**, **NPCs**
+and quest steps use a list plus selected detail. **Units** groups entries by
+Priority, Ignore and Flee. Select the row/category before editing; capture
+controls that add a row differ from detail buttons that replace a position.
+
+## 1. Create the draft
+
+Open **Profiles → Creator-Editor → Grinding**. This starts a new draft from a
+template. **Blank Profile** also starts fresh; **Reopen Editor** keeps the
+current draft. Save wanted work before choosing a fresh template or clearing.
+Other template buttons are not a promise that every enum type has a complete
+runtime handler; this guide covers grinding, gathering and questing contracts.
+
+In **Profile → General**, set:
+
+| Field | Practice value |
+| --- | --- |
+| Profile Name | `Retail_VoT_Practice` |
+| Profile Type | `Grinding` |
+| Profile SubType | `Level` |
+
+In **Profile → Behavior**, choose **Profile Logic → Spot**. SubType classifies
+the profile; it does not stop at a particular level. If you change Type,
+reselect a valid SubType. Give the profile a description so its flavor and
+purpose are clear later.
+
+Use letters, digits, `_` and `-` in the name, without `.lua` or folder slashes.
+Save replaces other characters with `_` for the filename. A name such as
+`Retail/My Route` produces `Retail_My_Route.lua`, not a subdirectory.
+
+## 2. Capture and edit points
+
+In **Points**, set **New point defaults** to `Checkpoint` and **Range** to `35`.
+The default range for a newly authored normal point is 60 yards, so change it
+deliberately for a smaller practice area.
+
+1. Stand on a reachable spot and click **Player Pos**. It adds a new point.
+   On the Retail sample route, one spot is X `-471.28`, Y `-4270.47`, Z `42.89`,
+   Map ID `1`; your own capture should reflect your actual location.
+2. Walk to a second reachable spot and capture again, or use **Target Pos**
+   with a selected unit. Target capture adds its position, not its combat rule.
+3. Select a point in the left list. The right pane exposes **X**, **Y**, **Z**,
+   **Map ID**, **Type**, and **Range (yards)** or **Rest time (seconds)**.
+   **Use Player Pos** / **Use Target Pos** replace this selected point's
+   position and map instead of adding a new point.
+4. Drag the list's reorder grip to change route order. Keep route points in
+   the intended travel sequence; Ignore/Triggerpoint entries are stored
+   separately from the patrol route.
+
+X/Y/Z are world coordinates, not map percentages. Z matters on slopes, bridges
+and buildings. The map is the world/instance map for navigation, not a UI zone
+map ID; `0` is valid. Check it before saving a cross-world destination.
+
+| Point type | Stored meaning and current limit |
+| --- | --- |
+| `Checkpoint` | Route/spot center with a range. Included in the patrol route. |
+| `Ignore` | Exclusion area with a range, kept out of the patrol route. It is not a command to move to that center. |
+| `Triggerpoint` | Separate trigger-area record with a range/callback field. The current generic range-check hook is not wired into execution; do not assume entering it automatically launches a task or callback. |
+| `RestPoint` | Included in the route, with `RestTime` in seconds (new-point preset: 15). The loader stores it, but the inspected active-route driver does not call its rest executor. Do not use it as a guaranteed timed stop; use routine delays for that. |
+
+**Edit Callback Code** belongs to the selected normal profile point. It is not
+a quest completion condition. Advanced handwritten helpers belong in the Lua
+file; keep a copy before changing an editor-generated script by hand.
+
+### Mouse capture and cancellation
+
+Enable **Mouse Click** to capture the world under the cursor. Confirm the
+resulting Z/map and that the spot is reachable; a screen-to-world capture can
+fail. These controls are implemented in the current mouse handler:
+
+| Gesture, while mouse mode is active | Effect |
+| --- | --- |
+| Shift + left-click | Add a point at the cursor. |
+| Shift + right-click | Select a nearby point. |
+| Ctrl + left-drag | Move the selected point. |
+| Ctrl + scroll | Resize the selected point's radius. |
+| Delete or Ctrl + right-click | Delete the selected point. |
+| Ctrl + Z / Ctrl + Shift + Z | Undo / redo supported point operations. |
+| Escape | Deselect first; with no selection, exit mouse mode. |
+
+The **Undo** / **Redo** buttons also operate on point history (up to 50
+recorded operations). This is not an undo for the whole profile, manual field
+changes, saved-file overwrites or Clear All. Clearing points clears their
+history. Turn Mouse Click off when finished.
+
+**Minimize** hides the window and leaves a restore chip at the top of the
+screen; active mouse tracking and drawing keep running. **Close** ends those
+services and hides the chip, but retains the draft in memory. Switching tabs
+also cleans up the old tab's mouse mode. Use **Reopen Editor** to return to that
+draft. Close is not Save, and the draft is not a saved checkpoint for `/reload`.
+
+## 3. Add unit rules and services
+
+In **Units**, select **Priority**, target the desired creature and click
+**Target**; use **Custom** to enter an ID manually. Check its Unit ID and
+category in the detail. For the sample Retail quest area, Mottled Boar is 3098.
+
+| Category | Current behavior |
+| --- | --- |
+| Priority | Preferred among otherwise valid combat targets. It does not bypass attackability, range or safety checks. |
+| Ignore | Excluded from proactive engagement; the bot may defend itself if that unit attacks. |
+| Flee | Saved/loaded legacy list. Current runtime does not actively flee because an ID appears here. |
+
+In **NPCs**, target a real vendor/repair NPC and click **Target**. Review its
+**Services** checkboxes: detected flags prefill them, but they do not prove a
+particular vendor sells suitable supplies. **Player Pos** / **Target Pos** in
+NPC detail update its saved location. Check faction and map as well as X/Y/Z.
+
+For mail, **Mailbox** adds the closest known mailbox, with an **Object ID** and
+`Mailbox` service. **Nearby** scans currently visible service NPCs/mailboxes
+and adds or updates them; inspect the imported services and positions. Repeated
+imports merge entries rather than removing saved rows. Service records give
+the runtime candidates; settings still control whether a service visit is due.
+
+**Export Points**, **Export Units** and **Export NPCs** open table text for the
+current collection. They are not a complete saved profile. **Clear All** clears
+that tab's collection; the footer's **Clear Profile** clears the whole draft
+and its edit origin. These clears have no general undo or confirmation dialog.
+
+## 4. Save and verify the destination
+
+Click **Save Profile** after checking required name, Type, SubType and Logic.
+A fresh profile saves to:
+
+```text
+scripts/Nexor_User/Profiles/Retail_VoT_Practice.lua
+```
+
+There is no Save As directory picker. A profile opened for editing reuses its
+source **directory**, while its current name determines the filename. The same
+sanitized filename overwrites that file without a confirmation; a different
+name writes another file alongside it and leaves the original. To organize
+fresh files in subfolders, move the saved local file while stopped, then reopen
+it from its new location. Do not put a world profile in the settings or product
+folders and expect the Profiles browser to treat it as a local profile.
+
+Check the printed **Profile saved successfully to:** path and the footer's
+saved state. The save function reads the file back and compares it with the
+generated text; a write-verification failure is not a successful save. Keep a
+copy before overwriting important files. If the path is unexpected, pause and
+check the draft's name and which local file you opened before saving again.
+
+A saved practice file contains the following core shape (the exporter also
+writes description/custom-code fields). The marker is produced by the editor:
+
+```lua
+-- ProfileTool: v2 profile (round-trip safe)
+local NX = ...
+local Profile = {
+    Name = "Retail_VoT_Practice",
+    Type = "Grinding", SubType = "Level", Logic = "Spot",
+    Points = {
+        { -471.28, -4270.47, 42.89, 35, Type = "Checkpoint", MapID = 1 },
+    },
+    Units = { { Type = "Priority", UnitID = 3098 } },
+    NPCs = {},
+}
+return Profile
+```
+
+## 5. Reopen, change and run the saved result
+
+Open **Profiles → Creator-Editor → Edit Existing Profile** and select the local
+file, or use its **Edit Profile** context action in the local Library. Verify
+the name, point count/order, coordinates/map, unit categories and NPC services.
+Change one range, save, then reopen again and confirm that exact change.
+For a copy, rename it to `Retail_VoT_Practice_Copy` before saving and verify
+that both filenames exist in the expected directory.
+
+Editor-generated marked scripts can round-trip. An unmarked handwritten v2
+script is refused to protect its local helpers: edit it in a code editor.
+Adding the marker to arbitrary custom code does not make its fields safe to
+round-trip. Server profiles have no local edit action; editing a local copy
+does not publish an update to a product.
+
+Save does not load the profile. Select the saved file in **Profiles → Library**,
+check the active name, then start and observe travel/targeting. Pause to inspect;
+**Shift-click Play/Pause** fully stops and unloads profile, routine and rotation.
+
+For quests, enter the **Quest ID** in Profile → General and use **Quest Steps**,
+not the legacy top-level Points capture. Step detail has target capture and its
+own **Pathing Points** with player/target/mouse capture, ordering, export and
+clear. Item starts add acquisition rows under **Quest Start**. Follow
+[Questing Profiles](/en/developer/profiles/questing-profiles) for exact fields,
+phase completion and current export/runtime limitations.
