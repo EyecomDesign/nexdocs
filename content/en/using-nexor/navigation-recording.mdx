@@ -1,0 +1,50 @@
+# Record navigation connections and transports
+
+Open **Advanced → Navigation Tools**. Use **Connection Editor** for zone crossings and **Transport Recorder** for observed moving vehicles. Check the current flavor, loaded map/zone data and authoring access before capturing anything.
+
+## Borders and portals
+
+Connection Editor lets you choose endpoints A/B, inspect zone IDs, adjust the working line and submit explicitly. Dragging the line does not save it. The endpoints must resolve to different zones.
+
+A **new** connection is currently created as `border`. Editing a selected existing connection preserves its existing type and portal/flight payload. Therefore walking two teleport endpoints does **not** create a working new portal.
+
+For a new Rut'theran Village → Darnassus portal, send a maintainer a data request with flavor/client build, both endpoint map/zone IDs, direction, observed interaction and timestamp. Keep credentials and account details out of the report. There is no verified recorder workaround for authoring that new portal.
+
+Without an admin token, **Create/Update (submit for review)** goes to moderation. With an authorized World API admin token, the same action writes directly to LIVE; delete is also privileged. Read the button's current label before using it. Obtain service authorization through the [private access procedure](/en/administrator/server/access); a bot account credential is not a substitute.
+
+## Record a moving vehicle
+
+The current Transport Recorder is TBC-only and accepts **Boat**, **Zeppelin**, **Tram** and **Elevator**. It does not record a teleport portal. Authoring access is checked before capture starts; start pauses automation.
+
+1. Choose **A to B**, **B to A** or **Both (two manual rides)**. Each selected direction needs its own observed trip.
+2. Enter the vehicle object entry ID and use **Check vehicle ID**. Stand beside or aboard the intended vehicle. The recorder resolves the nearest visible match again at capture; absent or ambiguous vehicles block the step.
+3. Capture the waiting point before boarding.
+4. Board manually, capture the onboard position and vehicle's origin stop, then mark departure. Waiting, onboard dwell and ride time are separate observations.
+5. At the destination, capture arrival and the vehicle stop.
+6. Disembark manually, capture a safe point off the vehicle, then an onward exit point. Repeat the whole sequence for the other direction if selected.
+7. Use **Save completed draft** and wait for read-back verification. Select the saved draft to inspect its directions, positions and timing. A saved draft remains private; it does not activate navigation.
+
+Capture uses explicit world map/zone IDs and compatible loaded grid/graph versions. Coordinates alone cannot establish the continent. Stand on the intended map; a stale or incomplete navigation-data load can prevent capture.
+
+## Adjust a saved recording
+
+Select a saved draft and choose **Adjust positions**. Select the direction/anchor, stand at the intended location and **Recapture selected position**. Character anchors and vehicle-stop anchors are separate; changing one does not infer a new timing or reverse ride. The anchor must remain on its recorded map/zone.
+
+**Undo last change** restores the preceding anchor. **Save as new draft** preserves the original and creates a verified copy; use that saved copy for later test/publication. Closing/canceling discards unsaved capture/edits. Normal loading screens preserve capture, while logout/reload clears unfinished state. Completion does not restart automation.
+
+## Keep four outcomes separate
+
+| Outcome | What it establishes |
+| --- | --- |
+| Saved and read back | The private recording round trip matches |
+| **Load private test route** | Compatible directed connections are temporarily available to this client; automation stays paused |
+| Reviewed publication | Authorized review has made selected saved directions public |
+| Successful automatic traversal | The actual client can board, ride, disembark and continue on that route |
+
+Private test loading and publication use the authorized actions panel. **End private test**, closing the panel, editing/reading another draft, token changes and logout/reload invalidate the private overlay; normal loading screens retain it. Start a test journey explicitly only after inspecting the loaded route.
+
+For replacement publication, review the matching public route/version and selected directions. A conflict requires refreshing and reviewing the current version before retrying. Publication refreshes this client's public graph; other clients receive the version at a later public refresh/session. Unsaved edits must be saved first.
+
+Submit review evidence with flavor/build, route identity/version, direction, anchors/maps, timing observations and any test outcome. A draft save or published data does not prove successful traversal. The [World API overview](/en/administrator/world-api/overview) is the handoff point for operators; detailed service moderation contracts remain under verification in NexDocs #35.
+
+Sources checked on 20 October 2026: [Connection Editor](https://github.com/NexorSystem/NexorBot/blob/9f373eaa9bd3d65581fc5ad6c52a417b87c71a89/src/api/navigation/ZoneNavigation/Tools/ConnectionEditor.lua), [Transport Recorder](https://github.com/NexorSystem/NexorBot/blob/9f373eaa9bd3d65581fc5ad6c52a417b87c71a89/src/api/navigation/ZoneNavigation/Tools/TransportRecorder.lua) and [current recorder UI](https://github.com/NexorSystem/NexorBot/blob/9f373eaa9bd3d65581fc5ad6c52a417b87c71a89/src/api/navigation/ZoneNavigation/Tools/TransportRecorderUI.lua). Historical transport design notes are supporting context, not release evidence.

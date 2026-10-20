@@ -5,6 +5,7 @@ const meta = {
   "item-rules": "Sell Keep and Delete",
   "scheduled-breaks": "Scheduled Breaks",
   "map-travel": "World Map travel",
+  "navigation-recording": "Navigation data recording",
 };
 
 export default meta;
