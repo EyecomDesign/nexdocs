@@ -1,0 +1,106 @@
+# Create a page
+
+## Set up the documentation repository
+
+Use the **EyecomDesign/nexdocs** checkout. Commands on this page run from its
+repository root, where `package.json`, `pnpm-lock.yaml`, and `content/` live.
+Use **Node.js 22** and **pnpm 10**, matching pull-request CI.
+
+```sh
+pnpm install --frozen-lockfile
+pnpm dev
+```
+
+Installation should complete without changing the lockfile. The dev server
+prints a local URL, normally `http://localhost:3000`. Open the English route you
+edit. Pagefind search needs a built index; the dev server alone does not validate
+search or the Cloudflare Worker.
+
+## Add the content and navigation
+
+1. Add an English `.mdx` file under `content/en/`. For example,
+   `content/en/guides/example.mdx` publishes at `/en/guides/example`.
+   An `index.mdx` publishes at its directory URL, without `/index`.
+2. Start with a page title and describe one clear workflow. Identify the reader,
+   prerequisites, steps, expected results, and recovery where needed.
+3. Add the page key and a readable label to that folder's `_meta.ts`. Follow the
+   existing ordering. New metadata files should export a named `meta` constant.
+4. Add links from the relevant landing page and nearby workflow so readers can
+   find it. Check both the sidebar and the page itself locally.
+
+Use absolute English page URLs such as `/en/guides/editing-a-page` for clarity.
+Markdown links can omit `.mdx`; Nextra strips `.md`/`.mdx` on Markdown links.
+Literal JSX `href` values are used as written, so use the published URL there.
+
+Relative links use the **rendered page URL**. On `/en/guides/creating-a-page`,
+`./editing-a-page` reaches its sibling. On the index URL `/en/guides`, the same
+relative spelling points beside `guides`, not inside it. Do not resolve a landing
+page's links merely from its source directory.
+
+Put downloadable images and files under `public/`. A file named
+`public/example.png` is served at `/example.png`; match filename case and encode
+spaces as `%20` in URLs. Markdown image imports beginning with `/` come from
+`public/`, while relative Markdown image imports resolve beside the source MDX
+file. JSX image paths use public/browser URLs.
+
+`CodeFile` reads files under `public/rotation-authoring/`. Its `path` is relative
+to that directory. Keep displayed code and the corresponding download in sync;
+do not point it outside that directory. Code fences are examples rather than
+published links, and the reference checker deliberately does not inspect their
+contents.
+
+## Record evidence for behavior
+
+Check the implementation in the repository that owns the behavior. Link a
+specific revision or release, identify what was actually verified, and keep
+unfinished designs separate from released instructions. State the limits of a
+source comparison or a local test; do not invent screenshots or report an
+unperformed website, Discord, game, or deployment check.
+
+Keep English product labels consistent with the inspected UI. Do not copy secret
+values, private host inventory, member data, or replacement credentials into
+pages, assets, or public downloads. The content-policy check complements review;
+it does not replace operator credential remediation.
+
+## Validate in the nexdocs repository
+
+Run these commands from the **nexdocs root** after installing dependencies:
+
+| Command | Expected result |
+| --- | --- |
+| `pnpm test` | Public-content and reference-checker fixture tests pass. They include actual harmless broken destinations, not a live website test. |
+| `pnpm check:public-content` | Published text passes the public-content policy with exit status 0. Findings show file/line/rule without matched values. |
+| `pnpm check:content` | Page, reference, and redirect counts print with exit status 0 and no findings. |
+| `pnpm typecheck` | TypeScript reports no errors. |
+| `pnpm lint` | ESLint reports no errors; review any warnings. |
+| `pnpm build` | The content gates and Next.js production build complete successfully. |
+
+The reference checker covers published English Markdown/MDX links, literal JSX
+`href`, images, `CodeFile` downloads, heading fragments, current redirects, entry
+routes, and numbered lessons' **Next:** links. It derives inventory from source
+files and checks case even on Windows. It does not fetch external URLs, execute
+MDX expressions or `next.config.ts`, certify every possible wildcard suffix, or
+prove a deployed service works. Nonliteral references and computed redirect
+configuration need explicit checker support or a literal form that can be checked.
+
+`pnpm test:content` runs only reference-checker fixtures;
+`pnpm test:public-content` runs only the publication-policy fixtures. Both
+production build scripts and pull-request CI run the content checks. If a check
+reports a missing target, fix the reference or add the intended published page;
+do not hide the containing directory from validation.
+
+Rotation-authoring tools are different: run the Python commands in
+[lesson 27](/en/developer/rotations/rotation-authoring/course/27-audit-and-validation)
+from a matching **NexorBot** checkout, not from nexdocs.
+
+## Submit for review
+
+Include the changed routes, source/release evidence, commands you ran and their
+results, and any remaining runtime verification in the pull request. Review the
+page in the local sidebar and keep local-build evidence separate from deployment.
+
+The Worker build and deployment correction is owned by
+[PR #6](https://github.com/EyecomDesign/nexdocs/pull/6). This contributor workflow
+does not change that pipeline. Cloudflare-specific `build:cf` / `preview` checks
+must be rechecked against the resulting configuration; a plain Next.js build
+does not establish Worker health, live routes, or deployed search behavior.

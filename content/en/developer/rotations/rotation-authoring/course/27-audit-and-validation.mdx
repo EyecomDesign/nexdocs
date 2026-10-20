@@ -1,24 +1,56 @@
 # 27. Audit and validate the file
 
-Run the read-only audit with an explicit rotation path:
+## Validate the rotation in NexorBot
+
+Use a **NexorSystem/NexorBot** checkout matching the source/release you are
+documenting, with **Python 3.12 or newer**. Open a terminal in that repository's
+root, where `tools/`, `tests/`, and `Rotations/` live. These read-only audit tools
+and their unit tests use Python's standard library; they are not nexdocs scripts.
+
+Run the audit with an explicit rotation path:
 
 ```text
 python -m tools.rotation_authoring.audit Rotations/ClassicTBC/WARLOCK/Warlock_TBC_Authoring_Tutorial.lua
 ```
 
-Then run the repository checks:
+Then run the rotation-authoring tests and repository validator from the same
+**NexorBot root**:
 
 ```text
 python -m unittest tests.rotation_authoring_test
 python -m tools.rotation_authoring.validate --root .
-pnpm typecheck
-pnpm build
 ```
 
 The audit reports missing required pulses, direct raw casts, repeated gates, and
 other authoring findings. It never edits the rotation. Client-side pulse
-transitions, pet handoff, item use, and wand intent still require a manual smoke
+transitions, pet stance/assist, item use, and wand intent still require a manual smoke
 test in the target game client.
+
+The unit-test command should pass; the audit and validator should finish without
+unresolved findings for the source/release being accepted. Resolve or explicitly
+track any reported authoring decision or missing smoke-test evidence. A static
+pass alone does not establish an in-game result.
+
+## Validate this documentation in nexdocs
+
+Use a separate **EyecomDesign/nexdocs** checkout with **Node.js 22** and
+**pnpm 10**. Change to its root, where `package.json` lives:
+
+```text
+pnpm install --frozen-lockfile
+pnpm test
+pnpm check:public-content
+pnpm check:content
+pnpm typecheck
+pnpm lint
+pnpm build
+```
+
+The tests, content gates, typecheck, lint, and Next.js build should pass. These
+commands check the documentation site; they do not run the rotation-authoring
+Python tools or certify a Cloudflare deployment. See the
+[contributor validation guide](/en/guides/creating-a-page#validate-in-the-nexdocs-repository)
+for expected results and Worker-specific verification limits.
 
 Next: [claim movement ownership](./28-movement-ownership) if the rotation truly
 needs a short custom maneuver.

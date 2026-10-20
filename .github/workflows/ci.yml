@@ -15,7 +15,25 @@ jobs:
       - run: node --test scripts/check-public-content.test.mjs
       - run: node scripts/check-public-content.mjs
 
+  content:
+    needs: public-content
+    name: Published references
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test:content
+      - run: pnpm check:content
+
   typecheck:
+    needs: public-content
     name: Type check
     runs-on: ubuntu-latest
     steps:
@@ -31,6 +49,7 @@ jobs:
       - run: pnpm typecheck
 
   lint:
+    needs: public-content
     name: Lint
     runs-on: ubuntu-latest
     steps:
@@ -46,6 +65,7 @@ jobs:
       - run: pnpm lint
 
   build:
+    needs: public-content
     name: Build
     runs-on: ubuntu-latest
     steps:

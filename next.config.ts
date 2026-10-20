@@ -145,11 +145,6 @@ const nextConfig: NextConfig = {
         permanent: false,
       },
       {
-        source: "/:lang(en)/administrator",
-        destination: "/:lang/administrator/server/overview",
-        permanent: false,
-      },
-      {
         source: "/:lang(en)/trinitycore-mmap-export",
         destination: "/:lang/administrator/trinitycore-mmap-export",
         permanent: false,

@@ -32,8 +32,25 @@ add or maintain German pages unless English-only support is explicitly reversed.
 
 1. Edit / create `content/en/<section>/<page>.mdx`
 2. Add / reorder the entry in the same directory's `_meta.ts`
-3. Commit + push to `main`
-4. GitHub Actions deploys in ~2 min — watch `.github/workflows/deploy.yml`
+3. From the nexdocs root, run `pnpm test`, both content checks, typecheck, lint and build (see `content/en/guides/creating-a-page.mdx`).
+4. Open a reviewable pull request with source/release evidence and actual check results. Merge and deployment are separate authorized actions.
+
+Published product instructions must identify their source/release basis. Mark
+source-only and unreleased behavior explicitly; never invent screenshots or live
+verification. Keep English-only scope and the unpublished German backup separate.
+
+`pnpm check:content` validates published English references, JSX hrefs, images,
+CodeFile downloads, fragments, static redirects, entry routes and lesson Next
+navigation. It uses the MDX parser from the installed Nextra dependency, Next's
+path matcher and the existing TypeScript parser; install with the lockfile first.
+It never executes MDX expressions or next.config.ts. Index pages publish at their
+folder URL; relative links use that rendered URL, while relative Markdown images
+are source imports. Keep these assumptions checked when upgrading Nextra/Next.
+
+The contributor guides are `/en/guides/creating-a-page` and
+`/en/guides/editing-a-page`. All pnpm commands run in **nexdocs**. The Python
+rotation-authoring commands in lesson 27 run in a matching **NexorBot** checkout
+with Python 3.12+, not here.
 
 ## Public-content boundary
 
@@ -85,12 +102,14 @@ PRs run a separate `.github/workflows/ci.yml` (typecheck + lint + build) before 
 | Command | What |
 |---|---|
 | `pnpm dev` | Local Next.js dev server (no Worker simulation) |
-| `pnpm build` | Plain `next build` — used by CI for typecheck/build verification |
+| `pnpm build` | Public-content/reference gates, then `next build` |
 | `pnpm build:cf` | Full Cloudflare build: `next build` → `pagefind` → `opennextjs-cloudflare build --skipNextBuild` |
 | `pnpm preview` | Build then run the Worker locally via `opennextjs-cloudflare preview` |
 | `pnpm deploy` | Build + deploy from your machine (rarely needed; GitHub Actions handles this) |
 | `pnpm typecheck` | `tsc --noEmit` |
 | `pnpm lint` | ESLint |
+| `pnpm check:content` | Static published-reference validation |
+| `pnpm test` | All Node fixture suites under `scripts/` |
 | `pnpm cf-typegen` | Regenerate `cloudflare-env.d.ts` from `wrangler.jsonc` |
 | `wrangler tail nexdocs` | Stream live worker logs |
 
@@ -103,6 +122,11 @@ PRs run a separate `.github/workflows/ci.yml` (typecheck + lint + build) before 
 - **Anything Clerk-, Prisma-, or Postgres-related** — the auth/DB scaffolding was intentionally stripped in PR #4. Re-introducing requires bindings (Hyperdrive), Workers env vars, and runtime adapter changes. See `wrangler.jsonc` for commented placeholders showing where bindings would go.
 
 ## Troubleshooting deploys
+
+PR #6 owns the Worker adapter/build/runtime correction. Contributor/reference
+validation does not replace that work. Recheck Worker-specific build and runtime
+behavior against its resulting configuration; a plain Next build proves neither
+live Worker health nor deployed search.
 
 - **Build logs**: GitHub → Actions tab → latest "Deploy to Cloudflare Workers" run.
 - **Runtime logs**: Cloudflare dashboard → Workers & Pages → `nexdocs` → Logs/Observability tab. Or `wrangler tail nexdocs`.

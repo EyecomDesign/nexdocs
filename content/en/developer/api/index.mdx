@@ -1,7 +1,7 @@
 # NX API
 
 Every rotation, profile, quest-step custom-code callback and plugin receives
-the same public `NX` table. Start with [Environment](./environment) for the
+the same public `NX` table. Start with [Environment](/en/developer/api/environment) for the
 entry header, script return values and event lifetime. The rotation course
 combines the same contracts into a rotation.
 
@@ -9,47 +9,47 @@ combines the same contracts into a rotation.
 
 | NX object | Covers | Reference |
 | --- | --- | --- |
-| `NX.UnitManager` | Live unit wrappers and bounded selectors | [Units and targets](./units-and-targets) |
-| `NX.SpellBook` | Global and custom spellbooks | [Spellbooks](./spellbooks) |
-| `NX.Item` | Item counts, use, and item policy | [Items, wands, and settings](./items-wands-settings) |
-| `NX.Pet` | Basic pet state and manual commands | [Pets](./pets) |
-| `NX.Combat` | Public combat helpers | [Environment](./environment) |
-| `NX.Movement` | Paths, movement styles, and route ownership | [Movement](./movement) |
-| `NX.Wand` | Framework-owned wand maintenance intent | [Items, wands, and settings](./items-wands-settings) |
-| `NX.Toggles` | Live user toggle values | [Environment](./environment) |
-| `NX.Options` | Live user option values | [Environment](./environment) |
-| `NX.Spell` | Spell functions by ID and spell-object construction | [Spells](./spells) |
-| `NX.Events` | Script-owned event listeners and cleanup | [Environment](./environment#event-ownership-and-cleanup) |
-| `NX.Quest` | Quest state checks in every script kind | [Environment](./environment) |
-| `NX.Distance` | Plain distance functions | [Environment](./environment) |
+| `NX.UnitManager` | Live unit wrappers and bounded selectors | [Units and targets](/en/developer/api/units-and-targets) |
+| `NX.SpellBook` | Global and custom spellbooks | [Spellbooks](/en/developer/api/spellbooks) |
+| `NX.Item` | Item counts, use, and item policy | [Items, wands, and settings](/en/developer/api/items-wands-settings) |
+| `NX.Pet` | Basic pet state and manual commands | [Pets](/en/developer/api/pets) |
+| `NX.Combat` | Public combat helpers | [Environment](/en/developer/api/environment) |
+| `NX.Movement` | Paths, movement styles, and route ownership | [Movement](/en/developer/api/movement) |
+| `NX.Wand` | Framework-owned wand maintenance intent | [Items, wands, and settings](/en/developer/api/items-wands-settings) |
+| `NX.Toggles` | Live user toggle values | [Environment](/en/developer/api/environment) |
+| `NX.Options` | Live user option values | [Environment](/en/developer/api/environment) |
+| `NX.Spell` | Spell functions by ID and spell-object construction | [Spells](/en/developer/api/spells) |
+| `NX.Events` | Script-owned event listeners and cleanup | [Environment](/en/developer/api/environment#event-ownership-and-cleanup) |
+| `NX.Quest` | Quest state checks in every script kind | [Environment](/en/developer/api/environment) |
+| `NX.Distance` | Plain distance functions | [Environment](/en/developer/api/environment) |
 
 ## Public NX functions
 
 | Function | Purpose | Reference |
 | --- | --- | --- |
-| `NX.UnitManager.Get(token)` | Resolve a live unit wrapper | [Units and targets](./units-and-targets) |
-| `NX.UnitManager.EnumFriends(callback)` | Enumerate a bounded set of friendly units | [Units and targets](./units-and-targets) |
-| `NX.UnitManager.EnumEnemies(callback)` | Enumerate a bounded set of enemy units | [Units and targets](./units-and-targets) |
-| `NX.UnitManager.EnumActiveEnemies(callback)` | Enumerate active enemy units | [Units and targets](./units-and-targets) |
-| `NX.UnitManager.CreateCustomUnit(token, callback)` | Create a controlled custom-unit selector | [Units and targets](./units-and-targets) |
-| `NX.SpellBook:GetGlobal()` | Resolve the merged class and flavor spell catalog | [Spellbooks](./spellbooks) |
-| `NX.SpellBook:New()` | Create an advanced custom spellbook | [Spellbooks](./spellbooks) |
-| `NX.Item.GetItemCount(item)` | Read an item count | [Items, wands, and settings](./items-wands-settings) |
-| `NX.Item.UseItemByID(item)` | Request item use through item policy | [Items, wands, and settings](./items-wands-settings) |
-| `NX.Import("PetModule")` | Activate the optional Pet Module at rotation load | [Optional imports](./imports) |
-| `PetModule.Maintain()` | Imported out-of-combat maintenance | [Pets](./pets) |
-| `PetModule.Assist()` | Imported combat pet assist | [Pets](./pets) |
-| `NX.Pet.IsPetActive()` | Read whether the player has an active pet | [Pets](./pets) |
-| `NX.Wand.Maintain()` | Register framework-owned wand intent | [Items, wands, and settings](./items-wands-settings) |
-| `NX.Movement.MoveTo(...)` | Follow a route to a destination | [Movement](./movement) |
-| `NX.Movement.MoveBackwardTo(...)` | Follow a route while moving backward | [Movement](./movement) |
-| `NX.Movement.MoveStrafeTo(...)` | Follow a route with left strafe movement | [Movement](./movement) |
-| `NX.Movement.RequestPath(...)` | Request a route asynchronously | [Movement](./movement) |
-| `NX.Movement.FollowPath(...)` | Install and follow a validated route | [Movement](./movement) |
-| `NX.Movement.ResumeNavigation()` | Resume framework-owned navigation | [Movement](./movement) |
-| `NX.Movement.StopMovement()` | Cancel the active route | [Movement](./movement) |
-| `NX.Movement.FaceToPosition(...)` | Hand facing back to a position | [Movement](./movement) |
-| `NX.Movement.SetRotationMovementOverride(...)` | Claim or release a short route | [Movement](./movement) |
+| `NX.UnitManager.Get(token)` | Resolve a live unit wrapper | [Units and targets](/en/developer/api/units-and-targets) |
+| `NX.UnitManager.EnumFriends(callback)` | Enumerate a bounded set of friendly units | [Units and targets](/en/developer/api/units-and-targets) |
+| `NX.UnitManager.EnumEnemies(callback)` | Enumerate a bounded set of enemy units | [Units and targets](/en/developer/api/units-and-targets) |
+| `NX.UnitManager.EnumActiveEnemies(callback)` | Enumerate active enemy units | [Units and targets](/en/developer/api/units-and-targets) |
+| `NX.UnitManager.CreateCustomUnit(token, callback)` | Create a controlled custom-unit selector | [Units and targets](/en/developer/api/units-and-targets) |
+| `NX.SpellBook:GetGlobal()` | Resolve the merged class and flavor spell catalog | [Spellbooks](/en/developer/api/spellbooks) |
+| `NX.SpellBook:New()` | Create an advanced custom spellbook | [Spellbooks](/en/developer/api/spellbooks) |
+| `NX.Item.GetItemCount(item)` | Read an item count | [Items, wands, and settings](/en/developer/api/items-wands-settings) |
+| `NX.Item.UseItemByID(item)` | Request item use through item policy | [Items, wands, and settings](/en/developer/api/items-wands-settings) |
+| `NX.Import("PetModule")` | Activate the optional Pet Module at rotation load | [Optional imports](/en/developer/api/imports) |
+| `PetModule.Maintain()` | Imported out-of-combat maintenance | [Pets](/en/developer/api/pets) |
+| `PetModule.Assist()` | Imported combat pet assist | [Pets](/en/developer/api/pets) |
+| `NX.Pet.IsPetActive()` | Read whether the player has an active pet | [Pets](/en/developer/api/pets) |
+| `NX.Wand.Maintain()` | Register framework-owned wand intent | [Items, wands, and settings](/en/developer/api/items-wands-settings) |
+| `NX.Movement.MoveTo(...)` | Follow a route to a destination | [Movement](/en/developer/api/movement) |
+| `NX.Movement.MoveBackwardTo(...)` | Follow a route while moving backward | [Movement](/en/developer/api/movement) |
+| `NX.Movement.MoveStrafeTo(...)` | Follow a route with left strafe movement | [Movement](/en/developer/api/movement) |
+| `NX.Movement.RequestPath(...)` | Request a route asynchronously | [Movement](/en/developer/api/movement) |
+| `NX.Movement.FollowPath(...)` | Install and follow a validated route | [Movement](/en/developer/api/movement) |
+| `NX.Movement.ResumeNavigation()` | Resume framework-owned navigation | [Movement](/en/developer/api/movement) |
+| `NX.Movement.StopMovement()` | Cancel the active route | [Movement](/en/developer/api/movement) |
+| `NX.Movement.FaceToPosition(...)` | Hand facing back to a position | [Movement](/en/developer/api/movement) |
+| `NX.Movement.SetRotationMovementOverride(...)` | Claim or release a short route | [Movement](/en/developer/api/movement) |
 
 ## Rotation entry points
 
@@ -58,10 +58,10 @@ object:
 
 | Function | Purpose | Reference |
 | --- | --- | --- |
-| `EngagementPulse` | Prepare the next engagement action | [Pulses](./pulses) |
-| `CombatPulse` | Run the combat priority ladder | [Pulses](./pulses) |
-| `OutOfCombatPulse` | Drain out-of-combat work | [Pulses](./pulses) |
-| `MultiPullPulse` | Optional multi-target combat policy | [Pulses](./pulses) |
+| `EngagementPulse` | Prepare the next engagement action | [Pulses](/en/developer/api/pulses) |
+| `CombatPulse` | Run the combat priority ladder | [Pulses](/en/developer/api/pulses) |
+| `OutOfCombatPulse` | Drain out-of-combat work | [Pulses](/en/developer/api/pulses) |
+| `MultiPullPulse` | Optional multi-target combat policy | [Pulses](/en/developer/api/pulses) |
 
 The authoritative declarations are in
 [`Public/PublicAPIs.lua`](https://github.com/NexorSystem/NexorBot/blob/9f373eaa9bd3d65581fc5ad6c52a417b87c71a89/Public/PublicAPIs.lua).
@@ -69,6 +69,6 @@ The course adds authoring patterns around those declarations; it does not create
 a second runtime API.
 
 This reference follows the merged shared-NX baseline in that revision.
-[Optional imports](./pets) are tracked by [#10](https://github.com/EyecomDesign/nexdocs/issues/10).
+[Optional imports](/en/developer/api/pets) are tracked by [#10](https://github.com/EyecomDesign/nexdocs/issues/10).
 The later namespace regrouping remains in [#12](https://github.com/EyecomDesign/nexdocs/issues/12);
 use the names verified here until its runtime changes are released.
