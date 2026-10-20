@@ -64,12 +64,7 @@ const nextConfig: NextConfig = {
       },
       {
         source: "/:lang(en)/getting-started",
-        destination: "/:lang/introduction/getting-started/buy-nexor",
-        permanent: false,
-      },
-      {
-        source: "/:lang(en)/introduction/getting-started",
-        destination: "/:lang/introduction/getting-started/buy-nexor",
+        destination: "/:lang/introduction/getting-started",
         permanent: false,
       },
       {
