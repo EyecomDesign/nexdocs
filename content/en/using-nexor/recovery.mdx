@@ -1,0 +1,46 @@
+# Recovery and consumable supplies
+
+Open **Settings → Recovery** to control resting and emergency consumables. Recovery belongs to the bot's state machine; a rotation should leave shared recovery actions to it. The [authoring course](/en/developer/rotations/rotation-authoring) explains rotation responsibilities.
+
+## Set up a first recovery session
+
+1. Enable **Recovery**, **Rest for Health** and, for a character with a mana pool, **Rest for Mana**.
+2. Enable **Use Food** and **Use Drinks** for the supplies you carry. Check their minimum level, usable quantity and current cooldown.
+3. Set **Start Health Recovery At** and **Start Mana Recovery At**. Reaching or falling below either enabled threshold can start a rest.
+4. Set **Finish Health Recovery At** and **Finish Mana Recovery At**. A committed rest continues toward these targets; a finish value below its start value is treated as the start value.
+5. Test in a safe area and watch **Eating**, **Drinking** or **Recovering**. Health and mana can recover together. Reaching the targets lets ordinary work resume.
+
+For example, use a 50% health start and a 95% finish. At 45% health, the bot can begin eating; it does not stop the committed session merely because health crosses 50%. Choose values for your character rather than assuming one setting fits every class.
+
+## Defaults and emergency items
+
+Current defaults enable Recovery, natural regeneration, food, drinks, health potions and Healthstones. Mana potions and bandages start disabled. Both finish targets are 95%; health potion, mana potion and Healthstone thresholds are 20%. The bandage threshold is 50%. Saved character settings can override these defaults.
+
+Food start defaults are 50% for Hunter, Priest, Shaman, Mage and Warlock, and 40% for the other listed classes. Listed mana classes start drinking at 20%. Characters without a real mana pool do not use the mana path; a Druid's hidden mana pool can still matter in forms.
+
+**Use Health Potions**, **Use Mana Potions** and **Use Healthstones** have separate thresholds. They require the master Recovery switch and their own toggle. Turning off ordinary **Rest for Health/Mana** does not disable those emergency-item paths. Turning off the master Recovery switch disables them.
+
+Potions use an owned entry from the current item table; there is no guaranteed strongest-item preference. Healthstones use an owned, off-cooldown entry. Availability and game restrictions still apply. Bandaging requires its toggle, usable supplies and an out-of-combat opportunity. **Use Recuperate** is Retail-specific; Cannibalism requires the Undead racial and an eligible corpse.
+
+## Why the bot may wait instead of consuming
+
+**Wait for Natural Regen** lets the bot sit when no usable item is available or another item would save too little time. Turning it off can let ordinary work continue below the target when there is no usable recovery action. Post-resurrection recovery has its own top-off behavior.
+
+**Natural Regen Tolerance** defaults to 50 for ordinary food and drinks. A higher value saves ordinary supplies; a lower value favors speed. Conjured supplies use a speed comparison instead of that cost tolerance. Food and drinks cannot be used while swimming, and ordinary eating/drinking in combat is disabled by default.
+
+The current audited food/drink catalogs cover TBC, Wrath, Cataclysm and MoP. Their shared supply policy classifies usable items relative to the selected vendor tier: ordinary before superior, situational and obsolete. Within a class it prefers smaller stacks, then faster restoration, then conjured items and deterministic ties. This is why the item with the largest raw restore amount may not be consumed first.
+
+ClassicEra, Forever and Retail use the legacy fallback catalog while their catalog entries remain pending. Without an audited tier reference, recovery prefers eligible conjured supplies and otherwise the highest recorded restore amount. Data coverage here describes the consumable selector; check current product support separately.
+
+## Missing-supply checks
+
+- Check master Recovery, the resource toggle and the item's own toggle before changing thresholds.
+- Confirm the item is in the bags, known to the active catalog, usable at this level and appropriate to the resource.
+- Check combat, swimming, an active channel, cooldown and natural regeneration before concluding the item was ignored.
+- Mage conjuring is separately configurable and initially off; its one-time prompt can change that setting. Supply targets use the buying quantities.
+- Set restock quantities in [Buying and repair](/en/using-nexor/vendors). Review [item protections](/en/using-nexor/item-rules) before selling supplies.
+- If behavior remains unexplained, make a short [diagnostic report](/en/using-nexor/diagnostics) with settings and the observed recovery state.
+
+Preference and threshold changes tracked in NexorBot #885/#920 remain separate work; this guide describes the current implementation.
+
+Sources checked on 20 October 2026: [controls](https://github.com/NexorSystem/NexorBot/blob/9f373eaa9bd3d65581fc5ad6c52a417b87c71a89/UI/Frames/BotInterface/Menus/Settings/Recovery.lua), [defaults](https://github.com/NexorSystem/NexorBot/blob/9f373eaa9bd3d65581fc5ad6c52a417b87c71a89/src/data/runtime/default_settings.lua), [recovery selection](https://github.com/NexorSystem/NexorBot/blob/9f373eaa9bd3d65581fc5ad6c52a417b87c71a89/src/api/states/recovery.lua) and [food/drink policy](https://github.com/NexorSystem/NexorBot/blob/9f373eaa9bd3d65581fc5ad6c52a417b87c71a89/src/data/tables/food_drinks.lua).
