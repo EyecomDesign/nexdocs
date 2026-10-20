@@ -1,4 +1,4 @@
----@type RotationEnv
+---@type NX
 local NX = ...
 
 -- This file is the canonical source used by the English authoring course.

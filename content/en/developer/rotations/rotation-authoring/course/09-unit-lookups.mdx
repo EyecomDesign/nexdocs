@@ -1,7 +1,7 @@
 # 9. Create live unit lookups
 
-Keep live unit resolution in small helpers. `NX.Player` is a class description;
-the live player is returned by `NX.UnitManager.Get("player")`:
+Keep live unit resolution in small helpers. Resolve the live player with
+`NX.UnitManager.Get("player")` and the target with the same manager:
 
 ```lua
 local function Player()

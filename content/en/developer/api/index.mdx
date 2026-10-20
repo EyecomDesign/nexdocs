@@ -1,8 +1,9 @@
 # NX API
 
-This section is the inventory of the public objects and functions exposed to a
-Nexor rotation through the `NX` scope. Use the pages below as the searchable
-reference; the rotation course explains how to combine the same contracts.
+Every rotation, profile, quest-step custom-code callback and plugin receives
+the same public `NX` table. Start with [Environment](./environment) for the
+entry header, script return values and event lifetime. The rotation course
+combines the same contracts into a rotation.
 
 ## Public NX objects
 
@@ -12,12 +13,15 @@ reference; the rotation course explains how to combine the same contracts.
 | `NX.SpellBook` | Global and custom spellbooks | [Spellbooks](./spellbooks) |
 | `NX.Item` | Item counts, use, and item policy | [Items, wands, and settings](./items-wands-settings) |
 | `NX.Pet` | Pet state, maintenance, and commands | [Pets](./pets) |
-| `NX.Combat` | Combat service exposed to the rotation environment | [Environment](./environment) |
+| `NX.Combat` | Public combat helpers | [Environment](./environment) |
 | `NX.Movement` | Paths, movement styles, and route ownership | [Movement](./movement) |
 | `NX.Wand` | Framework-owned wand maintenance intent | [Items, wands, and settings](./items-wands-settings) |
 | `NX.Toggles` | Live user toggle values | [Environment](./environment) |
 | `NX.Options` | Live user option values | [Environment](./environment) |
-| `NX.Player` | Player class description, not a live unit wrapper | [Units and targets](./units-and-targets) |
+| `NX.Spell` | Spell functions by ID and spell-object construction | [Spells](./spells) |
+| `NX.Events` | Script-owned event listeners and cleanup | [Environment](./environment#event-ownership-and-cleanup) |
+| `NX.Quest` | Quest state checks in every script kind | [Environment](./environment) |
+| `NX.Distance` | Plain distance functions | [Environment](./environment) |
 
 ## Public NX functions
 
@@ -59,6 +63,11 @@ object:
 | `MultiPullPulse` | Optional multi-target combat policy | [Pulses](./pulses) |
 
 The authoritative declarations are in
-[`Public/RotationAPIs.lua`](https://github.com/NexorSystem/NexorBot/blob/Development/Public/RotationAPIs.lua).
+[`Public/PublicAPIs.lua`](https://github.com/NexorSystem/NexorBot/blob/9f373eaa9bd3d65581fc5ad6c52a417b87c71a89/Public/PublicAPIs.lua).
 The course adds authoring patterns around those declarations; it does not create
 a second runtime API.
+
+This reference follows the merged shared-NX baseline in that revision.
+[Optional imports](./pets) are tracked by [#10](https://github.com/EyecomDesign/nexdocs/issues/10).
+The later namespace regrouping remains in [#12](https://github.com/EyecomDesign/nexdocs/issues/12);
+use the names verified here until its runtime changes are released.

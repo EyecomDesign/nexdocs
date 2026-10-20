@@ -1,7 +1,8 @@
 # Pulses
 
-The required rotation table fields are `EngagementPulse`, `CombatPulse`, and
-`OutOfCombatPulse`. `MultiPullPulse` is optional and falls back to
+The loader requires `Toggles` and `Options` tables (they may be empty), plus
+`EngagementPulse`, `CombatPulse`, and `OutOfCombatPulse` functions.
+`MultiPullPulse` is optional and falls back to
 `CombatPulse`.
 
 `OutOfCombatPulse` is special: return `true` while work remains and `false` when
