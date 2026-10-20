@@ -46,6 +46,30 @@ See the in-site guides for the full flow:
 - [Creating a new page](https://docs.nexor.app/en/guides/creating-a-page)
 - [Updating an existing page](https://docs.nexor.app/en/guides/editing-a-page)
 
+## Public content safety
+
+Run `pnpm check:public-content` before committing a page or a textual download.
+The same check runs before both production build scripts, in pull-request CI and
+before deployment. Its tests use Node's built-in runner:
+`pnpm test:public-content`.
+
+The check scans `content/en/` and textual files under `public/`. It flags
+credential assignments and access tables, URLs with credentials, literal host
+addresses, operator logins/home paths, private-key blocks and instructions to put
+replacement credentials into public pages. Explicit placeholders, environment
+references, loopback/bind addresses and documentation example addresses are
+accepted. Publication symlinks require review instead of being silently followed.
+
+A finding reports only a relative file, line and rule. Inspect the file locally;
+do not paste the matched value into a public issue, log or screenshot. Replace
+operational details with a placeholder or the approved private access procedure.
+
+This is a focused content-policy check, not a complete secret detector. It does
+not inspect Git history, binary downloads, compressed search fragments or the
+live deployment. CI runs after a push and cannot undo a credential already
+published in Git. If exposure occurs, involve the authorized operator for private
+assessment/rotation and verify rebuilt search and deployed output separately.
+
 ## Deployment
 
 `.github/workflows/deploy.yml` runs on every push to `main`:

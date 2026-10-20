@@ -5,13 +5,15 @@
   "scripts": {
     "dev": "next dev",
     "start": "node scripts/start.mjs",
-    "build": "next build",
-    "build:cf": "next build && pagefind --site .next/server/app --output-path public/_pagefind && opennextjs-cloudflare build --skipNextBuild",
+    "build": "node scripts/check-public-content.mjs && next build",
+    "build:cf": "node scripts/check-public-content.mjs && next build && pagefind --site .next/server/app --output-path public/_pagefind && opennextjs-cloudflare build --skipNextBuild",
     "preview": "pnpm run build:cf && opennextjs-cloudflare preview",
     "deploy": "pnpm run build:cf && opennextjs-cloudflare deploy",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "check:public-content": "node scripts/check-public-content.mjs",
+    "test:public-content": "node --test scripts/check-public-content.test.mjs"
   },
   "dependencies": {
     "@opennextjs/cloudflare": "^1.19.11",

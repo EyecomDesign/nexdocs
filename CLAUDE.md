@@ -35,6 +35,19 @@ add or maintain German pages unless English-only support is explicitly reversed.
 3. Commit + push to `main`
 4. GitHub Actions deploys in ~2 min — watch `.github/workflows/deploy.yml`
 
+## Public-content boundary
+
+Published pages and downloads must not contain operational credential values,
+private operator identities, origin inventory or instructions to republish
+replacement credentials. Use explicit placeholders and the access-request
+procedure in the public administrator guides. Agree on a private destination
+with the service owner before sharing environment-specific instructions.
+
+Run `pnpm check:public-content` before committing; `pnpm test:public-content`
+checks the policy with harmless fixtures. Keep diagnostics redacted. The gate
+covers published source/text downloads; it does not prove a live credential was
+revoked, erase history or certify a deployment.
+
 ## Deploy pipeline
 
 | | |
