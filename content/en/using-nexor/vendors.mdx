@@ -1,0 +1,43 @@
+# Buying, repair and reusable settings
+
+Open **Settings → Buying**. Opening the page shows a preview; it does not purchase items. **Automatic buying** controls ordinary trips. **Restock now** requests a real visit and can move the character, even when automatic buying is off. Category switches, Never buy rules and the money reserve still apply.
+
+## Configure a supply target
+
+1. In **Food** or **Drinks**, enable the category, then set **Restock to** and **Start trip at**. A target of zero disables buying that category; the trip threshold is kept below the target.
+2. For example, choose Restock to 20 and Start trip at 5. At five remaining or fewer, an automatic trip can be requested. A useful vendor encountered on another service trip can top up before that point.
+3. Review **Money reserve** in gold, silver and copper. Buying stops before spending below that floor; the default is zero. Prices and availability are confirmed at the vendor.
+4. Check **Reagents & custom items** and **Never buy**. The latter can exclude an otherwise eligible item. Pet-food buying requires accepted food for the active pet; ammunition settings depend on the character and weapon.
+5. Leave **Use the profile's vendor** off for automatic selection, or enable it when your loaded profile contains a suitable service NPC. A recorded NPC still needs an accessible route and the required stock.
+
+Food, drink and pet-food targets default to 20, with a trip threshold of zero. Food/drink tier selection defaults to the second-best usable vendor tier. Saved settings can differ. [Recovery](/en/using-nexor/recovery) explains how the active catalog classifies supplies already in your bags.
+
+## Run and check one visit
+
+With room in your bags and enough money above the reserve, request **Restock now**. Watch the buying state and bag quantities. **Last restock** and the supply-row reasons help distinguish purchased, already stocked, excluded and unavailable supplies. A request is not proof that the desired item was sold by that merchant.
+
+If nothing is bought, check the enabled category, target, Never buy list, reserve, bag space, usable item level and merchant stock. Missing vendors/routes and unavailable items cannot be fixed by raising the target. Keep a small manual supply while investigating; avoid repeatedly forcing the same failed trip.
+
+Smart Town can group useful service stops around an automatic visit and resumes ordinary work afterward. It compares available services and routes; it cannot guarantee a vendor or route that is absent from the current profile/world data. Buying, selling, repairing and mailing retain their own transaction rules.
+
+## Repair
+
+Open **Settings → Vendor Management**. Enable **Auto Repair**, select **Repair on Lowest Item Durability** or **Repair on Average Durability**, and set **Repair Percentage**. **Use Profile NPC** chooses profile repair data; **Trigger Repair** requests a visit immediately. Leave **Ignore Combat while Repairing** off unless you deliberately want that behavior.
+
+For example, set a repair threshold suitable for your run, damage an expendable piece through ordinary play, and observe a repair visit when the chosen durability measure is below the threshold. Confirm durability increases and check the money spent. A merchant without repair service or insufficient funds can prevent completion.
+
+Review [Sell, Keep and Delete rules](/en/using-nexor/item-rules) before combining a supply visit with a sale.
+
+## Save the settings for reuse
+
+Open **Home → Import-Export Settings**:
+
+- **Save New** asks for a name and saves the current settings, for example `Safe supply setup`.
+- Select an existing entry and choose **Overwrite** to replace that preset with the current settings.
+- Select an entry and choose **Load** to apply it. Reopen the settings pages and confirm the intended values before starting.
+
+Presets live under `scripts/Nexor_User/Settings/Saved Settings`. They store application settings; a world profile separately describes locations, units and services. Loading one is not a substitute for loading the other.
+
+This guide is based on current UI/runtime source. The in-game buying acceptance tracked in NexorBot #947 remains a separate validation task.
+
+Sources checked on 20 October 2026: [Buying UI](https://github.com/NexorSystem/NexorBot/blob/9f373eaa9bd3d65581fc5ad6c52a417b87c71a89/UI/Frames/BotInterface/Menus/Settings/Buying.lua), [buy handler](https://github.com/NexorSystem/NexorBot/blob/9f373eaa9bd3d65581fc5ad6c52a417b87c71a89/src/machines/status/buy.lua), [Smart Town](https://github.com/NexorSystem/NexorBot/blob/9f373eaa9bd3d65581fc5ad6c52a417b87c71a89/src/machines/smart_town.lua) and [settings manager](https://github.com/NexorSystem/NexorBot/blob/9f373eaa9bd3d65581fc5ad6c52a417b87c71a89/UI/Frames/BotInterface/Menus/Home/Import-Export%20Settings.lua).
