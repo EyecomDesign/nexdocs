@@ -5,9 +5,13 @@
 
 Use `EnumFriends`, `EnumEnemies`, or `EnumActiveEnemies` for bounded selection.
 The callback returns `true` to stop. `CreateCustomUnit(token, callback)` is the
-escape hatch; its callback must return a wrapper, never `nil`.
+selector for an author-chosen target; its callback must return a wrapper, never
+`nil`. Use `NX.UnitManager.Get("none")` when nobody matches. Ordinary unit
+wrappers refresh on method calls; a named custom selector caches its pick per
+tick. Define its inputs above it, because selection can also run at file load.
 
 `Spell:SetTarget` accepts a wrapper, token, resolver function, or selector object.
 `Spell:Cast(target)` is a one-off full-gate cast. A resolver returning `nil` is a
-no-op. Harmful predicates should explicitly check `unit:IsEnemy()`; mechanical
-validity and range remain in the spell gate.
+no-op. Spell gates own enemy/friend validity as well as mechanical range checks;
+do not repeat `IsEnemy()` inside each spell condition. A custom unit may still
+check it while choosing who should receive the spell.

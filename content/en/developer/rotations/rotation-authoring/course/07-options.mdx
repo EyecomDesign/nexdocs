@@ -1,23 +1,39 @@
-# 7. Declare numeric options
+# 7. Declare options
 
-Use `Options` for values rather than on/off policy. A fractional slider needs
-both `Step` and `Precision` so the UI and runtime use the same increment:
+Options express a player choice, such as how much health the rotation may spend.
+Put each option **inside** a named section; a flat list of section headers and
+widgets does not satisfy the lookup contract:
 
 ```lua
 Options = {
     {
-        Name = "Healthstone Percent",
-        Type = "Slider",
-        Min = 1,
-        Max = 100,
-        Step = 0.1,
-        Precision = 0.1,
-        Default = 35.0,
+        Name = "Mana and health",
+        {
+            Name = "Minimum Health Percent",
+            Type = "Slider",
+            Min = 1,
+            Max = 100,
+            Default = 35,
+            Description = "Spend health only above this percent.",
+        },
     },
 }
 ```
 
-Read the current value through `NX.Options[name]` at decision time. `Precision`
-is the snap increment; it is not a display-only decimal setting.
+Read `NX.Options["Minimum Health Percent"]` directly in the condition. The
+framework returns the declared default until the player changes it; do not hide
+an undeclared or misspelled option with `tonumber` or a fallback constant.
+
+For resource percentages, use whole numbers from 1 to 100. Do not write
+`Precision`. Step 1 is implicit; a decimal default such as `1.5` infers step 0.1.
+For another increment, write `Step`, for example `Step = 0.5`. A step-5 slider
+with `Min = 1` and `Max = 100` has stops 1, 5, 10, …, 100. Defaults must be on a
+stop; the live value is snapped to the same grid.
+
+Use a checkbox for one item or spell, and a dropdown for one choice from a list.
+Keep descriptions short and name the player's decision. Append new sections
+rather than shifting saved section positions; the imported Pet Module section
+belongs last. The [settings reference](../../../api/items-wands-settings) has
+more examples.
 
 Next: [load the global spellbook](./08-spellbook).

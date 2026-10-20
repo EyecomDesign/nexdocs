@@ -1,15 +1,39 @@
 ---@type NX
 local NX = ...
 
--- Warlock TBC demonstration. Retreat is opt-in and runs once per toggle-on.
--- Turn Retreat off and wait for cleanup before replacing this rotation.
+-- ============================================================
+-- Spell definitions
+-- ============================================================
+local spells = NX.SpellBook:GetGlobal()
+
+local Corruption   = spells.Corruption
+local CurseOfAgony = spells.CurseOfAgony
+local ShadowBolt   = spells.ShadowBolt
+
+-- ============================================================
+-- Constants
+-- ============================================================
 local DISTANCES = { 8, 12, 16 }
 local ANGLES = { 0, 30, -30, 60, -60, 90, -90 }
 local REQUEST_SECONDS, ROUTE_SECONDS, TOTAL_SECONDS = 5, 8, 20
 local PULSE_LEASE, ARRIVAL_RANGE = 0.5, 1.5
+
+-- ============================================================
+-- State
+-- ============================================================
+-- Movement ownership is global: cancel and observe cleanup before replacing.
 local generation, latched, pulseAt = 0, false, GetTime()
 local current, inFlight, watchdog
 
+-- ============================================================
+-- Unit definitions
+-- ============================================================
+local Player = NX.UnitManager.Get("player")
+local Target = NX.UnitManager.Get("target")
+
+-- ============================================================
+-- Shared functions
+-- ============================================================
 local function Finite(value)
     return type(value) == "number" and value == value and math.abs(value) < math.huge
 end
@@ -25,8 +49,7 @@ local function DistanceSquared(a, b)
 end
 
 local function Context()
-    local player = NX.UnitManager.Get("player")
-    local target = NX.UnitManager.Get("target")
+    local player, target = Player, Target
     if not player or not player:IsValid() or player:IsDeadOrGhost()
         or not target or not target:IsValid() or not target:IsEnemy() or target:IsDead()
     then return end
@@ -59,7 +82,7 @@ local function Finish(reason)
     if not run then return end
     current = nil
     generation = generation + 1 -- Invalidate before stopping keys or navigation.
-    if NX.Toggles["Retreat"] ~= true then latched = false end
+    if not NX.Toggles["Retreat"] then latched = false end
     if watchdog then watchdog:Cancel(); watchdog = nil end
     NX.Movement.StopMovement()
     NX.Movement.SetRotationMovementOverride(false)
@@ -80,7 +103,7 @@ local function Check(now)
     local run = current
     if not run then return end
     if now - pulseAt > PULSE_LEASE then Finish("pulse-gap"); return end
-    if NX.Toggles["Retreat"] ~= true then Finish("cancelled"); return end
+    if not NX.Toggles["Retreat"] then Finish("cancelled"); return end
     local context = Context()
     if not context then Finish("target-or-player-lost"); return end
     if context.guid ~= run.guid then Finish("target-changed"); return end
@@ -121,8 +144,8 @@ local function TickRetreat(allowStart)
     -- Test the old lease before renewing it, including on resume after a pause.
     if current and now - pulseAt > PULSE_LEASE then Finish("pulse-gap") end
     pulseAt = now
-    if NX.Toggles["Retreat"] ~= true then latched = false end
-    if not current and allowStart and NX.Toggles["Retreat"] == true and not latched and not inFlight then
+    if not NX.Toggles["Retreat"] then latched = false end
+    if not current and allowStart and NX.Toggles["Retreat"] and not latched and not inFlight then
         local context = Context()
         if not context then return end
         latched = true
@@ -163,33 +186,50 @@ local function TickRetreat(allowStart)
     run.phase = "ready" -- Try the next candidate on another pulse, never recurse.
 end
 
--- A real, small combat priority continues while the request is pending/active.
-local spells = NX.SpellBook:GetGlobal()
-local Corruption, CurseOfAgony, ShadowBolt = spells.Corruption, spells.CurseOfAgony, spells.ShadowBolt
-local function Target() return NX.UnitManager.Get("target") end
-for _, spell in pairs({ Corruption, CurseOfAgony }) do
-    spell:CastableIf(function()
-        local target = Target()
-        return NX.Toggles["Damage"] and target and not target:HasMyDebuff(spell)
-    end):SetTarget(Target)
-end
-if ShadowBolt then
-    ShadowBolt:CastableIf(function() return NX.Toggles["Damage"] end):SetTarget(Target)
-end
-local function CombatPulse()
-    TickRetreat(true) -- Never return early just because movement is pending.
-    if Corruption and Corruption:Execute() then return end
-    if CurseOfAgony and CurseOfAgony:Execute() then return end
-    if ShadowBolt and ShadowBolt:Execute() then return end
-end
+-- ============================================================
+-- Spell conditions
+-- ============================================================
+Corruption:CastableIf(function()
+    return NX.Toggles["Damage"] and not Target:HasMyDebuff(Corruption)
+end):SetTarget(Target)
 
-return {
+CurseOfAgony:CastableIf(function()
+    return NX.Toggles["Damage"] and not Target:HasMyDebuff(CurseOfAgony)
+end):SetTarget(Target)
+
+ShadowBolt:CastableIf(function()
+    return NX.Toggles["Damage"]
+end):SetTarget(Target)
+
+-- ============================================================
+-- Rotation
+-- ============================================================
+local Rotation = {
     Toggles = {
-        ["Damage"] = { Description = "Use the small Warlock damage priority", Default = true },
-        ["Retreat"] = { Description = "Try one bounded retreat; off cancels and rearms", Default = false },
+        ["Damage"] = { Description = "Use damage priorities", Default = true },
+        ["Retreat"] = { Description = "Try one retreat; off cancels and rearms", Default = false },
     },
     Options = {},
-    OutOfCombatPulse = function() TickRetreat(false); return false end,
-    EngagementPulse = CombatPulse,
-    CombatPulse = CombatPulse,
+    OutOfCombatPulse = function()
+        TickRetreat(false)
+        return false
+    end,
+    EngagementPulse = function()
+        TickRetreat(true)
+
+        if Corruption:Execute() then return true end
+        if CurseOfAgony:Execute() then return true end
+        if ShadowBolt:Execute() then return true end
+    end,
+    CombatPulse = function()
+        NX.Wand.Maintain()
+
+        TickRetreat(true)
+
+        if Corruption:Execute() then return true end
+        if CurseOfAgony:Execute() then return true end
+        if ShadowBolt:Execute() then return true end
+    end,
 }
+
+return Rotation

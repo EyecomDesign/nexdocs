@@ -1,22 +1,41 @@
-# 20. Check item availability
+# 20. Check Soulstone availability
 
-Healthstone IDs are item IDs, not spell IDs. Keep the supported list local and
-use the public item count helper:
+The item example is now the Warlock's Soulstone. The framework's Recovery and
+combat recovery already own **using** Healthstones for every class, including
+their setting and health threshold. Do not duplicate that action or its threshold
+in the rotation. Creating a Healthstone remains Warlock spell policy, if the
+author chooses to add it; the bot does not create one for the rotation.
+
+Read shared game data through its public path rather than maintaining local ID
+lists. Declare the constant before the Shared functions section:
 
 ```lua
-local HEALTHSTONE_ITEM_IDS = { 5512, 5511, 5510, 5509 }
+local SOULSTONES = NX.Tables.Items.Soulstones
 
-local function HasHealthstone()
-    for _, itemID in ipairs(HEALTHSTONE_ITEM_IDS) do
-        if NX.Item.GetItemCount(itemID) > 0 then
-            return true
+local function FindSoulstoneInBags()
+    for index = #SOULSTONES, 1, -1 do
+        local soulstone = SOULSTONES[index]
+        if NX.Item.GetItemCount(soulstone.itemID) > 0 then
+            return soulstone
         end
+    end
+    return nil
+end
+
+local function HasAnySoulstoneBuff()
+    for _, soulstone in ipairs(SOULSTONES) do
+        if Player:HasBuff(soulstone.spellID) then return true end
     end
     return false
 end
 ```
 
-Do not read internal item tables from the rotation. Catalog spells such as
-`CreateHealthstone` remain spell handles and are handled separately.
+`Soulstones` is an ordered list, weakest first, so the reverse scan chooses the
+strongest owned stone. `itemID` is used for inventory/use, and `spellID` for its
+effect's buff and cooldown. `NX.Tables.Items.Healthstones` is also public, but is
+an unordered table keyed by item ID; it is useful when deciding whether a
+Warlock needs to create a Healthstone.
 
-Next: [use or create the item](./21-healthstone-use).
+The historical lesson URL is retained so existing links keep working.
+
+Next: [create and use the Soulstone](./21-healthstone-use).

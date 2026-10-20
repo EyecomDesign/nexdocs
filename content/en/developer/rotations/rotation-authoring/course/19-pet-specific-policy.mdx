@@ -1,27 +1,24 @@
 # 19. Add class-specific pet policy
 
-Class-specific decisions remain in the rotation. For a Warlock, Health Funnel
-can use live player and pet state while the Pet Module remains generic:
+The Warlock rotation chooses when Health Funnel may spend the player's health.
+Use the current option values and the refreshing unit locals:
 
 ```lua
 HealthFunnel:CastableIf(function()
-    local pet = NX.UnitManager.Get("pet")
-    local player = NX.UnitManager.Get("player")
     return NX.Toggles["Pet"]
         and NX.Pet.IsPetActive()
-        and (pet:GetHP() or 100) < 50
-        and (player:GetHP() or 100) > 40
-end)
-HealthFunnel:SetTarget(function()
-    return NX.UnitManager.Get("pet")
-end)
+        and Pet:GetHP() < NX.Options["Health Funnel Pet Health Percent"]
+        and Player:GetHP() > NX.Options["Minimum Health Percent"]
+end):SetTarget(Pet)
 ```
 
-The Warlock rotation owns the choice to spend health and mana. It should not
-ask a generic pet helper to make that class decision.
+Put the two sliders inside the Mana and health section, with defaults 50 and 35,
+respectively. The framework returns the declared defaults and numeric health;
+`or 100` and fallback thresholds would hide authoring mistakes.
 
-This checkpoint contains the pet policy:
+The imported module still owns generic pet behavior. This loadable checkpoint
+contains the actual slider declarations, direct reads and final module section:
 
 <CodeFile path="stages/05-pets.lua" language="lua" />
 
-Next: [check item availability](./20-healthstone-availability).
+Next: [check Soulstone availability](./20-healthstone-availability).

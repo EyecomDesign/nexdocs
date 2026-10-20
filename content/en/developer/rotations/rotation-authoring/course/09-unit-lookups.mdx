@@ -1,23 +1,22 @@
-# 9. Create live unit lookups
+# 9. Define live unit locals
 
-Keep live unit resolution in small helpers. Resolve the live player with
-`NX.UnitManager.Get("player")` and the target with the same manager:
+Resolve standard units once in the Unit definitions section:
 
 ```lua
-local function Player()
-    return NX.UnitManager.Get("player")
-end
-
-local function Target()
-    return NX.UnitManager.Get("target")
-end
-
-local function Pet()
-    return NX.UnitManager.Get("pet")
-end
+local Player = NX.UnitManager.Get("player")
+local Target = NX.UnitManager.Get("target")
+local Pet    = NX.UnitManager.Get("pet")
 ```
 
-Call these helpers when a pulse or predicate needs current state. Do not hold a
-live wrapper as if it were a permanent snapshot.
+These are self-refreshing wrappers. `Target` still follows the game's current
+target after it changes, and a missing target or pet answers through the empty
+`none` unit. Do not wrap each lookup in a `Player()` or `Target()` helper.
+A position or health number read from a wrapper is a snapshot; read the method
+again when a decision needs the current value.
+
+Define a custom unit when the rotation selects a target itself. Its selector
+returns a unit or `NX.UnitManager.Get("none")`, never `nil`. Define constants
+and ordinary units above it, because the selector can run during file load.
+Lesson 23 builds the tutorial's bounded DoT selectors.
 
 Next: [define the pulse contract](./10-pulse-contract).

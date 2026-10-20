@@ -1,29 +1,34 @@
 ---@type NX
 local NX = ...
 
+-- ============================================================
+-- Spell definitions
+-- ============================================================
 local spells = NX.SpellBook:GetGlobal()
-local Corruption = spells.Corruption
+
+local Corruption   = spells.Corruption
 local CurseOfAgony = spells.CurseOfAgony
 
-local function Target()
-    return NX.UnitManager.Get("target")
-end
+-- ============================================================
+-- Unit definitions
+-- ============================================================
+local Target = NX.UnitManager.Get("target")
 
-local function AttachDot(spell)
-    if not spell then return end
-    spell:CastableIf(function()
-        local target = Target()
-        return NX.Toggles["Damage"] ~= false
-            and target:IsEnemy()
-            and not target:HasMyDebuff(spell)
-    end)
-    spell:SetTarget(Target)
-end
+-- ============================================================
+-- Spell conditions
+-- ============================================================
+Corruption:CastableIf(function()
+    return NX.Toggles["Damage"] and not Target:HasMyDebuff(Corruption)
+end):SetTarget(Target)
 
-AttachDot(Corruption)
-AttachDot(CurseOfAgony)
+CurseOfAgony:CastableIf(function()
+    return NX.Toggles["Damage"] and not Target:HasMyDebuff(CurseOfAgony)
+end):SetTarget(Target)
 
-return {
+-- ============================================================
+-- Rotation
+-- ============================================================
+local Rotation = {
     Toggles = {
         ["Damage"] = { Description = "Use damage priorities", Default = true },
     },
@@ -32,13 +37,15 @@ return {
         return false
     end,
     EngagementPulse = function()
-        if Corruption and Corruption:Execute() then return true end
-        if CurseOfAgony and CurseOfAgony:Execute() then return true end
-        return false
+        if Corruption:Execute() then return true end
+        if CurseOfAgony:Execute() then return true end
     end,
     CombatPulse = function()
-        if Corruption and Corruption:Execute() then return true end
-        if CurseOfAgony and CurseOfAgony:Execute() then return true end
-        return false
+        NX.Wand.Maintain()
+
+        if Corruption:Execute() then return true end
+        if CurseOfAgony:Execute() then return true end
     end,
 }
+
+return Rotation

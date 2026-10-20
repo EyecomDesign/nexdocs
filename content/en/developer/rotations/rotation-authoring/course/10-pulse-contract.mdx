@@ -1,19 +1,22 @@
 # 10. Define the pulse contract
 
-The loader calls named fields on the returned table. A rotation must provide
-`EngagementPulse`, `CombatPulse`, and `OutOfCombatPulse`; `MultiPullPulse` is
-optional:
+The returned rotation requires `Toggles` and `Options` tables and three pulse
+functions. `MultiPullPulse` is optional and falls back to `CombatPulse`:
 
 ```lua
 local Rotation = {
-    EngagementPulse = function() return false end,
-    CombatPulse = function() return false end,
+    Toggles = {},
+    Options = {},
     OutOfCombatPulse = function() return false end,
-    MultiPullPulse = function() return false end,
+    EngagementPulse = function() end,
+    CombatPulse = function() end,
 }
 ```
 
-`MultiPullPulse` falls back to `CombatPulse` when it is absent. Define the
-callbacks before adding policy so the file has a known loading boundary.
+Only `OutOfCombatPulse` has a result the engine reads: return `true` for work
+that acted and end with `return false`. Engagement, combat and multi-pull have
+no final return. An early `if Spell:Execute() then return true end` still ends
+one pulse after its first successful action; its boolean is not an engine
+completion signal.
 
 Next: [implement the out-of-combat pulse](./11-out-of-combat-pulse).

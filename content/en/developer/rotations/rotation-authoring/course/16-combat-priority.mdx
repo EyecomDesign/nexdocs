@@ -1,25 +1,24 @@
 # 16. Build the combat priority
 
-Only after spell policy and target ownership are attached should the pulse state
-the action order. `Execute()` performs the full gate:
+Once policy and targets are attached, the pulse states the action order:
 
 ```lua
 CombatPulse = function()
-    if Corruption:Execute() then
-        return true
-    end
-    if ShadowBolt:Execute() then
-        return true
-    end
-    return false
+    NX.Wand.Maintain()
+
+    if Corruption:Execute() then return true end
+    if CurseOfAgony:Execute() then return true end
 end
 ```
 
-Order the most important action first and stop after the first successful
-action. Do not move `CastableIf` logic into this ladder and do not repeat
-cooldown, range, or usability checks here.
+Keep the early returns on one line and group related actions with blank lines.
+Do not repeat a spell's condition or mechanical gates in the pulse. There is no
+final return because the engine discards the combat result.
 
-This checkpoint includes the attached damage spells:
+The checked Warlock catalog supplies spell objects even before a rank is learned.
+A misspelled/missing catalog key should fail clearly; do not hide it with nil
+checks or an `Execute(spell)` wrapper. This checkpoint contains the two attached
+DoTs, their declared Damage toggle and required option table:
 
 <CodeFile path="stages/04-spells.lua" language="lua" />
 

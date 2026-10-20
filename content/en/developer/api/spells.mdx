@@ -15,6 +15,9 @@ gates. Do not repeat those checks in a predicate. `CastableIf` can be omitted fo
 a normal always-policy spell. `Cast(target)` is the one-off full-gate escape hatch
 when the target changes per call.
 
-Use catalog names and `:IsKnown()` only for an availability branch. Optional
-handles must be guarded. Intrinsic options such as `isPetSpell`, `ignoreFacing`,
-and `allowDead` belong in the catalog.
+Check the class/flavor catalog before declaring named handles. A catalog spell
+object exists before the character learns a rank; normal Execute gates handle
+that case. Do not hide a missing catalog key with a nil guard or an Execute
+wrapper. Intrinsic options such as `isPetSpell`, `ignoreFacing` and `allowDead`
+belong in the catalog. Write one direct condition/target attachment per spell;
+a later attachment overwrites the first without a warning.

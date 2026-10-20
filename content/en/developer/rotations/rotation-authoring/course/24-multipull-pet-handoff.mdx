@@ -1,27 +1,19 @@
-# 24. Define the multipull pet handoff
+# 24. Respect pet ownership during multipull
 
-Pet commands at a multipull transition are edge-triggered. Send them once when
-gathering starts and once when it ends:
+This tutorial imports PetModule, so it does not send its own Passive,
+Defensive or Aggressive orders, or keep a gather hold/restore state. The module
+owns stance; a temporary `CommandPetDefensive()` would overwrite the player's
+chosen stance after the first gather.
 
-```lua
-local petHeldForGather = false
+The explicit multi-pull pulse in lesson 25 casts its DoTs without calling
+`PetModule.Assist()`. That does not promise that a pet already fighting will be
+called back. Automatic gather recall was discussed and dropped; it is not a
+shipped behavior or a required rotation wrapper.
 
-local function HoldPetForGather()
-    if petHeldForGather then return end
-    NX.Pet.CommandPetStopAttack()
-    NX.Pet.CommandPetPassive()
-    NX.Pet.CommandPetFollow()
-    petHeldForGather = true
-end
-
-local function RestorePetAfterGather()
-    if not petHeldForGather then return end
-    NX.Pet.CommandPetDefensive()
-    petHeldForGather = false
-end
-```
-
-Do not issue these commands on every pulse. The handoff owns only the temporary
-pet state; target selection and DoT policy remain separate.
+An author choosing manual pet management instead can use the basic `NX.Pet`
+commands without importing the module. That is a separate choice, not an action
+to add to this imported tutorial. The [pet reference](../../../api/pets) explains
+the two surfaces and the runtime permissions; the confirmed house rule for an
+imported rotation is to leave stance orders with the module.
 
 Next: [wire the multipull pulse](./25-multipull-pulse).

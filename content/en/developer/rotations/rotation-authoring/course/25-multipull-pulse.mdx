@@ -1,27 +1,18 @@
 # 25. Wire the multipull pulse
 
-The pulse composes the bounded selection, the temporary pet handoff, and the
-rotation’s instant-DoT policy:
+The custom units already own target selection and their spells already own
+Damage policy. The pulse simply states the two actions:
 
 ```lua
 MultiPullPulse = function()
-    if NX.Toggles["Pause"] or NX.Toggles["Multipull"] == false then
-        RestorePetAfterGather()
-        return false
-    end
-
-    HoldPetForGather()
-    local targets = SelectMultipullTargets()
-    if ApplyInstantDots(targets) then
-        return true
-    end
-
-    RestorePetAfterGather()
-    return false
+    if Corruption:Execute() then return true end
+    if CurseOfAgony:Execute() then return true end
 end
 ```
 
-The normal engine still owns navigation and combat state. The multipull pulse
-only declares its target cap, temporary pet policy, and action result.
+No separate Multipull toggle switches this pulse. The bot's gathering setting
+owns whether it gathers several enemies. Without `MultiPullPulse`, the framework
+runs `CombatPulse` instead; keep this optional override only when its action
+order should differ. There is no final return or pet gather wrapper.
 
 Next: [review the complete source](./26-complete-source).

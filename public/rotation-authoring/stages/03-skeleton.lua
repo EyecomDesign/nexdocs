@@ -1,17 +1,19 @@
 ---@type NX
 local NX = ...
 
--- The first loadable checkpoint: all required pulses, no policy yet.
-return {
+-- ============================================================
+-- Rotation
+-- ============================================================
+local Rotation = {
     Toggles = {},
     Options = {},
     OutOfCombatPulse = function()
         return false
     end,
     EngagementPulse = function()
-        return false
     end,
     CombatPulse = function()
-        return false
     end,
 }
+
+return Rotation

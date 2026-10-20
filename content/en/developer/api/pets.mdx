@@ -31,6 +31,12 @@ manual rotation can branch on `NX.Pet.GetPetState() == "missing"` and choose its
 own summon spell. Send manual commands on state changes, rather than repeating
 them every pulse. An imported rotation may still use these basic functions.
 
+Runtime access and authoring policy are separate: the confirmed course rule is
+that a rotation importing PetModule does not issue its own stance orders. The
+tutorial leaves those orders to the module rather than adding a gather
+hold/restore wrapper. Choosing fully manual pet management remains an author's
+choice; the course does not silently add or remove an import.
+
 ## Imported PetModule API
 
 The top-level import activates the module even if neither wrapper is called.
