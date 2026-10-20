@@ -1,0 +1,204 @@
+# Your First Run
+
+Install the [current account download](/en/introduction/getting-started/download-and-install/nexor)
+first, then use this guide to select content and verify one small session.
+The controls below follow the inspected current runtime. A maintainer-confirmed
+support matrix and a fresh-user client walkthrough are still pending
+[#15](https://github.com/EyecomDesign/nexdocs/issues/15) and
+[#17](https://github.com/EyecomDesign/nexdocs/issues/17); this page does not
+certify every game flavor, unlocker or distributed product.
+
+## Launch and finish account loading
+
+1. Sign in to the [Nexor website](https://nexor.app/) with the account whose
+   license and product choices you intend to use. Confirm the current client
+   and unlocker requirements with official support.
+2. Start the installed loader through your unlocker on the intended character.
+   In personal-package mode it reads the included key file automatically.
+   If your deployed site instead displays a Connection Token and instructs
+   manual entry, follow that mode's instructions. Do not extract hidden tokens
+   or put account credentials into a profile.
+3. If the client shows **Select Products**, review the products offered and
+   choose **Load Products**. The inspected client has this separate selection
+   flow; do not assume a saved website checkmark proves the product loaded.
+   [Product loading](/en/introduction/getting-started/product-loading) explains
+   the distinction and current integration limits.
+4. Wait for loading to finish. Click the Nexor minimap button to show/hide the
+   main interface, and check for startup errors. If the base license is
+   unavailable, or the session cannot start,
+   use [Account and Sessions](/en/introduction/getting-started/account-and-sessions)
+   before retrying. A second startup cannot take a license already held by
+   another bot merely because that bot is paused.
+
+For a first test, leave **Settings → General → Auto Start** off and start
+manually after checking the loaded selections.
+
+## Select the work you want
+
+| Selection | Purpose | Where to load it |
+| --- | --- | --- |
+| Rotation | Class abilities, openers and out-of-combat actions implemented by that rotation. | **Rotation → Library** |
+| Profile | A world route or one quest's phases. | **Profiles → Library** |
+| Routine | A task sequence that can load profiles, run quests or call other routines. | **Tasks → Library**, titled **Routines Library** |
+| Rotation Mode | Runs the selected combat rotation while you control the character's movement/targets. | **Rotation → General → Load Rotation Mode** |
+
+For world automation, load an appropriate rotation and **one profile or one
+routine**. A routine can load its own profiles while it runs. Loading a routine
+clears a directly selected profile; selecting a profile directly clears the
+active routine. Loading Rotation Mode clears the profile/routine selection.
+A file selected in the Profile Tool editor is only a draft until saved and
+loaded from the Library.
+
+### Load a rotation
+
+1. Open **Rotation → Library** and choose a rotation for your class, build,
+   talents and intended game flavor from the files actually available to you.
+2. **Server Files** lists delivered content when available; **Local Files**
+   reads your local rotation files. Use **Refresh** if the list is stale. An
+   empty list is not proof that every repository example is included with your
+   license; check the product loaded at startup and the author's requirements.
+3. Load the file and check the rotation's name on its floating toggle frame.
+   Open **Rotation → Options**, or the frame's gear button, to review the
+   rotation's own options. Make sure its **Pause / resume this rotation**
+   control is in the running state before expecting spells.
+4. In **Rotation → General**, choose **Use Bot Rotation** for this path.
+   The alternative addon integrations are separate modes; this walkthrough
+   does not establish their compatibility with your installation.
+
+The rotation's options and toggles depend on its author. Do not copy another
+class's values or assume loading it supplies reagents, food or equipment.
+
+### Choose one profile or routine
+
+For a profile, open **Profiles → Library**, choose **Server Files** or
+**Local Files**, and load a file intended for this character and location.
+Check any level, faction, prerequisite quest and profession requirements from
+its author. If no appropriate file is delivered, use the
+[Profile Tool](/en/developer/profiles/profile-tool) to create a small local route
+or follow a [flavor-qualified example](/en/developer/profiles/grinding-gathering);
+do not substitute an unrelated flavor's route.
+
+For a routine, open **Tasks → Library** and load the intended routine instead.
+Open **Tasks → Overview** to inspect its tasks before starting. A routine that
+references missing local profiles/children cannot supply those files itself.
+The [routine reference](/en/developer/tasks/task-routines) explains conditions
+and the [parent/child practice](/en/developer/tasks/nested-routines) gives a
+small profile-free task-control example; neither is a promise of a bundled
+leveling pack.
+
+The QuickMenu shows a **PROFILE** name, Type/SubType, point count and logic
+when applicable. A routine also shows a **TASK** progress row; Task Overview
+shows its active task and any nested breadcrumb. A routine can change the
+displayed profile name as it loads world work. Check the rotation name
+separately: the PROFILE row is not the selected rotation's identity.
+
+## Prepare minimum supplies
+
+| Check | Why it matters |
+| --- | --- |
+| Usable gear, repaired equipment and some free bag space | Combat and loot cannot succeed just because a route loads. |
+| Suitable food; drink for a mana user; desired recovery items | Recovery settings choose what is used. Use the [Recovery guide](/en/using-nexor/recovery) to check supplies and thresholds. |
+| Any ammunition, reagents or class items required by the rotation | A loaded rotation does not create its required items. |
+| Learned profession/rank and any required gathering tool | Gather once manually on this character before testing a gathering route. |
+| Reachable service candidates and enough money for enabled buying/repair | Review [vendor controls](/en/using-nexor/vendors). A profile's empty NPC list does not guarantee a supply trip. |
+
+Before a longer run, review [item rules](/en/using-nexor/item-rules) and
+[Scheduled Breaks](/en/using-nexor/scheduled-breaks). For this first check, stay
+near the expected first point or quest phase and watch one action complete.
+
+## Start, pause and fully stop
+
+Click the Nexor logo to show the QuickMenu if it is hidden. Its header has the
+bot's Play/Pause control and current status. A separate control on the rotation
+frame pauses only that rotation.
+
+| Control | Result |
+| --- | --- |
+| QuickMenu **Play** | Starts/resumes gameplay automation when a profile, routine or Rotation Mode is selected and the required session is available. |
+| QuickMenu **Pause** | Stops gameplay execution while retaining loaded selections for resume. It also cancels an outstanding manual travel order/forced service request. |
+| **Shift-click Play/Pause** | Full stop: unloads profile, routine and rotation and clears their remembered reload identities. Load the wanted content again before restarting. |
+| Rotation frame **Pause / resume this rotation** | Suppresses that rotation's pulses. It does not pause the world route or routine. |
+| **Rotation → Options → Unload** | Unloads the selected rotation. It is not a full stop of a loaded world profile. |
+
+An automatic stop, such as completion of a directly loaded quest, can preserve
+the selected content for another start. The explicit Shift-click full stop is
+the control that unloads it. Neither gameplay Pause nor full stop ends the
+authenticated account session or frees its license; use
+[session recovery](/en/introduction/getting-started/account-and-sessions) when
+the license must be released.
+
+## Check the result
+
+Press Play once and watch both the QuickMenu and the character:
+
+- **Grinding/gathering:** the character travels toward a valid route point,
+  performs one eligible fight or gathering interaction, then obtains the
+  expected loot. Service/recovery work may run first; inspect the displayed
+  state before changing the route.
+- **Questing:** the correct quest enters the log, its intended objective gains
+  credit, or the turn-in completes. A phase label alone is not proof of credit.
+- **Routine:** Task Overview advances to the expected next task. Finishing the
+  task queue does not automatically unload a world profile it selected.
+
+Then Pause and confirm gameplay execution stops. Resume with Play, then test
+Shift-click full stop and confirm the loaded selections are cleared. If the
+character repeatedly fails the same action, pause to inspect rather than
+waiting for the file name or status label to prove success.
+
+| Symptom | First checks |
+| --- | --- |
+| Play refuses because nothing is loaded | Select a profile, routine or **Load Rotation Mode**; loading only a rotation is not a world-work selection. |
+| Profile name is right, but no spell is cast | Check the separately loaded rotation, **Use Bot Rotation**, its pause control, target validity, range and supplies. |
+| No server file appears | Check the startup product selection, availability and author's delivered content; refresh the library. |
+| Travel fails or the destination is wrong | Check world map/Z and the route's flavor/location. Follow [map travel](/en/using-nexor/map-travel) and [navigation recording](/en/using-nexor/navigation-recording) for the current tools and limits. |
+| A timed rest/break appears | Check [Scheduled Breaks](/en/using-nexor/scheduled-breaks) and current recovery state. |
+
+For a reproducible failure, use [Diagnostics](/en/using-nexor/diagnostics) and
+include the installed bot version, game build/flavor, unlocker, selected files,
+steps and expected/actual result. Keep account credentials and personal data
+out of logs and screenshots shared for support.
+
+## Rotation Mode: a complete alternative
+
+1. Load the suitable rotation in **Rotation → Library**, review **Rotation →
+   Options**, and choose **Use Bot Rotation** as above.
+2. Select **Rotation → General → Load Rotation Mode**. This removes the
+   previous routine/world profile and marks the selected profile type as
+   `Rotation`. Its name can be empty; **No profile loaded** in the name row
+   alone does not disprove Rotation Mode. Check the Type and rotation frame.
+3. Position the character yourself and select a suitable live enemy. Press
+   QuickMenu **Play**. An enemy selected out of combat can invoke the rotation's
+   opener; combat uses its combat actions. With no suitable enemy, its
+   out-of-combat actions may run.
+4. Handle movement, facing and target choice yourself. This mode does not run
+   route patrol, quest tasks, town services or the normal bot recovery loop.
+   Custom rotation code may implement its own movement, so it is not a blanket
+   guarantee that every authored rotation will keep the character stationary.
+5. Confirm an appropriate action occurs, then test the rotation's pause and
+   the bot's Pause separately. Use **Shift-click Play/Pause** when finished
+   to unload the rotation and clear the selection.
+
+There is no world-profile navigation requirement for this path. It does not
+establish a supported unlocker/client combination by itself. Loading a normal
+profile or routine leaves Rotation Mode and returns to world automation.
+
+## Reload and Auto Start
+
+**Settings → General → Auto Start** controls whether restored content starts
+gameplay automatically after loading. It is separate from the website's
+product-selector startup preference. Leave it off until the first session's
+selections and supplies have been checked.
+
+The remembered routine takes precedence over an ordinary remembered profile;
+Rotation Mode has its own remembered selection. Server profiles/routines are
+downloaded again, and auto-start waits for that download. A routine restarts
+from its file with fresh timers/repeat counters and no nested call stack;
+live quest/level conditions can skip work that is already satisfied.
+
+Last-rotation restoration is a separate setting, **Rotation → General →
+Reload last rotation**. The known
+[last server rotation reload issue #1108](https://github.com/NexorSystem/NexorBot/issues/1108)
+has not been verified fixed for this guide. After `/reload`, check the rotation
+name, options and pause state before starting; select it manually if it did
+not restore. Shift-click full stop clears the remembered selections instead
+of preparing them to resume.
