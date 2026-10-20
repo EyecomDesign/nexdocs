@@ -20,7 +20,14 @@ NX.Movement.RequestPath(x, y, z, function(result)
 end)
 ```
 
-The callback runs later and exactly once. A partial path ends at a mesh edge; it
-is not proof that the requested destination was reached.
+The callback may run inline for cached results or invalid input, so store request
+state before calling. `RequestPath` returns a numeric request ID (`0` if setup
+fails); the result's `requestId` identifies its callback and its `status` is a
+numeric router status, rather than a pollable `pending` state. A partial path
+ends at a mesh edge; it is not proof that the destination was reached.
+
+The [complete example](./32-movement-fallback) defines the candidate coordinates
+and consumes callback results from an inbox in a live pulse. It does not recurse
+into another request from a callback.
 
 Next: [follow the accepted path](./30-movement-path-following).

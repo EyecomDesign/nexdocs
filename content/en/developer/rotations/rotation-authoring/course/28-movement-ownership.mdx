@@ -15,4 +15,10 @@ Claim before requesting a route and release on every exit path. Keep the policy
 that decides *when* to retreat in the rotation; `NX.Movement` owns pathing,
 directional keys, facing, and cleanup.
 
+This is only the ownership pair. Use the
+[complete bounded example](./32-movement-fallback) when copying a maneuver: it
+also defines inputs, callback lifetime, cancellation and pause cleanup. The
+current override has no owner token; cancel and wait for cleanup before
+replacing that rotation.
+
 Next: [request and validate a path](./29-movement-path-request).
