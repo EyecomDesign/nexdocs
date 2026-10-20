@@ -31,6 +31,9 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      - name: Check published references
+        run: pnpm check:content
+
       - name: Build (OpenNext + Pagefind)
         run: pnpm run build:cf
 

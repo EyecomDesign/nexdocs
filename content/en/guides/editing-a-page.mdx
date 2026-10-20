@@ -1,0 +1,38 @@
+# Edit a page
+
+Use a branch of the **nexdocs** repository and edit the existing English file
+under `content/en/`. If this is your first contribution, follow the
+[repository setup and checks](/en/guides/creating-a-page).
+
+1. Find the file from the current published route. `/en/developer/api/movement`
+   corresponds to `content/en/developer/api/movement.mdx`; a directory landing
+   may use `index.mdx` in that directory.
+2. Read the surrounding workflow, incoming links, and the owning implementation.
+   Record a current source revision and any release or runtime evidence before
+   changing a product claim. Preserve explicit limitations when behavior is still
+   pending or only source-verified.
+3. Make the smallest coherent correction. If you rename or remove a route, fix
+   its sidebar entry, links, downloads, and lesson navigation. Add a deliberate
+   redirect when an existing published URL must keep working.
+4. Keep screenshots, code displayed by `CodeFile`, and downloadable examples
+   aligned with the text. Redact credentials and personal data before adding an
+   image. Do not revive the unpublished German tree.
+5. From the **nexdocs root**, run `pnpm test`, `pnpm check:public-content`,
+   `pnpm check:content`, `pnpm typecheck`, `pnpm lint`, and `pnpm build`.
+   The [validation table](/en/guides/creating-a-page#validate-in-the-nexdocs-repository)
+   explains prerequisites and expected results. Open the affected page and its
+   navigation locally as well.
+6. In the pull request, explain the reader's corrected outcome, link the source
+   evidence, and report only checks you actually ran. Note any deployment or
+   supported-client test that remains open.
+
+For a content-check finding, inspect the named file and line locally. A
+`missing-route` can mean a browser-relative URL points beside an index page;
+`missing-asset` can mean filename case differs. A `next-order` finding means a
+numbered lesson does not lead to the next currently published lesson. Review the
+destination rather than adding a broad exception.
+
+For a public-content-policy finding, do not paste the matched value into an issue
+or build log. Replace it with an explanatory placeholder or the established
+public access procedure, and involve the authorized operator privately if
+credential remediation is needed.
