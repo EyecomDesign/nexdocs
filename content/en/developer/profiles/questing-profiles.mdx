@@ -1,160 +1,233 @@
-# ⁉️ Questing Profiles
+# Questing Profiles
 
-A **Questing Profile** describes how the bot completes a single quest: where to pick it
-up, what to do for each objective, and where to turn it in. Unlike a grinding or gathering
-profile (which defines a flat `Points` patrol), a quest profile lays out an ordered set of
-**phases** inside an `Executecodeorder` block.
+A questing profile describes one quest: its start, objectives and turn-in. Load
+it in **Profiles** and start the bot to run the whole file, or use a
+[task routine](/en/developer/tasks/task-routines) for a whole quest or one phase
+at a time. A directly loaded quest stops the bot when no phase remains.
 
-A quest profile can run two ways:
+These contracts follow the current
+[quest handler](https://github.com/NexorSystem/NexorBot/blob/9f373eaa9bd3d65581fc5ad6c52a417b87c71a89/src/machines/profiles/questing.lua)
+and [Profile Tool exporter](https://github.com/NexorSystem/NexorBot/blob/9f373eaa9bd3d65581fc5ad6c52a417b87c71a89/UI/Frames/BotInterface/ProfileTool/ProfileTool.lua).
+Quest IDs, objectives and NPCs can differ by game flavor and server. Check them
+on the character that will run the profile.
 
-- **Loaded directly** from the **Profiles** browser → the bot runs the *whole* quest
-  (pick up → every objective → turn in) and stops when the quest is complete.
-- **Driven by a [Task Routine](/en/developer/tasks/task-routines)** → either one task per phase
-  (`Run Quest Phase`) or the whole quest in one task (`Run Full Quest`).
+## A complete file
 
-## File shape
-
-Quest profiles live under `Profiles/` — a common layout is
-`Profiles/{Expansion}/Questing/{Name}.lua`. The filename is free-form; a handy convention is
-`<questid>_<Name>.lua`.
+This author-owned **Retail / Valley of Trials** example follows quest 25126,
+*Cutting Teeth*. It requires the preceding quest to have made Gornek's offer
+available. Save it as
+`Nexor_User/Profiles/MyProfiles/Retail/25126_Cutting_Teeth.lua`; this example is
+not a promise that the file ships as a default product.
 
 ```lua
-Profile = {
+local NX = ...
+
+local Profile = {
     Name = "Cutting_Teeth",
     Type = "QUESTING",
+    NPCs = {},
     Executecodeorder = {
         questid = 25126,
-
-        -- Where to accept the quest.
         PickUp = {
-            npcid  = 3143,                                -- the quest giver's NPC id
-            Points = { { -597.74, -4248.26, 38.96, 5 } }, -- a spot next to the giver
+            npcid = 3143,
+            Points = { { -597.74, -4248.26, 38.96, 5, MapID = 1 } },
         },
-
-        -- Where to hand it in (often the same NPC).
-        TurnIn = {
-            npcid  = 3143,
-            Points = { { -597.74, -4248.26, 38.96, 5 } },
-        },
-
-        -- One entry per quest objective.
         Objectives = {
-            [1] = {
-                type           = "KillAndLoot",
+            {
+                type = "KillAndLoot",
                 objectiveIndex = 1,
-                WhitelistIDs   = { 3098 },              -- only these mobs count
-                Points = {                              -- roam these while killing
-                    { -471.28, -4270.47, 42.89, 35 },
-                    { -433.26, -4287.73, 42.86, 35 },
-                    { -494.11, -4340.77, 38.66, 35 },
+                WhitelistIDs = { 3098 },
+                Points = {
+                    { -471.28, -4270.47, 42.89, 35, MapID = 1 },
+                    { -433.26, -4287.73, 42.86, 35, MapID = 1 },
+                    { -494.11, -4340.77, 38.66, 35, MapID = 1 },
                 },
             },
         },
+        TurnIn = {
+            npcid = 3143,
+            Points = { { -597.74, -4248.26, 38.96, 5, MapID = 1 } },
+        },
     },
 }
+
+return Profile
 ```
 
-## The `Executecodeorder` block
+The loader accepts a Lua chunk returning a table, as above, and legacy
+`Profile = { ... }` files. `Executecodeorder` selects the quest runner; normal
+grinding profiles use top-level `Points` instead. Keep the exact field names.
+Handwritten scripts can have local helpers; the Profile Tool only reopens its
+marked, round-trip-safe script files.
 
-| Field | Type | Purpose |
-|-------|------|---------|
-| `questid` | number | The **server** quest id. Everything keys off this — it must match the quest your server actually grants. |
-| `PickUp` | table\|nil | `{ npcid, Points }` — the quest giver and a spot to interact from. Omit if the quest is auto-granted. |
-| `TurnIn` | table\|nil | `{ npcid, Points }` — the turn-in NPC and spot. Often the same NPC as `PickUp`. |
-| `Objectives` | table | Array of objective phases (see below). Empty `{}` for a pure pickup/turn-in quest. |
+Load the local file in **Profiles**, check its name, then start. The active phase
+should change from `PickUp` to `KillAndLoot`, then `TurnIn`. The quest must enter
+the log, objective 1 must gain credit, and the quest must leave the log after
+turn-in. If those observations fail, stop and check the offer, IDs, objective
+order and destination map. Use the bot's Stop control to interrupt a run.
 
-### Points format
+## Phase order and completion
 
-Every `Points` entry is `{ x, y, z, radius }` in **world coordinates**:
+`Executecodeorder.questid` is the server's quest ID. `PickUp` and `TurnIn` are
+optional top-level blocks. `Objectives` runs in **array order**;
+`objectiveIndex` identifies the corresponding 1-based quest-log objective,
+not the execution order. Already accepted, credited or turned-in work is skipped
+from live quest state.
 
-- **PickUp / TurnIn** → a single point right next to the NPC, `radius` ≈ `5` (interaction range).
-- **Objectives** → several points spread across the objective area, `radius` ≈ `35` (the bot roams these while working the objective; more points = better coverage).
+In the table, **objective credit** means the specified `objectiveIndex` is
+finished. Without an index, ordinary objective phases wait for all objectives.
+A quest already turned in completes every phase. A successful item use, spell
+cast or interaction alone does not prove objective credit.
 
-> **Capturing coordinates & ids in-game:** stand on a spot and run the bot's waypoint
-> helper (`/run NexorWP()`), or target an NPC/mob and run `/run NexorTarget()` to print its
-> `npcid` and position. Drop the printed `{ x, y, z, r }` line straight into a `Points` table.
+| Phase | Required authored inputs | Completion and material limits |
+| --- | --- | --- |
+| `PickUp` | Top-level block with `npcid` and search `Points`, or the item offer below | Quest enters the log, or was already turned in. QuestTalk approaches a live NPC; multiple points search for a moving giver, while one point waits there if the NPC is absent. |
+| `TurnIn` | Top-level block with `npcid` and `Points` | Quest is turned in, not merely ready to hand in. Requires a valid offer/reward interaction. |
+| `CompleteQuest` | Top-level `CompleteQuest = { npcid = ..., Points = ... }`, selected by `Run Quest Phase` | Same NPC hand-off/completion as `TurnIn`. Full runs select `TurnIn`; use that name there. A `CompleteQuest` row exported inside `Objectives` is not the top-level block the phase resolver expects. |
+| `KillAndLoot` | `objectiveIndex`, intended mob `WhitelistIDs`, search `Points` | Objective credit. Uses normal engage/loot handling. These IDs enable quest-target eligibility, including the trivial-target exception; the current combat scanner does not enforce them as an exclusive ID filter. Other eligible enemies and self-defense can still be handled. |
+| `Grinding` | Search `Points`; optional mob `WhitelistIDs` | Kill/loot behavior, but no objective-based completion. Ends only when the whole quest is turned in or its routine stops it. Prefer `KillAndLoot` for an objective. |
+| `Gathering` | Node/object `WhitelistIDs` or `objectid`, search `Points`, `objectiveIndex` | Objective credit. Reuses object interaction; requires the skill/tool and loot access. |
+| `InteractWithObject` | `objectid` or object `WhitelistIDs`, search `Points`, `objectiveIndex` | Objective credit. Scans GameObjects, approaches a matching object, interacts and waits through casting/channeling. No configurable gossip sequence. |
+| `UseItemOnMob` | `itemid`, `npcid` or mob `WhitelistIDs`, search `Points`, `objectiveIndex` | Objective credit. Approaches an eligible unit to below 5 yards, settles targeting/movement and uses the item. Cast/channel and success observation prevent immediate repeated attempts; a successful attempt alone does not finish the phase. |
+| `UseSpellOnMob` | `spellid`, `npcid` or mob `WhitelistIDs`, search `Points`, `objectiveIndex` | Objective credit. Approaches and casts on the selected unit (8-yard approach boundary); requires a known, suitable spell. |
+| `UseItemOnSelf` | `itemid`, `objectiveIndex`; optional first point | Objective credit. Uses the item on `player`, optionally after approaching the point. |
+| `UseSpellOnSelf` | `spellid`, `objectiveIndex`; optional first point | Objective credit. Casts on `player`, optionally after approaching the point. |
+| `UseItemOnPosition` | `itemid`, first point, `objectiveIndex` | Objective credit. Walks to the point, then uses the item **on the player**. Does not place an item's ground-target reticle. |
+| `UseSpellOnPosition` | `spellid`, first point, `objectiveIndex` | Objective credit. Approaches, casts, then clicks that world position if a ground reticle appears. Requires a suitable spell and world-click support. |
+| `TalkTo` / `InteractWithUnit` | `npcid` or mob `WhitelistIDs`, search `Points`, `objectiveIndex` | Objective credit. Approaches/interacts with a matching unit. Does not implement a configurable gossip conversation tree. |
+| `MoveTo` | First point with arrival radius and destination `MapID` | Arrival within that radius **on that map**. Ignores later points; needs no quest credit. No point leaves it blocked. |
+| `CustomCode` | `customcode = function(NX, phase, substate) ... end` | In full runs: returns exactly `true`, or its real quest objective completes. Missing code warns and marks this standalone phase done. The single-phase task has the separate behavior below. |
 
-## Phase types
+The normal self/position/spell/interaction handlers allow a three-second grace
+between attempts while waiting for server credit. They cannot make an
+unsuitable item or spell usable. Self/position approach helpers act in the
+current world; use `MoveTo` with `MapID` for a required world transition before
+a local item/spell action.
 
-Phases are resolved by the questing engine (`src/machines/profiles/questing.lua`) and run in
-this order: **PickUp → each incomplete Objective (by `objectiveIndex`) → TurnIn**. Completion
-is detected live from the quest log, so a phase that is already done is skipped automatically.
+## Points, IDs and target policy
 
-**Implemented today** (these have full driving logic):
+The export shape is
+`{ x, y, z, radius, MapID = mapID, Type = "Checkpoint" }`. These are world
+coordinates, not the map UI's 0–100 percentages. `MapID` is the world/instance
+map used by navigation, not a zone's UI map ID. Zero is valid. A legacy point
+without a map uses the current-map fallback; preserve captured values for
+cross-world travel.
 
-| Phase | Where | Fields | Behaviour |
-|-------|-------|--------|-----------|
-| `PickUp` | `Executecodeorder.PickUp` | `npcid`, `Points` | Walk to the giver, then the `QuestTalk` substate interacts and accepts the quest. |
-| `TurnIn` | `Executecodeorder.TurnIn` | `npcid`, `Points` | Walk to the NPC, `QuestTalk` interacts and completes the quest. |
-| `KillAndLoot` | `Objectives[n]` | `type`, `objectiveIndex`, `WhitelistIDs`, `Points` | Roam the points and engage **only** the whitelisted mobs, looting after each kill (reuses the same engage/loot machinery as a grinding profile). |
+The phase loader also accepts keyed `{ X, Y, Z, Range, MapID }` points. Prefer
+the exporter's tuple shape in handwritten quests: item/spell position handlers
+read numeric entries. Missing phase radii become radius 5 navigation points;
+`MoveTo`'s own arrival test defaults to 3 if no radius was authored. Set an
+explicit radius to make both behaviors clear.
 
-> **Not yet implemented:** the Task UI's "Run Quest Phase" dropdown also lists
-> `CompleteQuest`, `Gathering`, `Grinding`, `UseItemOnPosition/Mob/Self`,
-> `UseSpellOnPosition/Mob/Self`, `TalkTo`, `InteractWithUnit`, `InteractWithObject`,
-> `MoveTo`, and `CustomCode`. These are placeholders carried over from the legacy engine —
-> selecting one loads the phase but the bot idles ("No handler for phase type"). They will be
-> documented here as each is ported.
+Each phase defaults to **`Spot`**. Combat works from the selected point and its
+radius. Set `Logic = "Path"` to patrol and scan around the player, or
+`Logic = "Bounce"` for a route traversed back and forth with point-based combat.
+`logic` is accepted as an alias; export writes `Logic`. Invalid overrides warn
+and fall back to `Spot`.
 
-### Objective fields
+| Field | Meaning |
+| --- | --- |
+| `questid` | Quest identity, normally on `Executecodeorder`; a phase may override it. |
+| `objectiveIndex` | Actual 1-based quest-log objective for this flavor/server. |
+| `npcid` | Creature/NPC ID for a giver or target unit. |
+| `WhitelistIDs` | Creature IDs for combat/unit phases, GameObject IDs for object/gathering phases. These are different ID kinds. |
+| `itemid` / `spellid` | Item to use or spell to cast. Spell phases accept the older shared `itemid` as fallback. The UI's **Item/Spell ID** exports as `spellid` for `UseSpell*`. |
+| `objectid` | GameObject ID, such as a chest. The editor's **Object ID** exports here. |
+| `targetState` | `"Any"` (default), `"Alive"` or `"Dead"` for `UseItemOnMob`, `UseSpellOnMob`, `TalkTo` and `InteractWithUnit`. Case is normalized; invalid values warn/use `Any`. |
 
-| Field | Type | Purpose |
-|-------|------|---------|
-| `type` | string | The phase type, e.g. `"KillAndLoot"`. |
-| `objectiveIndex` | number | Which quest objective this drives (matches the in-game objective order, 1-based). |
-| `WhitelistIDs` | number[] | NPC/object ids that count for this objective — the bot engages/interacts only with these. |
-| `Points` | table | `{ {x,y,z,r}, … }` area to work the objective in. |
-| `logic` | string\|nil | Optional nav/combat logic override (`"Path"` default, or `"Spot"`/`"Bounce"`). |
+A corpse interaction needs `targetState = "Dead"` and the correct unit ID.
+Setting it on `KillAndLoot` does not change that phase's combat policy. Targeted
+actions support friendly/neutral quest units; player-controlled units are
+excluded.
 
-## Navigation & combat logic
+## Item-started quests
 
-Each phase defaults to **`Path`** logic (the bot fights from its current position while
-roaming the points — the same behaviour as a grinding profile). You normally don't set
-`logic` at all. Only override it per phase (e.g. `logic = "Spot"`) if you specifically want
-the bot to anchor combat to a fixed point.
+In **Quest Steps → PickUp → Quest Start**, choose the item offer and enter the
+starter item ID. If it is already in the bags, the runtime uses it and accepts
+the matching quest. Otherwise, `acquire` rows describe how to obtain it, in
+order. Supported methods: `KillAndLoot`, `InteractWithObject`,
+`InteractWithUnit`.
 
-## Complete example
-
-`Profiles/Examples/Questing/25126_Cutting_Teeth.lua` — *Cutting Teeth* (Valley of Trials):
+This pickup shape comes from the item-start regression fixture. These IDs and
+points illustrate the fixture, not a tested in-game route:
 
 ```lua
--- PickUp/TurnIn: Gornek (3143). Obj 1: kill Mottled Boars (3098).
-Profile = {
-    Name = "Cutting_Teeth",
-    Type = "QUESTING",
-    Executecodeorder = {
-        questid = 25126,
-        PickUp = { npcid = 3143, Points = { { -597.74, -4248.26, 38.96, 5 } } },
-        TurnIn = { npcid = 3143, Points = { { -597.74, -4248.26, 38.96, 5 } } },
-        Objectives = {
-            [1] = {
-                type = "KillAndLoot", objectiveIndex = 1, WhitelistIDs = { 3098 },
-                Points = {
-                    { -471.28, -4270.47, 42.89, 35 },
-                    { -433.26, -4287.73, 42.86, 35 },
-                    { -494.11, -4340.77, 38.66, 35 },
-                },
-            },
+PickUp = {
+    offer = { type = "Item", itemid = 4881 },
+    acquire = {
+        {
+            itemid = 9999,
+            type = "KillAndLoot",
+            Logic = "Spot",
+            WhitelistIDs = { 3192 },
+            Points = { { 1, 2, 3, 35 } },
+        },
+        {
+            itemid = 4881,
+            type = "InteractWithObject",
+            objectid = 3239,
+            Logic = "Bounce",
+            Points = { { -223.87, -5095.70, 49.97, 5 } },
         },
     },
-}
+    Points = {},
+},
 ```
 
-Loading this from the Profiles browser makes the bot accept the quest at Gornek, kill
-Mottled Boars until objective 1 is done, then return to Gornek to turn it in — then stop.
+A row's `itemid` means the item to **obtain**, not an item-use instruction. A row
+stays completed after that item is observed during this run, even if a later
+method consumes it. Open loot pauses acquisition. A missing starter with no
+remaining valid method waits and warns. It cannot bypass quest prerequisites.
+Acquisition navigation currently does not copy a point's `MapID` into its
+temporary route; keep acquisition rows in the current world.
 
-## Best practices
+## Custom code
 
-- **Use the real `questid`.** If it doesn't match the quest your server grants, pickup,
-  objective tracking, and turn-in will never register. Verify it in-game:
-  `/run print(C_QuestLog.GetLogIndexForQuestID(<id>))` (prints a number when the quest is in
-  your log).
-- **One quest per file.** Chain related quests with a [Task Routine](/en/developer/tasks/task-routines)
-  rather than cramming several quests into one profile.
-- **Whitelist precisely.** Put the exact mob/object ids in `WhitelistIDs` so the bot doesn't
-  fight unrelated enemies.
-- **Spread objective points** across the spawn area and keep `radius` generous (~35) so the
-  bot finds targets; keep PickUp/TurnIn radius small (~5).
-- **Mind prerequisites.** If a quest requires an earlier one (e.g. it isn't offered until a
-  prior quest is turned in), model the whole chain in a routine in the right order.
-- **`Type` is `"QUESTING"`** (the loader treats any profile with an `Executecodeorder` block
-  as a quest profile).
+Every phase may attach `customcode(NX, phase, substate)`. It runs on active bot
+pulses, including combat, before normal phase handling. Its return value does
+not replace or complete a normal action. Keep it bounded and avoid repeating a
+side effect every pulse.
+
+A standalone `CustomCode` objective in a full run completes on `true`:
+
+```lua
+{
+    type = "CustomCode",
+    objectiveIndex = 1,
+    customcode = function(NX, phase, substate)
+        -- Example: allow progression when this phase reaches Active.
+        return substate == "Active"
+    end,
+},
+```
+
+If that index belongs to an already finished quest objective, the full runner
+skips it. Use `MoveTo` for arrival independent of quest credit. Arrival/custom
+completion flags live in memory, not saved checkpoints across a file reload or
+`/reload`.
+
+The routine action **Run Quest Phase** handles `CustomCode` differently: with a
+quest ID and objective index it waits for live objective credit; without both,
+it uses a run-once completion check. That task action does not test the
+`_customDone` flag set by a `true` return. Use **Run Full Quest** or direct
+profile loading when the function's return must drive progression.
+
+## Capture and check your file
+
+1. In **Profile Tool → Profile → General**, choose `Questing` and enter the
+   **Quest ID**. Without a valid ID, export warns and writes normal profile
+   format rather than a runnable `Executecodeorder` quest.
+2. Add **Quest Steps**. On an NPC/unit step, **Capture Target** fills the ID and
+   adds a point at the selected target's position. It adds a point rather than
+   replacing all existing points.
+3. Open the step's **Pathing Points**. Use **Player Position**,
+   **Target Position** or **Mouse Click**, then check X/Y/Z, range and map in
+   point detail. Enter object, item, spell and quest IDs in their contextual
+   fields; target capture does not discover every kind of ID.
+4. Save locally and inspect the Lua for `Executecodeorder`, quest ID, phase
+   blocks and points. Load it in **Profiles**, start, and watch the phase and
+   quest-log changes described above.
+
+Keep one quest per file and chain them with
+[routines](/en/developer/tasks/task-routines). A routine can stop a long-running
+phase with a level, time or quest-state condition.
