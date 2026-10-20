@@ -191,3 +191,17 @@ test("accepts development and documentation hosts in both table layouts", () => 
   assert.deepEqual(scanText("| Host | ops.internal |", name), finding("operator-inventory"));
 });
 
+
+test("accepts public source links and repository paths containing a Home directory", () => {
+  for (const value of [
+    "https://github.com/example/project/blob/main/UI/Menus/Home/Settings.lua",
+    "UI/Menus/Home/Settings.lua",
+    "https://example.invalid/home/reference",
+  ]) assert.deepEqual(scanText(value, "content/en/example.mdx"), []);
+});
+
+test("still rejects an absolute private home path inside a shell command", () => {
+  assert.deepEqual(scanText("cd /home/fixture-operator/scripts", "content/en/example.mdx"), [
+    { file: "content/en/example.mdx", line: 1, rule: "private-home-path" },
+  ]);
+});
