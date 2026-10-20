@@ -1,0 +1,120 @@
+# Account, licenses, and bot sessions
+
+Use this guide when a bot cannot start, an old game window still holds a license,
+or you need to replace your Connection Token. These instructions describe the
+current v2 connection.
+
+## What each item does
+
+| Item | What it means |
+| --- | --- |
+| Account | Your website identity, purchases, registered characters, and bot sessions. |
+| Connection Token / personal key file | The credential that lets the loader sign in to your account. A packaged download puts the token inside your personal key file. It is not another license. |
+| License | Your right to use a product, subject to its remaining time, expiry, and session limit. |
+| Bot session | One bot startup and its ongoing authenticated connection, holding the licenses for the products it loads. |
+
+**One NexorBot license permits one running bot. Two simultaneous bots require two
+NexorBot licenses**, whether they run on one computer or different computers.
+Optional products have their own session limits; owning one does not grant another
+NexorBot session. Downloading the loader or renewing a Connection Token does not
+buy or renew a license.
+
+## Find and end a bot session
+
+1. Sign in to the [Nexor website](https://nexor.app/).
+2. Open **Account → Overview** or **Account → Bot Settings**.
+3. Find **Active bot sessions**. Search by character or product name, then check
+   the character, products, **Starting** / **Running** status, start time, and last
+   check-in to identify the right row.
+4. Choose **Kill Session** on that row and confirm. Use **Kill all sessions** only
+   when you intend to end every bot session of this account, including rows hidden
+   by your search.
+5. Check the result and refresh the list if needed. If the list could not load,
+   use **Try again** before deciding that no session exists.
+
+Ending a session frees its licenses on the server immediately. With a working
+connection, the current client normally learns that the session ended at its next
+check-in, about 20 seconds later, and stops. If it cannot reach the server, its
+existing lease still expires. A new startup does not push out another open bot.
+
+The in-game **Pause** and **Stop** controls stop gameplay automation. They leave
+the authenticated session in place and do not free its licenses. A connected bot
+can keep checking in while gameplay is stopped. To free a license, end the session
+on the website or exit that game session normally. The current client tries to end
+the session before reload, logout, or quit; a failed request or a crash can still
+leave it waiting for timeout. Reload starts a new bot startup, so it can take a
+license again.
+
+## Match the problem to the recovery
+
+| What you see | What to check and do |
+| --- | --- |
+| A license is in use | Another live session holds every usable license for that product. Find it under **Active bot sessions**. End the session you no longer need, wait for an abandoned one to expire, or obtain another license if both bots must run. |
+| No valid license | Check that the account owns a usable license and that its time or expiry has not run out. The server's `entitlement_unavailable` response covers both missing and unusable licenses; it does not identify which one applies. Killing a session cannot create an entitlement. |
+| A game crashed or was force-closed | An active session can remain held for up to 60 seconds after its last successful check-in, possibly less if a license expires sooner. Wait for it to expire or use **Kill Session**, then start again. |
+| Startup never finished | **Starting** is a reservation before startup confirmation. It expires after 120 seconds without activation. End that row on the website if you want to retry sooner. This is different from an active bot's 60-second maximum lease. |
+| The connection dropped | The client checks in every 20 seconds. A successful check-in grants at most 60 seconds, shortened by remaining license time or expiry. It must succeed again before the current deadline. A drop shorter than one minute can still stop the bot. Once stopped, restore the connection and type `/reload`; there is no automatic reconnect after that deadline. |
+
+For an in-use NexorBot license, the current client identifies the product with
+“Your license for NexorBot is in use by another running bot.” It directs you to
+end that session on the website and then type `/reload`. For a missing or expired
+usable license, it says “You have no valid license for NexorBot.” Fix that account
+or license problem before reloading. Optional products can be skipped while the
+base bot starts; NexorBot itself is required.
+
+## Renew the Connection Token
+
+Renew when the credential or personal key file may have been shared, or when you
+intend to replace account access. To recover only one abandoned bot, use
+**Kill Session** instead.
+
+1. Open **Account → Overview** and find the **Connection Token** card.
+2. Choose **Renew**, review the warning, and confirm **Renew Connection Token**.
+3. The old credential stops working immediately. **Every running bot of this
+   account is signed out**, and its licenses are freed. Restart each bot with the
+   current credential using the mode shown by your website:
+
+| Website mode | What to do after renewal |
+| --- | --- |
+| **Dashboard → Download Nexor** provides a zip with a personal key file; the token is hidden | Download your package again and unzip it into NilName's `scripts` folder, replacing the old package files. Do this for each installation using the account. The loader reads the new key file; do not type a token or reuse the old key file. |
+| The account page displays the Connection Token and tells you to enter it in the bot | Use the current displayed token as that page instructs, then restart the bot. Follow this only when your deployed website and client use visible-token mode. A hidden token is not an instruction to recover or extract it from a key file. |
+
+If renewal reports failure, follow the card's result. If it says renewal could
+not be confirmed, bots may already have stopped: in package mode download again;
+in visible-token mode reload the account page to establish the current token.
+Do not repeatedly start with a saved old credential.
+
+Keep your package, key file, and token private. Do not paste them into a support
+ticket, screenshot, log, or chat. For help, report the product, error text, and
+whether a matching session appears, with account and character details redacted.
+
+## Examples
+
+- **A second bot with one license:** Bot A is running; Bot B is refused because
+  the NexorBot license is in use. Pausing Bot A does not free it. End A's session
+  on the website and reload B, or buy a second NexorBot license to keep both bots
+  running.
+- **Crash and restart:** The game closes without sending an end request. A
+  restart may find the previous active session still holding its license. Wait
+  up to the remaining 60-second lease or kill the abandoned row, then reload.
+  A row still marked **Starting** instead has the 120-second reservation limit.
+- **Renewal while two bots run:** Renewing the account's Connection Token signs
+  out both bots, even on different computers. Download and extract the current
+  package on both installations, or follow visible-token mode if that is what
+  the website provides, then restart both. You still need two NexorBot licenses.
+
+Continue with [installation](/en/introduction/getting-started/download-and-install/nexor)
+or [purchasing](/en/introduction/getting-started/buy-nexor).
+
+## Source and version
+
+Checked against the website at
+[`3070af5`](https://github.com/EyecomDesign/Nexor/tree/3070af5fb8104690e226f2823c4f869c7d301c92)
+and the client at
+[`9f373ea`](https://github.com/NexorSystem/NexorBot/tree/9f373eaa9bd3d65581fc5ad6c52a417b87c71a89).
+The website's [v2 rollout record](https://github.com/EyecomDesign/Nexor/blob/3070af5fb8104690e226f2823c4f869c7d301c92/docs/bot-runtime-v2-operations.md)
+records production enablement on 17 October 2026. The
+[session controls](https://github.com/EyecomDesign/Nexor/blob/3070af5fb8104690e226f2823c4f869c7d301c92/Services/BotSessions/AccountBotSessionList.cs),
+[conditional token card](https://github.com/EyecomDesign/Nexor/blob/3070af5fb8104690e226f2823c4f869c7d301c92/Services/Html/ConnectionTokenCard.cs),
+and [gameplay and exit controls](https://github.com/NexorSystem/NexorBot/blob/9f373eaa9bd3d65581fc5ad6c52a417b87c71a89/src/core/core.lua)
+define the behavior above. This page does not report a new live test.
