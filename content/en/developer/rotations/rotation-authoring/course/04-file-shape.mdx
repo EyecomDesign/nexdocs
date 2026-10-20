@@ -1,7 +1,7 @@
 # 4. Define the file shape
 
-Return one rotation table from the chunk. This is the smallest valid shape
-before adding metadata or pulse callbacks:
+Return one rotation table from the chunk. This is the smallest shape before
+adding toggles, options and pulse callbacks:
 
 ```lua
 local Rotation = {}
@@ -12,4 +12,8 @@ return Rotation
 Keep the returned value as the public boundary. Helpers, constants, and local
 state can stay above it; the loader consumes the table returned at the end.
 
-Next: [add rotation information](./05-rotation-info).
+The rotation list displays the file name. An old `Info` table is ignored; do not
+add one to identify the rotation. Lesson numbers after 4 keep their existing
+URLs, so the course continues at 6.
+
+Next: [declare toggles](./06-toggles).

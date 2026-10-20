@@ -222,11 +222,6 @@ local function ApplyInstantDots(targets)
 end
 
 local Rotation = {
-    Info = {
-        Name = "Warlock TBC Authoring Tutorial",
-        Title = "Warlock TBC — Level 1-20 Authoring Tutorial",
-    },
-
     Toggles = {
         ["Pause"] = { Description = "Pause the rotation", Default = false },
         ["Buffs"] = { Description = "Maintain self buffs", Default = true },

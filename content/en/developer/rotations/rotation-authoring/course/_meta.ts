@@ -3,7 +3,6 @@ export default {
   "02-create-file": "2. Create the file",
   "03-environment": "3. Environment",
   "04-file-shape": "4. File shape",
-  "05-rotation-info": "5. Rotation information",
   "06-toggles": "6. Toggles",
   "07-options": "7. Options",
   "08-spellbook": "8. Global spellbook",
