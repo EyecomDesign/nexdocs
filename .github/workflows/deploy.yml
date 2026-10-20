@@ -26,6 +26,9 @@ jobs:
           node-version: 22
           cache: pnpm
 
+      - name: Check public content
+        run: node scripts/check-public-content.mjs
+
       - run: pnpm install --frozen-lockfile
 
       - name: Build (OpenNext + Pagefind)
