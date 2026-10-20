@@ -16,7 +16,7 @@ The common API is defined in
 
 ## Live units and settings
 
-Resolve live units at decision time:
+Resolve standard units once; the returned wrappers refresh themselves:
 
 ```lua
 local player = NX.UnitManager.Get("player")
@@ -25,7 +25,9 @@ local target = NX.UnitManager.Get("target")
 
 There is no `NX.Player` or `NX.Target`. `NX.Unit` is the unit class, and `NX.Aura`
 is the aura class; check a live unit with methods such as `unit:HasBuff(spell)`.
-See [Units and targets](./units-and-targets) for nil checks and selectors.
+See [Units and targets](./units-and-targets) for validity checks and selectors.
+Read a position or health number again when it must reflect a later decision;
+those values are snapshots, unlike the refreshing wrapper.
 
 `NX.Toggles["Damage"]` and `NX.Options["Minimum Health"]` read live values by
 name. Both tables are read-only; read each option rather than requesting a whole

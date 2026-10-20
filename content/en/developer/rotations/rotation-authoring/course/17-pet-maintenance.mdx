@@ -14,14 +14,8 @@ pulse calls a wrapper. A `Pet` toggle switches the imported module off and retur
 the stance when disabled. Use its maintenance result in the OOC drain contract:
 
 ```lua
-local function MaintainPetOutOfCombat()
-    return NX.Toggles["Pet"] and PetModule.Maintain()
-end
-
 OutOfCombatPulse = function()
-    if MaintainPetOutOfCombat() then
-        return true
-    end
+    if NX.Toggles["Pet"] and PetModule.Maintain() then return true end
     return false
 end
 ```
@@ -31,5 +25,10 @@ maintenance action. Add `PetModule.SettingsBlock(),` as the last entry in
 `Options` to expose module settings; otherwise the defaults apply. Basic reads
 such as `NX.Pet.GetPetState()` still need no import. See
 [the full pet contract](../../../api/pets).
+
+Write the call directly, without a one-use maintenance wrapper. A Pet toggle
+is this tutorial's choice, not a rule requiring every imported rotation to
+declare one; when declared here, both the action calls and class healing policy
+honor it.
 
 Next: [add pet combat assist](./18-pet-assist).

@@ -1,14 +1,33 @@
 # Items, wands, and settings
 
-Use `NX.Item.GetItemCount(item)` and `NX.Item.UseItemByID(item)` for item policy.
-Use catalog `CreateHealthstone` for creation. Internal item tables are not a
-rotation API.
+`NX.Item.GetItemCount(itemID)` reads a count and
+`NX.Item.UseItemByID(itemID, target)` requests item use. Shared game data lives at
+`NX.Tables.Items`: `Soulstones` is an ordered weakest-first list of
+`{ itemID, spellID }` records; `Healthstones` is an unordered table keyed by item
+ID. Do not copy a shared item-ID list into each rotation.
 
-For a fractional slider, set `Step` and `Precision` explicitly. `Precision` is
-the snap increment. Read `NX.Options[name]` live.
+The bot's Recovery/combat recovery owns using Healthstones and its health
+threshold. Creating one remains Warlock spell policy; that does not authorize a
+second Healthstone use/threshold in the rotation. The course instead teaches a
+Soulstone create/use example in
+[lessons 20–21](../rotations/rotation-authoring/course/20-healthstone-availability),
+including its remaining in-game assumptions. Item-use return values are not a
+promise that a cast succeeded; the framework also tracks casts/channels/GCD.
 
-`NX.Wand.Maintain()` registers the current combat pulse’s wand intent and returns
-nothing. The framework owns Shoot, continuous cadence, cooldown arbitration,
-queue-boundary rescans, and disarm. Never call `Shoot:Cast()` or
-`Shoot:Execute()` from a rotation. Do not add a wand consumer list, OOM fallback,
-or movement-into-range claim.
+Declare options inside named sections and read `NX.Options["Name"]` directly.
+The framework supplies the declared default; a misspelled name must be fixed,
+not hidden with a fallback. Resource sliders run from 1 to 100 with whole-number
+defaults. Do not write `Precision`. Step 1 or a decimal step inferred from the
+default is implicit; write `Step` only for another increment. With
+`Min = 1`, `Max = 100`, `Step = 5`, the stops are 1, 5, 10, …, 100 and a default
+of 35 is valid. Returned values are snapped to the same stops. See
+[options](../rotations/rotation-authoring/course/07-options).
+
+`NX.Wand.Maintain()` is a bare statement at the top of a wand-capable caster's
+combat pulse, before any early-return action. It returns nothing. The framework
+owns weapon checks, Shoot cadence, cooldown arbitration and disarm, plus the
+no-wand auto-attack fallback. Do not wrap the normal call in a Wand toggle,
+weapon check or Use Wand checkbox, or call `Shoot:Cast()`/`Shoot:Execute()`.
+Melee classes use `NX.AutoAttack.Maintain()` in engagement/combat; Hunters use
+`NX.AutoShot.Maintain()` there. These are intent calls, not movement-into-range
+claims.

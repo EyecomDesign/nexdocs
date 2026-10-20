@@ -1,24 +1,38 @@
 # 23. Cap multipull targets
 
-Make the target cap explicit when adding a multipull policy. A bounded selector
-keeps the amount of work visible:
+Define the target cap in Constants, then custom units in Unit definitions. A
+selector checks the current target first so it works on an opening pull, before
+that enemy appears in the active-enemy list:
 
 ```lua
 local MAX_MULTIPULL_TARGETS = 3
 
-local function SelectMultipullTargets()
-    local selected = {}
-    NX.UnitManager.EnumActiveEnemies(function(enemy)
-        if enemy:IsEnemy() then
-            selected[#selected + 1] = enemy
+local CorruptionTarget = NX.UnitManager.CreateCustomUnit("CorruptionTarget", function()
+    if Target:IsEnemy() and Target:MyDebuff(Corruption):GetRemainingTime() <= Corruption:GetCastTime() then
+        return Target
+    end
+
+    local enemies = NX.UnitManager.GetActiveEnemies()
+    for index = 1, math.min(#enemies, MAX_MULTIPULL_TARGETS) do
+        local enemy = enemies[index]
+        if enemy:IsEnemy() and enemy:MyDebuff(Corruption):GetRemainingTime() <= Corruption:GetCastTime() then
+            return enemy
         end
-        return #selected >= MAX_MULTIPULL_TARGETS
-    end)
-    return selected
-end
+    end
+
+    return NX.UnitManager.Get("none")
+end)
 ```
 
-Returning `true` stops enumeration. Keep selection separate from the pulse that
-uses the selected units.
+Write `CurseOfAgonyTarget` separately with the same bounded search and
+`not unit:HasMyDebuff(CurseOfAgony)`, as in the complete source. Each spell then
+has one direct Damage condition chained to its selected unit. The selector's
+enemy check chooses a unit; the spell's cast gate still checks target validity.
 
-Next: [define the multipull pet handoff](./24-multipull-pet-handoff).
+Corruption's refresh window uses its live cast time, including talents, rather
+than an unused Dot Refresh Seconds slider. A missing aura has zero remaining
+seconds, so `<=` also handles an instant Corruption. This particular selector
+checks the current target plus the first three active enemies; it is not a
+promise that only three total mobs can ever receive a DoT.
+
+Next: [respect pet ownership during multipull](./24-multipull-pet-handoff).

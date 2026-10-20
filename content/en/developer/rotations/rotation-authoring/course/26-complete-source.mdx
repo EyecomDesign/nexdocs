@@ -14,8 +14,43 @@ separate.
 This download matches that source revision, including the top-level PetModule
 import and final settings section. The three displayed stage files are the
 retained executable checkpoints. Unreferenced fragment downloads and the old
-extra items checkpoint were removed. Earlier lessons still have ownership and
-settings differences tracked in [#33](https://github.com/EyecomDesign/nexdocs/issues/33);
-use this complete source when comparing against the current tutorial.
+extra items checkpoint were removed. The separate bounded movement example in
+lesson 32 is a lifecycle demonstration, rather than another tutorial stage.
+
+## Confirmed guidance and remaining evidence
+
+The course follows the confirmed rules 1–97 in the
+[authoring decision record](https://github.com/NexorSystem/NexorBot/blob/9f373eaa9bd3d65581fc5ad6c52a417b87c71a89/Docs/rotation-authoring-decisions.md).
+That file is a dated working log: later confirmed rounds supersede earlier
+examples mentioning Pause, Healthstone use, pet gather holds or pre-import pet
+calls. The source version above is the selected baseline; no deployment or
+in-game validation is implied by copying it.
+
+Framework pause and Healthstone use belong to the bot. The rotation owns its
+spell conditions, declared choices, Soulstone creation/use and action order.
+It reads settings directly, leaves imported pet stance to PetModule and returns
+an OOC busy signal only when work acted. Stages 03–05 grow those same contracts.
+
+The [TBC smoke-test record](https://github.com/NexorSystem/NexorBot/blob/9f373eaa9bd3d65581fc5ad6c52a417b87c71a89/Docs/rotation-authoring/SMOKE_TEST.md)
+observed Soulstone creation/player use on 5 October at `Development@e70635d9`.
+It remains partial: full cooldown and moving-use boundaries, and the noted
+already-gathered-enemy curse case, are not claimed as a completed live pass.
+Broad toggle
+descriptions in new code should name the category; the pinned tutorial retains
+some older confirmed descriptions naming individual spells. That wording is
+source-version history, not a different runtime contract.
+
+Future author libraries/product namespaces
+([NexorBot #973](https://github.com/NexorSystem/NexorBot/issues/973)),
+folder/routine renaming ([#11](https://github.com/EyecomDesign/nexdocs/issues/11))
+and NX regrouping ([#12](https://github.com/EyecomDesign/nexdocs/issues/12)) are
+separate release work. Automatic pet recall during gather was dropped; this
+course does not promise it. A named-behavior terminology preference or future
+swing timer is not introduced as a settled new API.
+
+General house policy for custom movement and pet control beyond the confirmed
+import rules is not settled by this course. Lesson 32 composes existing APIs
+with stated limits; its fixed distances and deadlines are example choices,
+not a new authoring standard.
 
 Next: [audit and validate the file](./27-audit-and-validation).

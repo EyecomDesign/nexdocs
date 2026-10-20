@@ -1,17 +1,21 @@
 # 15. Assign spell targets
 
-Keep target ownership on the spell attachment. A harmful spell can resolve the
-current live target with a resolver:
+Chain the target on the spell's condition. `Target` is the refreshing unit local
+from lesson 9:
 
 ```lua
-Corruption:SetTarget(function()
-    return NX.UnitManager.Get("target")
-end)
+Corruption:CastableIf(function()
+    return NX.Toggles["Damage"] and not Target:HasMyDebuff(Corruption)
+end):SetTarget(Target)
 ```
 
-`SetTarget` also accepts a live wrapper, a token, or a selector object. For a
-one-off target variation, `spell:Cast(target)` keeps the full spell gate while
-using the target supplied for that call. A resolver returning `nil` is a no-op;
-it does not silently become self.
+This replaces the un-targeted attachment from lesson 14, rather than adding a
+second condition. A resolver function is useful only when it must work out a
+target at cast time. For a separate condition/target pair on one spell, use a
+named `Behavior` and `Execute("Name")`; do not overwrite the default attachment.
+The tutorial instead uses custom units for its different DoT targets.
+
+`spell:Cast(target)` is a one-off full-gate cast that bypasses the attached
+condition. Use `Execute()` in the normal ladder so its policy remains effective.
 
 Next: [build the combat priority](./16-combat-priority).

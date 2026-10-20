@@ -1,18 +1,24 @@
 # 6. Declare user toggles
 
-Use `Toggles` for boolean policy switches that the player can change while the
-rotation runs:
+Toggles switch broad categories while playing. This tutorial uses three:
 
 ```lua
 Toggles = {
-    ["Pause"] = { Description = "Pause the rotation", Default = false },
     ["Buffs"] = { Description = "Maintain self buffs", Default = true },
-    ["Damage"] = { Description = "Use damage and mana priorities", Default = true },
-    ["Pet"] = { Description = "Use the Pet Module", Default = true },
+    ["Damage"] = { Description = "Use damage priorities", Default = true },
+    ["Pet"] = { Description = "Manage the pet", Default = true },
 }
 ```
 
-Read the live value through `NX.Toggles[name]` when making a decision. Do not
-copy a toggle into a permanent local value during file load.
+Read `NX.Toggles["Damage"]` where the decision is made. A declared toggle has a
+value; do not add `~= false`, a second defaults table or a wrapper function.
+Check every read against the exact declared name: an unknown name reads `nil`
+and should be caught during authoring.
 
-Next: [declare numeric options](./07-options).
+The rotation window's pause button belongs to the framework, which suppresses
+all pulses while paused. Do not declare a `Pause` toggle or repeat a pause guard
+in the pulses. A single item gets an option such as `Use Soulstone`; a pulse
+itself does not get a `Multipull` toggle. The bot's own setting decides whether
+to gather multiple enemies.
+
+Next: [declare options](./07-options).

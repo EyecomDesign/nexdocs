@@ -2,48 +2,68 @@
 local NX = ...
 local PetModule = NX.Import("PetModule")
 
+-- ============================================================
+-- Spell definitions
+-- ============================================================
 local spells = NX.SpellBook:GetGlobal()
-local Corruption = spells.Corruption
+
+local Corruption   = spells.Corruption
 local CurseOfAgony = spells.CurseOfAgony
 local HealthFunnel = spells.HealthFunnel
 
-local function Target()
-    return NX.UnitManager.Get("target")
-end
+-- ============================================================
+-- Unit definitions
+-- ============================================================
+local Player = NX.UnitManager.Get("player")
+local Target = NX.UnitManager.Get("target")
+local Pet    = NX.UnitManager.Get("pet")
 
-local function Pet()
-    return NX.UnitManager.Get("pet")
-end
+-- ============================================================
+-- Spell conditions
+-- ============================================================
+Corruption:CastableIf(function()
+    return NX.Toggles["Damage"] and not Target:HasMyDebuff(Corruption)
+end):SetTarget(Target)
 
-local function AttachDot(spell)
-    if not spell then return end
-    spell:CastableIf(function()
-        local target = Target()
-        return NX.Toggles["Damage"] ~= false
-            and target:IsEnemy()
-            and not target:HasMyDebuff(spell)
-    end)
-    spell:SetTarget(Target)
-end
+CurseOfAgony:CastableIf(function()
+    return NX.Toggles["Damage"] and not Target:HasMyDebuff(CurseOfAgony)
+end):SetTarget(Target)
 
-AttachDot(Corruption)
-AttachDot(CurseOfAgony)
-if HealthFunnel then
-    HealthFunnel:CastableIf(function()
-        return NX.Toggles["Pet"]
-            and NX.Pet.IsPetActive()
-            and (Pet():GetHP() or 100) < 50
-            and (NX.UnitManager.Get("player"):GetHP() or 100) > 40
-    end)
-    HealthFunnel:SetTarget(Pet)
-end
+HealthFunnel:CastableIf(function()
+    return NX.Toggles["Pet"]
+        and NX.Pet.IsPetActive()
+        and Pet:GetHP() < NX.Options["Health Funnel Pet Health Percent"]
+        and Player:GetHP() > NX.Options["Minimum Health Percent"]
+end):SetTarget(Pet)
 
-return {
+-- ============================================================
+-- Rotation
+-- ============================================================
+local Rotation = {
     Toggles = {
         ["Damage"] = { Description = "Use damage priorities", Default = true },
-        ["Pet"] = { Description = "Let the framework handle the pet", Default = true },
+        ["Pet"] = { Description = "Manage the pet", Default = true },
     },
     Options = {
+        {
+            Name = "Mana and health",
+            {
+                Name = "Minimum Health Percent",
+                Type = "Slider",
+                Min = 1,
+                Max = 100,
+                Default = 35,
+                Description = "Spend health only above this percent.",
+            },
+            {
+                Name = "Health Funnel Pet Health Percent",
+                Type = "Slider",
+                Min = 1,
+                Max = 100,
+                Default = 50,
+                Description = "Heal the pet below this health percent.",
+            },
+        },
         PetModule.SettingsBlock(),
     },
     OutOfCombatPulse = function()
@@ -52,15 +72,19 @@ return {
     end,
     EngagementPulse = function()
         if NX.Toggles["Pet"] and PetModule.Assist() then return true end
-        if Corruption and Corruption:Execute() then return true end
-        if CurseOfAgony and CurseOfAgony:Execute() then return true end
-        return false
+
+        if Corruption:Execute() then return true end
+        if CurseOfAgony:Execute() then return true end
     end,
     CombatPulse = function()
-        if HealthFunnel and HealthFunnel:Execute() then return true end
+        NX.Wand.Maintain()
+
+        if HealthFunnel:Execute() then return true end
         if NX.Toggles["Pet"] and PetModule.Assist() then return true end
-        if Corruption and Corruption:Execute() then return true end
-        if CurseOfAgony and CurseOfAgony:Execute() then return true end
-        return false
+
+        if Corruption:Execute() then return true end
+        if CurseOfAgony:Execute() then return true end
     end,
 }
+
+return Rotation

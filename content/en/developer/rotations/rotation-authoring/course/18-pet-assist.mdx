@@ -1,23 +1,19 @@
 # 18. Add pet combat assist
 
 Keep the top-level `local PetModule = NX.Import("PetModule")` from lesson 17.
-Use a separate helper for the pet's normal combat assist intent:
+Write the assist call directly at the desired place in engagement/combat policy:
 
 ```lua
-local function AssistPetInCombat()
-    return NX.Toggles["Pet"] and PetModule.Assist()
-end
-
 EngagementPulse = function()
-    if AssistPetInCombat() then
-        return true
-    end
-    return false
+    if NX.Toggles["Pet"] and PetModule.Assist() then return true end
+
+    if Corruption:Execute() then return true end
 end
 ```
 
-Call assist from the engagement or combat path when the rotation wants the pet
-to act. Do not turn generic assist into a class-specific healing decision.
-Manual commands remain on `NX.Pet`; module actions come from `PetModule`.
+There is no one-use `AssistPetInCombat` wrapper or final return. Placement within
+its supported pulse is the author's choice. The tutorial heals with Health
+Funnel before Assist in combat. The explicit Pet guard makes this tutorial's
+switch apply to the action call as well as the module's stance lifecycle.
 
 Next: [add class-specific pet policy](./19-pet-specific-policy).

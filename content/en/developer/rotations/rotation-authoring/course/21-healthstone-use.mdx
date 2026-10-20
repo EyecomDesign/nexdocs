@@ -1,25 +1,47 @@
-# 21. Use or create a Healthstone
+# 21. Create and use a Soulstone
 
-Use the public item boundary when the player is below the configured threshold:
+Declare `CreateSoulstone` from the checked catalog and add a `Use Soulstone`
+checkbox inside the Items option section. Its default is `true`. Attach creation
+policy once:
 
 ```lua
-local function UseHealthstone()
-    local threshold = tonumber(NX.Options["Healthstone Percent"] or 35) or 35
-    if (Player():GetHP() or 100) > threshold then
-        return false
-    end
+CreateSoulstone:CastableIf(function()
+    return NX.Options["Use Soulstone"] and not FindSoulstoneInBags()
+end)
+```
 
-    for _, itemID in ipairs(HEALTHSTONE_ITEM_IDS) do
-        if NX.Item.GetItemCount(itemID) > 0 then
-            return NX.Item.UseItemByID(itemID) == true
-        end
-    end
-    return false
+The item itself has no spell object carrying its use condition. Put that
+condition in one Shared function, after the helpers from lesson 20:
+
+```lua
+local function UseSoulstoneOnPlayer()
+    local soulstone = FindSoulstoneInBags()
+
+    return soulstone
+        and not HasAnySoulstoneBuff()
+        and not Player:IsMoving()
+        and NX.Spell.GetCooldownRemaining(soulstone.spellID) <= 0
+        and NX.Item.UseItemByID(soulstone.itemID, "player")
 end
 ```
 
-If no stone exists, the rotation can execute the catalog `CreateHealthstone`
-spell according to its own item toggle and priority. Item IDs and spell IDs are
-different contracts.
+The OOC pulse then contains the two simple steps:
+
+```lua
+if CreateSoulstone:Execute() then return true end
+if NX.Options["Use Soulstone"] and UseSoulstoneOnPlayer() then return true end
+```
+
+Do not repeat the creation predicate around `Execute()`. The tutorial keeps the
+item action out of combat. A rank not yet learned is refused by normal spell
+gates; Soulstone creation begins at level 18 in this level-1–20 TBC example.
+
+The [recorded TBC smoke test](https://github.com/NexorSystem/NexorBot/blob/9f373eaa9bd3d65581fc5ad6c52a417b87c71a89/Docs/rotation-authoring/SMOKE_TEST.md)
+observed creation and use on the player at level 19 on 5 October 2026,
+`Development@e70635d9`. It is explicitly a partial record, not a blanket pass:
+the effect cooldown and moving-use boundaries still lack a complete measurement.
+No new game test was performed for these pages. Item use may return no truthy
+value; the running cast/channel/GCD supplies the framework's busy state without
+inventing a successful return.
 
 Next: [add wand maintenance](./22-wand-maintenance).

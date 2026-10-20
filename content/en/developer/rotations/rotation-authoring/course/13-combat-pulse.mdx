@@ -1,21 +1,20 @@
 # 13. Implement the combat pulse
 
-`CombatPulse` is the action window for the normal priority ladder. Add the
-pause guard first:
+The normal combat priority ends after the first action that acts. It has no
+pause guard and no final `return false`:
 
 ```lua
 CombatPulse = function()
-    if NX.Toggles["Pause"] then
-        return false
-    end
+    NX.Wand.Maintain()
 
-    -- The priority ladder is added after spell policy is attached.
-    return false
+    if Corruption:Execute() then return true end
+    if ShadowBolt:Execute() then return true end
 end
 ```
 
-At this point the file has a complete pulse contract and can be loaded without
-doing work. The first checkpoint is available here:
+The wand line is a statement at the top, so it is reached even when an action
+returns early. Lesson 22 explains its framework ownership. Before adding spell
+policy, this empty loadable checkpoint gives the complete pulse boundary:
 
 <CodeFile path="stages/03-skeleton.lua" language="lua" />
 

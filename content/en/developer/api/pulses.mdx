@@ -6,9 +6,14 @@ The loader requires `Toggles` and `Options` tables (they may be empty), plus
 `CombatPulse`.
 
 `OutOfCombatPulse` is special: return `true` while work remains and `false` when
-the state is drained. The other pulse return values are action results and are not
-used as an OOC drain signal. The engine maps Engage, Pulling, Killing, Moving,
+the state is drained. Only claim busy when something acted; casts, channels and
+GCD already count as busy in the framework. Other pulse results are discarded:
+use early returns to end a successful step, but no final return. The engine maps Engage, Pulling, Killing, Moving,
 Waiting, Searching, MapMovement, and MultiPull states to these names.
 
 Keep pulse bodies cheap. Attach spell policy once, then use an early-return
 priority ladder.
+
+The framework's rotation pause button suppresses dispatch; do not add a Pause
+toggle or per-pulse pause checks. A wand-capable caster starts CombatPulse with
+the statement `NX.Wand.Maintain()`, above every step that might return.

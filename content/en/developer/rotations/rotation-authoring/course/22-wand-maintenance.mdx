@@ -1,20 +1,25 @@
 # 22. Add wand maintenance
 
-Wand use is an intent owned by the rotation and a cadence owned by the
-framework:
+A Warlock's combat pulse opens with one unguarded intent statement:
 
 ```lua
 CombatPulse = function()
-    if NX.Toggles["Wand"] ~= false then
-        NX.Wand.Maintain()
-    end
+    NX.Wand.Maintain()
 
-    -- Continue with the normal priority ladder.
-    return false
+    if Corruption:Execute() then return true end
+    if CurseOfAgony:Execute() then return true end
 end
 ```
 
-Call `Maintain()` once per combat pulse that wants wand behavior. Do not call
-`Shoot:Execute()`, create a consumer list, or take over movement into range.
+The framework owns weapon checks, Shoot cadence, spell arbitration and disarm.
+With no usable wand it handles auto-attack fallback. Do not add a Wand toggle,
+Use Wand checkbox, weapon check or direct Shoot cast. The intent returns no
+action result, so it is never an `if ... then return` step.
+
+For the corresponding class contracts, melee rotations use
+`NX.AutoAttack.Maintain()` in engagement/combat and Hunters use
+`NX.AutoShot.Maintain()` there. The caster wand call belongs in combat only.
+The engine still decides movement and range; a rotation does not move into wand
+range itself.
 
 Next: [cap multipull targets](./23-multipull-target-cap).

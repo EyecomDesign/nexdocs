@@ -1,20 +1,17 @@
 # 12. Implement the engagement pulse
 
-`EngagementPulse` owns the first action window after a target becomes relevant.
-Start with a pause guard and an explicit completed result:
+`EngagementPulse` owns the opening priority after a target becomes relevant.
+Use the same early-return action form as other pulses, without a final return:
 
 ```lua
 EngagementPulse = function()
-    if NX.Toggles["Pause"] then
-        return false
-    end
-
-    -- Add the first engagement action in a later step.
-    return false
+    if Corruption:Execute() then return true end
 end
 ```
 
-Keep the callback focused on engagement work. The normal priority ladder belongs
-in `CombatPulse`.
+Attach Corruption's condition and target in the next lessons before using this
+opening policy. The framework owns pause and cast gates. A selector that only
+reads active enemies can miss a pull target that has not entered combat yet;
+lesson 23 checks the current target before the active-enemy list.
 
 Next: [implement the combat pulse](./13-combat-pulse).
