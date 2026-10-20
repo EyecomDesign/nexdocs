@@ -6,6 +6,7 @@ const meta = {
   "scheduled-breaks": "Scheduled Breaks",
   "map-travel": "World Map travel",
   "navigation-recording": "Navigation data recording",
+  "diagnostics": "Diagnostics and problem reports",
 };
 
 export default meta;

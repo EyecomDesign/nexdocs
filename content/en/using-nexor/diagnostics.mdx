@@ -1,0 +1,67 @@
+# Diagnostic logs and useful problem reports
+
+File logging is disabled by default in a normal saved configuration. Enable it only for a short reproduction, collect the relevant evidence and turn it off again.
+
+## Enable, reproduce, disable
+
+Run these in the game chat:
+
+```text
+/run NexorFileLogging()
+/run NexorFileLogging(true)
+```
+
+The first command reports the state without changing it. The second enables the global switch and saves it, so the choice survives reload. Reproduce the problem once, note the time and current bot action, then disable logging:
+
+```text
+/run NexorFileLogging(false)
+```
+
+This is a global permission to write logs. Topic diagnostics have their own switches; enabling file logging does not enable every topic. Disabling it preserves topic settings for a later reproduction. A log target that cannot be created is disabled rather than retried continuously; check the reported location and write access if no file appears.
+
+An illustrative sanitized status line is:
+
+```text
+[Logger] file logging ON -> <scripts-root>/Nexor_User/Logs
+```
+
+## Find the files
+
+Under your unlocker's scripts directory, open `Nexor_User/Logs`. The usual character file is `scripts/Nexor_User/Logs/<Name>_<Realm>.log`. Names are sanitized for the filesystem. Use placeholders in a report if character/realm identity is unrelated to the problem.
+
+Some diagnostics write separate topic files in the same directory, for example `path_progress.log` for engagement path progress and `loot_crash.log` for loot tracing. Collect only the file and time window relevant to the symptom. A global switch being on does not guarantee a particular topic emitted a line.
+
+## Choose a symptom path
+
+| Symptom | First checks |
+| --- | --- |
+| Startup refused, license busy or connection credential changed | [Account and sessions](/en/introduction/getting-started/account-and-sessions); distinguish startup reservation, in-use lease and missing entitlement |
+| Product missing after a restart or website selection | [Product loading](/en/introduction/getting-started/product-loading); record selected versus actually loaded content |
+| No movement or a failed cross-zone trip | [World Map travel](/en/using-nexor/map-travel); separate invalid ground, missing graph route and navigation service/setup |
+| Quest phase stuck | [Quest profiles](/en/developer/profiles/questing-profiles); include phase/action, required IDs, completion condition and current map/target state |
+| Repeated resting or no consumable use | [Recovery](/en/using-nexor/recovery); include enabled toggles, start/finish thresholds and usable supplies |
+| Unexpected sale/delete decision | [Item rules](/en/using-nexor/item-rules); capture the preview reason and the relevant exact/pattern rules |
+
+Keep current unlocker/navigation installation requirements while investigating; the pending navigation fallback removal is not a reason to delete required local data. Avoid temporary transport probes or helper macros copied from old development discussions: they are not the supported diagnostic interface.
+
+## Copy this report template
+
+```text
+Bot release/revision and channel:
+Game flavor, client build and locale:
+Unlocker and version:
+Loaded profile/routine/rotation/product names and revisions:
+Relevant settings (values only when safe to share):
+Steps to reproduce:
+Expected result:
+Actual result and visible bot state/action:
+Timestamp and time zone:
+Frequency and whether restart changes it:
+Small relevant log excerpt / error text:
+```
+
+Before sharing, remove account credentials, Connection Tokens, key-file contents, authorization headers and unrelated private information. Do not upload the complete settings/key directory. Keep enough surrounding log lines to show the sequence, and state when an example has been sanitized rather than presenting it as an untouched capture.
+
+Logs show what the client observed; a last line before a crash identifies the last flushed operation, not necessarily the cause. If the report concerns a saved navigation draft, include its ID/version and whether saving, private testing, publication or traversal failed as separate outcomes.
+
+Sources checked on 20 October 2026: [logger and command](https://github.com/NexorSystem/NexorBot/blob/9f373eaa9bd3d65581fc5ad6c52a417b87c71a89/src/utils/logger.lua), [logging default](https://github.com/NexorSystem/NexorBot/blob/9f373eaa9bd3d65581fc5ad6c52a417b87c71a89/src/data/runtime/default_settings.lua) and [removed transport probes](https://github.com/NexorSystem/NexorBot/issues/1061).
