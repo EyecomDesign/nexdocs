@@ -1,0 +1,42 @@
+# Scheduled Breaks
+
+Open **Settings → Security**, allow **Allow Security**, then enable **Enable Scheduled Breaks**. Scheduled Breaks are disabled by default. They temporarily suspend ordinary autonomous work while safety handling remains available.
+
+## Choose a schedule
+
+| Timing preset | Work before a break | Break length |
+| --- | --- | --- |
+| Short sessions | 20–40 minutes | 3–7 minutes |
+| Balanced (recommended), default values | 45–90 minutes | 5–15 minutes |
+| Long sessions | 90–150 minutes | 10–20 minutes |
+
+Or choose Custom by editing **From** and **To** under **Work before a break** and **Break length**. Values are positive whole minutes; the controls allow 1–240 and each From must be no greater than its To. Each work/break interval samples a value within its configured range.
+
+For a short observed test, use a small valid custom range in a safe area. Start a supported profile or routine, check **Next break in**, and watch the transition. Restore your normal schedule afterward.
+
+## What the visible states mean
+
+- **No break active · Next break in …**: ordinary work is running.
+- **Break ready · Waiting for a safe moment**: the interval is due, but the current committed action needs a safe boundary.
+- **Scheduled Break · … remaining**: new ordinary work is suspended.
+- **Break finished · Resuming safely**: the timer ended or was skipped, but safety cleanup must finish before ordinary work resumes.
+
+A boundary can include a current fight, gather action, transaction or committed transport step. During the break the bot can defend itself, finish its own permitted loot/skinning, recover and handle death. It does not start unrelated autonomous objectives. The schedule does not log the character out or release a license.
+
+**Take Break Now** requests the same safe-boundary transition during an active work interval. **Skip Break** requests a safe resume from a pending/active break; it does not abort necessary safety work immediately.
+
+## Pause, reload and stop
+
+- A manual pause freezes schedule progress and the remaining break countdown. Resuming continues from that remaining time.
+- Reload/reconnect restoration uses a local checkpoint for the same profile/routine identity. It is best effort; missing, invalid or mismatched checkpoints start fresh. Offline time is not subtracted from a restored break's saved remaining duration.
+- Changing the work range resamples the target while retaining work already elapsed. A new target below elapsed work makes the break due.
+- Changing the break range during a break resamples its total duration and subtracts already elapsed break time; it may therefore finish immediately.
+- Disabling the feature or Allow Security resets the schedule. Full stop/unload also resets it rather than preserving a paused countdown.
+
+## Covered modes
+
+Current scheduling covers autonomous Grinding, Questing and Gathering profiles, supported Fishing handlers, and live task routines. A handler must actually exist; an enum alone does not establish a working profile type. Rotation-only sessions and one-off manual travel are excluded. Unsupported/non-autonomous profile types show **Unavailable for this profile**.
+
+Break-location selection and pre-break actions are future work. If the state appears stuck, record the visible phase and current action in a [diagnostic report](/en/using-nexor/diagnostics).
+
+Sources checked on 20 October 2026: [scheduler](https://github.com/NexorSystem/NexorBot/blob/9f373eaa9bd3d65581fc5ad6c52a417b87c71a89/src/systems/scheduled_break.lua), [Security controls](https://github.com/NexorSystem/NexorBot/blob/9f373eaa9bd3d65581fc5ad6c52a417b87c71a89/UI/Frames/BotInterface/Menus/Settings/Security.lua) and [status frame](https://github.com/NexorSystem/NexorBot/blob/9f373eaa9bd3d65581fc5ad6c52a417b87c71a89/UI/Frames/BotInterface/ScheduledBreakFrame.lua).
