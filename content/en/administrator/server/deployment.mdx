@@ -1,83 +1,50 @@
-import { Callout } from "nextra/components";
-
 # 🚀 Deployment
 
-Every push to the `master` branch of [`EyecomDesign/AmeisenNavigation`](https://github.com/EyecomDesign/AmeisenNavigation) triggers `.github/workflows/deploy.yml`. The pipeline takes about 3–5 minutes.
+Use the release workflow in the service's current repository and the operator's
+approved private runbook. This page describes the review and verification steps;
+it does not authorize a production deployment.
 
-## What the workflow does
+## Before a release
 
-1. **`build-and-push`** (`ubuntu-latest`, permissions: `contents: read`, `packages: write`)
-   - `actions/checkout@v4`
-   - `docker/setup-buildx-action@v3` + `docker/login-action@v3` to `ghcr.io`
-   - `docker/build-push-action@v6` builds from repo root, pushes two tags:
-     - `ghcr.io/eyecomdesign/nexnav:sha-<full-sha>`
-     - `ghcr.io/eyecomdesign/nexnav:latest`
-   - Layers cached via `type=gha`
+1. Identify the repository, target environment, source revision and intended
+   change. Check that the build artifact corresponds to that revision.
+2. Review the change, automated checks and any data or configuration migration.
+   Confirm compatibility with the clients and datasets that will use it.
+3. Identify the previous working release and the rollback procedure before making
+   a change.
+4. Have an authorized operator obtain runtime credentials from the approved
+   private store. Pass them through the deployment platform's secret mechanism.
+5. Record the release revision and the verification plan without publishing
+   credentials, internal addresses or environment inventory.
 
-2. **`deploy`** (`ubuntu-latest`, permissions: `contents: read`, `packages: read`, `needs: build-and-push`)
-   - `actions/checkout@v4` (so the runner has `deploy/*` + `docker-compose.yml` for upload)
-   - **`appleboy/scp-action@v0.1.7`** uploads `deploy/,docker-compose.yml` recursively to `/opt/nexnav/` on the VPS. This is the only place where on-box config gets refreshed — without this step, Caddyfile / Prometheus / Grafana edits would never reach the box.
-   - **`appleboy/ssh-action@v1.2.0`** SSH'es in as `deploy@$DEPLOY_HOST` and runs:
-     - `docker login ghcr.io` with the workflow's `GITHUB_TOKEN` (so the VPS can pull the private image)
-     - Snapshots the current `NEXNAV_IMAGE` from `/opt/nexnav/.env` as `prev_tag` for rollback
-     - Rewrites `.env` with the new `sha-<sha>` tag
-     - `docker compose pull app prometheus grafana && up -d --remove-orphans`
-     - Polls `http://localhost:5100/healthz/ready` every 3 s for up to 90 s
-     - On health-gate failure: rewrites `.env` back to `prev_tag`, runs `up -d` again, exits 1
-     - On success: `docker image prune -f` to reclaim disk
+## Verify the deployed service
 
-<Callout type="info">
-  The health gate gives the app 90 s to come up — enough for the cold mmap preload. If it ever needs longer (Tier 1.5 with classic + classicera mmaps loaded), bump `for i in $(seq 1 30)` in the workflow.
-</Callout>
+Check the actual deployed revision and the service's documented health check.
+Then exercise a small representative operation, such as a route request for a
+known supported map. Confirm the response and inspect relevant error, latency
+and resource metrics.
 
-## Required GitHub secrets
-
-Set under **Settings → Secrets and variables → Actions**:
-
-| Secret | Value |
-|---|---|
-| `DEPLOY_HOST` | `51.75.64.12` |
-| `DEPLOY_USER` | `deploy` |
-| `DEPLOY_SSH_KEY` | Full PEM of the workstation private key (the public half is in `/home/deploy/.ssh/authorized_keys` on the VPS) |
-
-The `GITHUB_TOKEN` used for GHCR pull is the workflow's built-in per-job token; no extra secret needed.
-
-## Manual deploy / re-run
-
-```bash
-# Trigger a fresh deploy of the current master HEAD
-gh workflow run deploy.yml
-
-# Re-run a failed deploy
-gh run list --workflow=deploy.yml --limit 5
-gh run rerun <run-id> --failed
-```
+A successful build does not establish that the service is reachable or that the
+correct dataset is available. Keep the pre-release and post-release observations
+separate so a later investigation can identify what changed.
 
 ## Rollback
 
-Two ways. **Automatic** (during deploy): if the health gate fails, the workflow rewrites `.env` back to `prev_tag` and `up -d` runs the previous SHA.
+If verification fails, use the approved rollback procedure for that service.
+Confirm the previous artifact is compatible with any data changes before restoring
+it. Recheck health and the representative operation after rollback.
 
-**Manual** (after deploy, post-incident):
+Record the affected revision, time, symptom and sanitized outcome in the tracking
+issue. Do not paste an environment file or a credential-bearing command as
+evidence.
 
-```bash
-ssh -i ~/.ssh/id_nexnav_deploy deploy@51.75.64.12
-cd /opt/nexnav
+## Documentation-site deployment
 
-# Pick a known-good SHA from `git log --oneline` or GHCR
-PREV='ghcr.io/eyecomdesign/nexnav:sha-426f2b1fdf740e1bc5640f9e7493da18230680c0'
-sed -i "s|^NEXNAV_IMAGE=.*|NEXNAV_IMAGE=$PREV|" .env
-docker compose pull app
-docker compose up -d
-docker compose logs app --tail 30
-```
+The documentation site has its own build and deployment workflow. Its source of
+truth is the [NexDocs repository](https://github.com/EyecomDesign/nexdocs).
+Navigation-service deployment and documentation deployment are separate changes.
 
-If GHCR has cleaned up an older SHA (rare; we don't prune by default), you'll need to find a still-available tag. Listing: `gh api /users/EyecomDesign/packages/container/nexnav/versions`.
-
-## Image hygiene
-
-`docker image prune -f` runs after every successful deploy. The retained images are: current `sha-`, `latest`, and anything still referenced by a container. To trim further on disk pressure:
-
-```bash
-ssh deploy@51.75.64.12
-docker image prune -a -f --filter "until=168h"   # nuke dangling + un-used > 7 days
-```
+After a documentation deployment, check real public pages and search output in
+addition to the build result. The
+[monitoring checklist](/en/administrator/server/monitoring) explains how to report
+a failed runtime check.
