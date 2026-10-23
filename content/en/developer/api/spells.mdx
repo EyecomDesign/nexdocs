@@ -18,3 +18,37 @@ when the target changes per call.
 Use catalog names and `:IsKnown()` only for an availability branch. Optional
 handles must be guarded. Intrinsic options such as `isPetSpell`, `ignoreFacing`,
 and `allowDead` belong in the catalog.
+
+## Ground spells
+
+A ground-targeted spell (catalog option `isSkillshot`, for example Flamestrike or
+Blizzard) is placed on the ground instead of cast at a unit. Use the same seam:
+
+```lua
+Flamestrike:CastableIf(function() return NX.Toggles["AoE"] end)
+    :SetTarget(Target)
+    :SetAOEOptions({ range = 8 })
+
+-- In a pulse:
+if Flamestrike:Execute() then return true end
+```
+
+`Execute()` places the spell on the densest enemy cluster near the target. The
+attached target is the position hint and is required: no target, a dead or
+friendly target, a false condition, or no position is a no-op (`false`).
+`SetAOEOptions({ range = n })`, or a function returning that table, sets the enemy
+search range.
+
+Placing always arms the circle and clicks the spot in one step, so the circle is
+never left hanging on the cursor. Other calls:
+
+| Call | Places the spell |
+|---|---|
+| `spell:Execute()` | on the best cluster near the attached target |
+| `spell:Cast(target)` | under that target, with no cluster search |
+| `spell:CastAOE(target, opts)` | on the best cluster near `target` (the call `Execute()` uses) |
+| `spell:CastAtUnit(unit)` | under that unit |
+| `spell:CastAtPosition(x, y, z)` | at an exact world coordinate |
+
+`Cast(target)` and `CastAtUnit(unit)` also need a live hostile target. Rotations
+should use `Execute()`; call `CastAOE` directly only outside the attach-logic seam.
