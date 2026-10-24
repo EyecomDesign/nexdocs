@@ -1,66 +1,46 @@
-import { Callout } from "nextra/components";
-
 # 🔑 Access
 
-<Callout type="warning">
-  The credentials on this page are point-in-time and live in a **public** docs site. Treat them as compromised the moment this page is reachable on the internet. Rotate before/after publishing publicly. See [Operations → Rotate dashboard password](/en/administrator/server/operations) for the exact rotation runbook.
-</Callout>
+This documentation is public. It is not an access directory or a credential store.
 
-## Monitoring dashboard
+## Request access from the service owner
 
-| | |
-|---|---|
-| **URL** | `https://dash.nexor.app` |
-| **User** | `admin` |
-| **Password** | `B1y2bcVfXL0slQwCfg13WD7hJFXr3nI` |
+Tell the maintainer which environment and task you need, such as viewing metrics
+or investigating one failed route. Ask for the minimum access needed for that
+task through an approved private channel.
 
-Caddy's edge `basic_auth` is the **only** gate; once past, Grafana auto-logs you in as Admin (`GF_AUTH_ANONYMOUS_ENABLED=true` + `GF_AUTH_DISABLE_LOGIN_FORM=true`). No second prompt.
+The handoff should identify the correct service, account or role, authentication
+method and expiry. If a private runbook or secret store has not been established,
+agree on an approved destination before sharing operational details. Do not put
+the handoff in a public issue, pull request, chat transcript or screenshot.
 
-## SSH into the VPS
+## Separate permissions
 
-Two users exist on `51.75.64.12`:
+| Task | Access to request |
+| --- | --- |
+| Inspect metrics or logs | Read-only monitoring access where available. |
+| Review a build or release | Access to the relevant repository and workflow results. |
+| Deploy, restart or change a service | Explicit operator permission for that environment. |
+| Approve world-data submissions | The World API review role authorized by its owner. |
+| Manage credentials or network rules | Explicit permission for the affected account or infrastructure. |
 
-| User | sudo | docker group | When to use |
-|---|---|---|---|
-| `ubuntu` | passwordless sudo | no | Bootstrapping, file installs into `/etc/*` / `/opt/*`, anything privileged |
-| `deploy` | no sudo | yes | Running `docker compose` commands, log tailing, app-level ops |
+Repository access does not automatically grant production access. A public app
+endpoint also does not grant permission to use an administrative endpoint.
 
-Both have the operator's RSA-PEM SSH key (`~/.ssh/id_nexnav_deploy`) in their `authorized_keys`. Password auth is disabled.
+## Connect using the approved instructions
 
-```bash
-# Privileged ops (installs, sshd config, /etc/* edits)
-ssh -i ~/.ssh/id_nexnav_deploy ubuntu@51.75.64.12
+Use the current private access instructions supplied by the owner. Obtain
+credentials directly from the approved store; avoid copying them into commands
+that may be retained in shell history or build logs.
 
-# Day-to-day docker ops
-ssh -i ~/.ssh/id_nexnav_deploy deploy@51.75.64.12
-cd /opt/nexnav && docker compose ps
-```
+For a support report, include the operation, time, service revision and sanitized
+error. Leave out passwords, tokens, key files, account identifiers and private
+host details. The maintainer can request additional evidence privately.
 
-If you don't have the SSH private key, get it from the operator's password manager. The corresponding public key fingerprint is `SHA256:c3CrFlQI39C4Hvea74lbJkOZzg6dx8XE5pJJHxlCA7I`.
+## Lost, expired or exposed access
 
-## Cloudflare
+Ask the owner to revoke or renew the affected access. Do not try credentials
+found in an older page or Git revision. Removing published text does not make an
+exposed credential safe to reuse.
 
-- **Zone owner:** `Hi@nexor.app`
-- **Zone:** `nexor.app` (zone id `60574bdab9b6c5144a1f670f3c57c455`)
-- **SSL/TLS mode:** Full (strict)
-- **Universal SSL** covers `*.nexor.app` (one subdomain level) — that's why flavor hosts are flat (`retail.nexor.app`) and not nested (`retail.nav.nexor.app`)
-
-## GitHub
-
-- **Server repo:** [`EyecomDesign/AmeisenNavigation`](https://github.com/EyecomDesign/AmeisenNavigation) — push to `master` triggers deploy
-- **Actions tab:** [Workflow runs](https://github.com/EyecomDesign/AmeisenNavigation/actions/workflows/deploy.yml)
-- **Required repo secrets** (Settings → Secrets and variables → Actions):
-  - `DEPLOY_HOST` = `51.75.64.12`
-  - `DEPLOY_USER` = `deploy`
-  - `DEPLOY_SSH_KEY` = full PEM of the workstation private key (same one in `~/.ssh/id_nexnav_deploy`)
-- **GHCR package:** `ghcr.io/eyecomdesign/nexnav` — private, pulled on the VPS with the workflow's per-job `GITHUB_TOKEN`
-
-## Public app endpoints
-
-| Host | Status |
-|---|---|
-| `retail.nexor.app` | **Live**, default flavor |
-| `classic.nexor.app` | DNS pre-listed, Caddyfile pre-lists; app config does NOT enable it yet — needs mmaps + `appsettings.Production.json` entry |
-| `classicera.nexor.app` | Same — pre-listed but inactive |
-
-All three resolve to the same VPS through Cloudflare proxy. The app picks the flavor from the first dot-label of the `Host` header via `FlavorResolver`.
+See [Operations](/en/administrator/server/operations) for the rotation handoff and
+[Monitoring](/en/administrator/server/monitoring) for incident evidence.

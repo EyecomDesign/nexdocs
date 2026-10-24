@@ -7,9 +7,10 @@ edit, approve, or reject changes to [world objects](/en/administrator/world-api/
 the data the bot reads — pending changes sit in a quarantine until someone approves them here.
 
 <Callout type="warning">
-  The **AdminToken** is a credential — anyone holding it can edit live world data. This docs site is
-  currently public with no auth gate, so treat the token names and URLs below accordingly and rotate
-  the token before sharing the site more widely.
+  This documentation is public. Obtain authorized Admin Area access from the
+  service owner through an approved private channel. Keep tokens, cookies and
+  current credentials out of public pages, issues and screenshots. See the
+  [access procedure](/en/administrator/server/access).
 </Callout>
 
 ## Accessing the Admin Area
@@ -45,16 +46,14 @@ dotnet run --launch-profile "NexorWorldApi (Azurite)"
 
 The default profile (`dotnet run`) instead targets Azure Key Vault and opens `/swagger`.
 
-In production the service runs on Azure App Service (`WoWVendorApiApp`), so the live Admin Area is at:
-
-```
-https://wowvendorapiapp.azurewebsites.net/Admin/Login
-```
+For a production environment, request the approved Admin Area URL and access
+instructions from its owner. The public documentation does not list production
+administrator destinations or current credentials.
 
 <Callout type="info">
-  The production admin uses the AdminToken from Azure Key Vault. The local URL above
-  (`https://localhost:7164/Admin/Login`) is the same UI running against the Azurite emulator for
-  development.
+  Local development and production are separate environments. Use local test
+  credentials for the emulator; obtain production access through the private
+  operator process.
 </Callout>
 
 ## Dashboard

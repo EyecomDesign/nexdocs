@@ -1,73 +1,44 @@
-import { Callout } from "nextra/components";
-
 # 🌍 Server Overview
 
-<Callout type="warning">
-  **This section contains operational credentials, hostnames, and infrastructure details.**
-  The docs site is currently public with no auth gate. Once an auth layer is added in front of NexDocs, the secrets on these pages are considered safe; until then, **assume anything published here is reachable by anyone on the internet** and rotate before going truly public.
-</Callout>
+Nexor uses navigation services to turn a destination into a walking route. This
+section explains the service responsibilities and the checks used when operating
+them. Deployment addresses, administrator accounts and credentials belong in the
+operator's approved private records.
 
-The **NexNavigation HTTP server** is the live backend that the Lua client talks to for pathfinding, height queries, batch tile fetches, and runtime obstacles. It runs on a single OVHcloud VPS in Gravelines (France), fronted by Cloudflare, and is reached at `https://retail.nexor.app`.
+## Service responsibilities
 
-## Architecture at a glance
+| Part | Responsibility |
+| --- | --- |
+| Bot client | Sends a route request for the current game flavor and map, then follows an accepted route. |
+| Navigation API | Accepts requests and returns route results or a failure that the caller can handle. |
+| Path workers and datasets | Calculate routes against the appropriate map data. |
+| Monitoring | Helps authorized operators distinguish request failures, capacity problems and missing data. |
 
-```
-Internet
-   │
-   ▼
-Cloudflare (orange-cloud, free plan)
-   retail.nexor.app, dash.nexor.app, classic.nexor.app, classicera.nexor.app
-   │   (TLS terminates at CF edge with Universal SSL)
-   ▼
-OVHcloud VPS-2 (51.75.64.12, Ubuntu 25.04, 12 GB RAM, 6 vCores, 100 GB NVMe)
-   ufw: 443/80 allowed from Cloudflare IPs only; 22 open (key-only auth)
-   │
-   ▼ docker compose (network: nexnav)
-   ┌──────────────────────────────────────────────────────────────┐
-   │ caddy   :443/:80   ←─ TLS via Cloudflare Origin Cert          │
-   │                       (SANs: nexor.app + *.nexor.app, 15 yr)  │
-   │   ├─ basic_auth → grafana:3000   for dash.nexor.app           │
-   │   ├─ reverse_proxy app:5100      for retail/classic/era       │
-   │   └─ blocks /metrics on public hosts                          │
-   │                                                                │
-   │ app     :5100  (NexNavigation.HttpServer, MemoryBudget 9 GB)  │
-   │   ├─ /healthz/{live,ready}                                     │
-   │   ├─ /metrics  (RequireHost app:5100 — internal only)         │
-   │   └─ /{mapId}/path, /closest, /height, /tiles, /obstacles      │
-   │                                                                │
-   │ redis   :6379  (obstacle pub/sub + cache; not exposed)         │
-   │                                                                │
-   │ prometheus :9090  (scrapes app + caddy, 7 d retention)         │
-   │                                                                │
-   │ grafana    :3000  (NexNav Overview dashboard)                  │
-   └──────────────────────────────────────────────────────────────┘
-        │
-        ▼
-   /var/lib/nexnav/mmaps/{retail,classic,classicera}/
-        ↑ rsync push from operator's workstation (master copy)
-```
+The World API has a different job: it provides world records such as service NPCs
+and navigation connections. A working world-data lookup does not by itself prove
+that a walking route can be calculated. See the
+[World API overview](/en/administrator/world-api/overview) for that data workflow.
 
-## Live URLs
+## Check the correct environment
 
-| URL | Purpose | Auth |
-|---|---|---|
-| `https://retail.nexor.app` | Public pathfinding API (retail flavor) | None |
-| `https://classic.nexor.app` | (DNS pre-listed, app inactive) | None |
-| `https://classicera.nexor.app` | (DNS pre-listed, app inactive) | None |
-| `https://dash.nexor.app` | Grafana monitoring dashboard | Basic auth at the Caddy edge |
+Before diagnosing an incident, identify the bot revision, client flavor, map,
+time and affected operation. Then ask an authorized operator to confirm the
+active service revision and dataset. Use the current deployment record rather
+than assuming that a host, container image or capacity value from an older guide
+is still in use.
 
-## What lives where
+## Public and private information
 
-- **Server code:** [`EyecomDesign/AmeisenNavigation`](https://github.com/EyecomDesign/AmeisenNavigation) (master)
-- **Lua client:** `NexorSystem/NexorBot` (branch `Navigation-Rework`); local clone at `C:\Nex\scripts\Nexor_Dev`
-- **mmaps source:** operator workstation at `C:\Nex\mmaps\<flavor>\`; pushed to VPS via rsync
-- **Operational secrets:** `/opt/nexnav/.env` on the VPS (not in repo)
-- **Origin cert + key:** `/etc/nexnav/origin.{crt,key}` on the VPS
+Public documentation can explain interfaces, expected behavior and troubleshooting
+steps. Operational credentials, origin addresses, privileged access instructions,
+firewall inventories and current infrastructure identifiers require a private
+handoff from the service owner. Removing a value from this site does not revoke it
+or erase earlier copies.
 
 ## Continue reading
 
-- [🔑 Access](/en/administrator/server/access) — who logs in where, with which credentials
-- [🚀 Deployment](/en/administrator/server/deployment) — how a `git push` becomes a live release
-- [📊 Monitoring](/en/administrator/server/monitoring) — the Grafana dashboard, scrape targets, scaling triggers
-- [🛠️ Operations](/en/administrator/server/operations) — common runbooks (rotate password, push new mmaps, enable a flavor)
-- [📑 Reference](/en/administrator/server/reference) — URL/port/path cheat-sheet
+- [Access](/en/administrator/server/access) — request the access appropriate to your role.
+- [Deployment](/en/administrator/server/deployment) — review, verify and roll back a release.
+- [Monitoring](/en/administrator/server/monitoring) — investigate service health.
+- [Operations](/en/administrator/server/operations) — maintenance and credential handling.
+- [Reference](/en/administrator/server/reference) — terminology and public-safe examples.
