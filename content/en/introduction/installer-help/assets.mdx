@@ -1,0 +1,38 @@
+# 🎨 WoW Folders and Assets
+
+Nexor needs some image and sound files (the Nexor **assets**) in each WoW folder you play with.
+The installer finds your WoW folders, one per Flavor (for example TBC or Forever), and puts the
+assets into `Interface\AddOns\Media` there.
+
+## The installer found no WoW folder
+
+- Start WoW once through Battle.net, then search again.
+- Or choose the folder yourself. A WoW folder holds a WoW program such as `WowClassic.exe`.
+  Pick the folder of one Flavor, for example `_classic_era_` or `_anniversary_`.
+- **"is not a WoW folder"**: the folder you picked holds no WoW program. Pick the Flavor folder
+  that holds the `.exe`.
+- **"Choose your WoW folders first"** or **"is not one of your WoW folders"**: confirm the WoW
+  folder in Setup first.
+
+## "is a link to another place"
+
+A folder inside your WoW folder is a Windows link (junction) to another place. Nexor never writes
+through links, to keep your other files safe. Remove the link, or choose a WoW folder without one.
+
+## The asset list is not available or not valid
+
+The installer reads the list of assets from the Nexor download server.
+
+- **"not available yet"** or **"not valid"**: try again later.
+- **"needs a newer installer"**: update the installer (the Main button says **Update**).
+
+## "does not match its published fingerprint"
+
+The installer checks every downloaded file. A file that does not match is thrown away and nothing
+is changed. Try again later. If it keeps happening, your network or antivirus may change
+downloads.
+
+## Windows refuses to write the assets
+
+If your WoW folder is under `C:\Program Files`, Windows may need admin rights. See
+[Admin rights](/en/introduction/installer-help/admin-rights).

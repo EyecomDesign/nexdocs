@@ -1,0 +1,27 @@
+# 🛂 Admin Rights
+
+The Nexor Installer installs only for your Windows user and does not need admin rights to run.
+
+Some folders are protected by Windows, for example a WoW folder under `C:\Program Files`. When
+Windows refuses a write there, the installer says so.
+
+## Asset writes
+
+When Windows refuses to write the Nexor assets, the installer offers **Try with admin rights**.
+Windows then asks for permission once. Click **Yes**. The installer then writes only the listed
+asset files into `Interface\AddOns\Media`.
+
+If you click **No**, the installer says **"Could not write with admin rights"** and nothing more is
+written. Click the button again when you are ready.
+
+## Other files ("Could not write …")
+
+- Close WoW and NoName, then try again. A running game can hold files open.
+- Make sure the drive is not full.
+- Your antivirus may block the write. Allow the Nexor Installer in your antivirus, then try again.
+- If Windows keeps refusing, move WoW out of `C:\Program Files` (for example to `C:\Games`).
+
+## NoName asks for admin rights
+
+When you press Play, Windows may ask for admin rights for NoName. That prompt is NoName's own,
+not the installer's.
