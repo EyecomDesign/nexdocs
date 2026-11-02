@@ -1,12 +1,21 @@
-# 🧭 Task Routines
+# 🧭 Routines
 
-A **Task Routine** is an ordered list of tasks that orchestrate profiles and bot actions —
+A **routine** is an ordered list of tasks that orchestrate profiles and bot actions —
 for example: *“pick up quest A, kill the mobs, grind to level 4, then turn it in.”* Where a
 profile says *what to do in one place*, a routine strings several profiles and actions
 together into a full play session.
 
-Routines live under `Tasks/Routines/{Name}.lua` and are loaded from the
-**Tasks → Library** tab.
+Your routines live under `scripts/Nexor_User/Routines/{Name}.lua`. Load them from
+the **Tasks → Library** tab, titled **Routines Library**. On startup, the bot moves
+files from the old `Nexor_User/Tasks/Routines/` folder into `Nexor_User/Routines/`.
+If both folders contain the same filename, it keeps both files and warns you.
+
+Bot defaults live under `Routines/<Flavor>/` in the repository. The flavor folder
+is one of `ClassicEra`, `TBC`, `Wrath`, `Cataclysm`, `MoP`, `Retail` or `Forever`.
+Only files listed with type `routine` in the bot product's `nexor-config.json`
+are defaults; a file merely present in the folder is not loaded. Use `routine`
+in new configs. The bot still accepts the old `task` type for compatibility,
+but the website requires `routine` for new configs.
 
 ## File shape
 
@@ -124,7 +133,7 @@ re-running a routine **smart-skips** anything already completed.
 
 ## Complete example — Valley of Trials intro chain
 
-`Tasks/Routines/Test_Cutting_Teeth.lua` — two quests, with a grind in the middle:
+`scripts/Nexor_User/Routines/Test_Cutting_Teeth.lua` — two quests, with a grind in the middle:
 
 ```lua
 return {

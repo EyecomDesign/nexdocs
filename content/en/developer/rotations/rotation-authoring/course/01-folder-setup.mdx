@@ -1,15 +1,22 @@
 # 1. Set up the rotation folders
 
-Create the rotation inside the loader-owned `Rotations` tree in the NexorBot
-repository. Use one folder for the expansion and one for the class:
+Put your own rotation under `scripts/Nexor_User/Rotations/`. The Local tab reads
+this folder without filtering by game flavor. You can use any subfolders:
 
 ```text
-Rotations/
-└── ClassicTBC/
-    └── WARLOCK/
+scripts/Nexor_User/Rotations/
+└── MyRotations/
 ```
 
-Keep rotation source files in this tree. `Profiles/` contains profile data and
-`NexDocs/` contains documentation; neither is a rotation load location.
+The course's reference source lives in the NexorBot repository at
+`Rotations/TBC/WARLOCK/Warlock_TBC_Authoring_Tutorial.lua`. Copy it into your user
+folder to test it locally.
+
+Files shipped as bot defaults use repository folders named `ClassicEra`, `TBC`,
+`Wrath`, `Cataclysm`, `MoP`, `Retail` or `Forever`, matching the bot's flavor names.
+The same names apply below `Profiles/` and `Routines/`. Only files listed in the
+bot product's `nexor-config.json` are defaults; placing a file in a repository
+folder does not make it available. The bot shows defaults for the current flavor.
+It does not create empty flavor or class folders for your own rotations.
 
 Next: [create the rotation file](./02-create-file).
