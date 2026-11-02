@@ -5,8 +5,9 @@
   "scripts": {
     "dev": "next dev",
     "start": "node scripts/start.mjs",
-    "build": "next build",
-    "build:cf": "next build && pagefind --site .next/server/app --output-path public/_pagefind && opennextjs-cloudflare build --skipNextBuild",
+    "build": "node scripts/generate-code-sources.mjs && next build",
+    "build:cf": "node scripts/generate-code-sources.mjs && next build && pagefind --site .next/server/app --output-path public/_pagefind && opennextjs-cloudflare build --skipNextBuild",
+    "test": "node --test scripts/code-file.test.mjs",
     "preview": "pnpm run build:cf && opennextjs-cloudflare preview",
     "deploy": "pnpm run build:cf && opennextjs-cloudflare deploy",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",

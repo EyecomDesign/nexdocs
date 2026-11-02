@@ -50,6 +50,13 @@ add or maintain German pages unless English-only support is explicitly reversed.
 
 PRs run a separate `.github/workflows/ci.yml` (typecheck + lint + build) before merge.
 
+`CodeFile` renders course Lua from `components/docs/code-sources.generated.json`.
+After changing or adding a file under `public/rotation-authoring`, run
+`node scripts/generate-code-sources.mjs` and commit the generated map with it.
+Both build scripts regenerate the map. CI checks that committed copies match
+and runs `pnpm test`, which renders the real component without build-machine
+filesystem access. Do not reintroduce runtime reads from `public/` in this component.
+
 ## Critical Nextra 4 + App Router conventions to remember
 
 - **`next.config.ts` MUST contain `i18n: { locales: ['en'], defaultLocale: 'en' }`** — Next App Router ignores this block, but Nextra reads it to build the English page map. Removing it breaks runtime with *"Can't find pageMap for 'en'"*.
