@@ -1,3 +1,3 @@
 export default {
-  "task-routines": "Task Routines",
+  "task-routines": "Routines",
 };
