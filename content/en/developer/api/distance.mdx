@@ -1,0 +1,111 @@
+# Distance
+
+Use these dot calls for distance queries. They do not move the bot.
+The [published public API](https://github.com/NexorSystem/NexorBot/blob/54f75d7f38fa57f95d868eccda4756938ace84cc/Public/PublicAPIs.lua)
+defines these signatures. See [units and targets](./units-and-targets) for wrapper methods.
+
+## `NX.Distance.GetDistance(from, to)`
+
+Returns straight-line distance in yards between two objects or unit tokens.
+It also accepts six coordinates: `GetDistance(x1, y1, z1, x2, y2, z2)`.
+This existing helper forwards to the backend without the missing-position
+protection offered by the boolean helpers below. Resolve valid endpoints first.
+
+```lua
+local target = NX.UnitManager.Get("target")
+if target:IsValid() then
+    local distance = NX.Distance.GetDistance("player", "target")
+end
+```
+
+## `NX.Distance.GetDistance2D(x1, y1, x2, y2)`
+
+Takes four numeric coordinates and returns horizontal distance in yards,
+ignoring height. Returns `nil` when a coordinate is missing.
+
+```lua
+local horizontalDistance = NX.Distance.GetDistance2D(0, 0, 3, 4) -- 5 yards
+```
+
+## `NX.Distance.IsWithinRange(object1, object2, range)`
+
+Takes two object references or unit tokens and a range in yards. Returns a
+boolean, or `false` when a position is missing or the distance cannot be read.
+The range comparison is inclusive.
+
+```lua
+local closeToTarget = NX.Distance.IsWithinRange("player", "target", 10)
+```
+
+## `NX.Distance.IsWithinDistance(x1, y1, z1, x2, y2, z2, distance)`
+
+Takes two numeric XYZ positions and a distance in yards. Returns `true` when the
+3D distance is at most the limit, or `false` when a coordinate is missing.
+
+```lua
+local withinFiveYards = NX.Distance.IsWithinDistance(0, 0, 0, 3, 4, 0, 5)
+```
+
+## `NX.Distance.IsInMelee(target, meleeRange)`
+
+Takes a target object or unit token and an optional range in yards (default `5`).
+Returns a boolean, or `false` when either position is missing or cannot be read.
+This ignores combat reach. Use `unit:InMelee(other)` for the wrapper's check that
+counts combat reach. Neither result replaces a spell's own cast gate.
+
+```lua
+local withinBasicMeleeRange = NX.Distance.IsInMelee("target")
+local withinThreeYards = NX.Distance.IsInMelee("target", 3)
+```
+
+## `NX.Distance.RequestPathDistance(from, to)`
+
+Asks for walking distance along a path. Each endpoint can be a unit wrapper,
+unit token, object reference, or a table with named numeric fields
+`{ x, y, z, mapId }`. Coordinates must be finite and both endpoints must use the
+same map. A unit or object is read at its current position, with the player's
+current map ID assumed. Use explicit tables to state the map yourself.
+
+Returns a read-only record with `status`, `distance`, and `reason`. Keep it and
+inspect it on later pulses: a pending result updates in place. It exposes no
+path or request ID. Walking distance never falls back to a straight-line guess.
+It does not start movement; see [movement](./movement) for requesting and following a route.
+
+| `status`      | Meaning                                                                            | `distance`      |
+| ------------- | ---------------------------------------------------------------------------------- | --------------- |
+| `pending`     | A path answer is still awaited                                                     | `nil`           |
+| `ready`       | A usable path distance is available                                                | Number of yards |
+| `unreachable` | The path result says the destination cannot be reached                             | `nil`           |
+| `unavailable` | Inputs, router, or result cannot supply a usable distance                          | `nil`           |
+| `throttled`   | This script already has a waiting request and this pair has no fresh cached answer | `nil`           |
+
+`reason` is an optional diagnostic string. Use `distance` only with `ready`.
+There is **one waiting request per script**. Asking again while it waits returns
+`throttled` with `reason = "request-waiting"` and sends no new server request.
+A fresh cached answer can still be read and does not consume the waiting slot.
+Calls from a timer count as the profile's requests. If the router drops a waiting
+request, a later call closes it as `unavailable`/`request-dropped` so it cannot
+hold the script's slot forever.
+
+Keep the record outside the pulse function. This example starts one request on
+its first call, then reads that record. The answer describes positions captured
+at request time; moving endpoints require a deliberate later refresh.
+
+```lua
+local pathDistance
+
+local function ReadInitialTargetWalkingDistance()
+    if not pathDistance then
+        pathDistance = NX.Distance.RequestPathDistance("player", "target")
+    end
+    if pathDistance.status == "ready" then
+        return pathDistance.distance
+    end
+    return nil, pathDistance.status, pathDistance.reason
+end
+```
+
+Call this function from a pulse. `pending` means wait; `throttled` means share the
+script's existing request rather than flood retries. A missing target is
+`unavailable`, not a measured zero-yard path. Decide when to clear a terminal
+record before starting a new measurement.

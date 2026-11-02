@@ -1,0 +1,56 @@
+# Bot state and unlocked calls
+
+These dot calls use the public `NX` passed to your script. Do not pass `NX` as
+an extra argument. Their [published declarations](https://github.com/NexorSystem/NexorBot/blob/54f75d7f38fa57f95d868eccda4756938ace84cc/Public/PublicAPIs.lua)
+define the contract below.
+
+## `NX.Bot.State()`
+
+Returns the current bot substate as a string, such as `Active`, `Engage`,
+`Combat`, or `Loot`. Read it when needed; a saved string is a snapshot.
+A CustomCode phase can run in several states, so scope its work explicitly:
+
+```lua
+if NX.Bot.State() == "Combat" then
+    -- Run this phase's combat-specific work here.
+end
+```
+
+## `NX.Bot.ActionState()`
+
+Returns the current action state as a string, such as `Moving`, `Waiting`, or
+`Casting`. It takes no arguments and does not change the bot's state.
+
+```lua
+local isMoving = NX.Bot.ActionState() == "Moving"
+```
+
+## `NX.Bot.IsEngaging()`
+
+Returns `true` only in the `Engage` substate: the bot has selected a mob and is
+approaching it to open the fight. This includes extra pulls. It is `false` in
+`Combat`, `Active`, `Loot`, and every other substate.
+
+```lua
+if NX.Bot.IsEngaging() then
+    -- Apply this script's engagement-only policy here.
+end
+```
+
+## `NX.Unlock(fnOrName, ...)`
+
+Calls a game function through the active unlocker adapter. `fnOrName` is either
+the function itself or its global name as a string. Remaining arguments are
+forwarded unchanged. All return values are preserved; no success boolean is
+added. The adapter unwraps secret values when its secret API is available.
+This call adds no spell, item, cooldown, or target policy. Prefer the
+[spell](./spells) and [item](./items-wands-settings) helpers when they cover the job.
+
+```lua
+local currentHealth = NX.Unlock(UnitHealth, "player")
+local maximumHealth = NX.Unlock("UnitHealthMax", "player")
+```
+
+The function must exist and be supported by the active client and adapter.
+Unlocking does not make an absent function available or turn an error into `nil`.
+The example does not establish compatibility with every client and unlocker.

@@ -12,3 +12,34 @@ nothing. The framework owns Shoot, continuous cadence, cooldown arbitration,
 queue-boundary rescans, and disarm. Never call `Shoot:Cast()` or
 `Shoot:Execute()` from a rotation. Do not add a wand consumer list, OOM fallback,
 or movement-into-range claim.
+
+## `NX.Item.HasWeaponEnchant(enchantId)`
+
+Takes a numeric temporary weapon-enchant ID. Returns `true` if either the main-hand
+or off-hand has that enchant. Returns `false` for a nonnumeric input, an unavailable
+weapon-enchant API, or no match. Use the enchant ID reported by the game, not the
+spell ID that applies it. This reads equipped weapons, not placed totems or auras.
+
+```lua
+local function HasRequestedWeaponEnchant(enchantId)
+    return NX.Item.HasWeaponEnchant(enchantId)
+end
+```
+
+Supply the client/flavor's actual enchant ID when calling this helper.
+
+## `NX.Item.EquipItemByID(itemId)`
+
+Takes a positive integer item ID; invalid IDs return `false`. The numeric ID is
+passed to the native equip route, using the namespaced API when available.
+A valid call forwards the native result; do not assume it confirms that an item
+was equipped. Check the equipment change separately. The item must be an
+appropriate equippable bag item, and client restrictions still apply.
+
+```lua
+local function RequestEquipmentChange(itemId)
+    return NX.Item.EquipItemByID(itemId)
+end
+```
+
+Call this only when your script intentionally wants to change equipment.

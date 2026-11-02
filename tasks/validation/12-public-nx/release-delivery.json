@@ -1,0 +1,17 @@
+{
+  "bot_source": "54f75d7f38fa57f95d868eccda4756938ace84cc",
+  "bootstrap_files_checked": 46,
+  "bot": [
+    {
+      "slug": "nexor_bot",
+      "files": 473,
+      "manifest_matches_source": true,
+      "downloaded_file": "Public/PublicAPIs.lua",
+      "download_digest_matches": true
+    }
+  ],
+  "session_ended": true,
+  "client_execution": "NOT_EXERCISED",
+  "evidence": "https://github.com/NexorSystem/NexorBot/issues/1002#issuecomment-6590065356",
+  "note": "Authenticated customer HTTP download proof; no new live client observation."
+}

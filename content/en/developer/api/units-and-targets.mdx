@@ -11,3 +11,28 @@ escape hatch; its callback must return a wrapper, never `nil`.
 `Spell:Cast(target)` is a one-off full-gate cast. A resolver returning `nil` is a
 no-op. Harmful predicates should explicitly check `unit:IsEnemy()`; mechanical
 validity and range remain in the spell gate.
+
+## Enemy counts and lists
+
+`NX.UnitManager.GetEnemiesInRange(radius)` and
+`NX.UnitManager.GetActiveEnemiesInRange(radius)` take a numeric radius in yards
+and return **count, then list**. The first includes enemies in range; the second
+uses the active-enemy set. A count alone is not a new target-selection policy.
+With no matches, the result is `0` and an empty list, not `nil`.
+
+Both results are cached per tick and radius. Repeated calls to the same getter
+and radius in that tick reuse the list. Treat it as read-only; do not sort it,
+remove entries, or keep it as a future-tick snapshot.
+
+```lua
+local count, enemies = NX.UnitManager.GetEnemiesInRange(10)
+local activeCount, activeEnemies = NX.UnitManager.GetActiveEnemiesInRange(10)
+for _, enemy in ipairs(activeEnemies) do
+    -- Read the matching unit wrapper here.
+end
+```
+
+For just the count, assign the first return to one local. For just the list, use
+`local _, enemies = NX.UnitManager.GetActiveEnemiesInRange(10)`.
+Before forwarding the count into another function, assign it to a local; Lua can
+otherwise forward both returns as separate arguments.
