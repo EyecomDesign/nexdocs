@@ -1,0 +1,12 @@
+{
+  "bot_source": "54f75d7f38fa57f95d868eccda4756938ace84cc",
+  "bot_checkout": "78d3e0f694cd65e15c25fec7387ccc12210f379c",
+  "source_comparison": "Public/src/tests unchanged between bot reference and checkout",
+  "lua_snippets_compile": 13,
+  "simple_distance_snippets_executed": 4,
+  "actual_path_polling_example": "pending -> ready, one request",
+  "public_declarations_checked": 13,
+  "published_source_files_audited": 92,
+  "removed_name_hits": [],
+  "scope": "AUTOMATED: real production distance code with controlled client/router inputs; not LIVE"
+}
