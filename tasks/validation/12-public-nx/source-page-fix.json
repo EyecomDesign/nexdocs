@@ -1,0 +1,53 @@
+{
+  "before_deployment_source": "3a515b462f9e213d14c5f4bda3a41a625f22f6ae",
+  "before_http": [
+    {
+      "url": "https://docs.nexor.app/en/developer/api/distance",
+      "status": 200,
+      "body_bytes": 286978
+    },
+    {
+      "url": "https://docs.nexor.app/en/developer/rotations/rotation-authoring/course/26-complete-source",
+      "status": 500,
+      "body_bytes": 21
+    },
+    {
+      "url": "https://docs.nexor.app/en/developer/rotations/rotation-authoring/course/06-toggles",
+      "status": 200,
+      "body_bytes": 220587
+    },
+    {
+      "url": "https://docs.nexor.app/en/developer/rotations/rotation-authoring/course/13-combat-pulse",
+      "status": 500,
+      "body_bytes": 21
+    },
+    {
+      "url": "https://docs.nexor.app/en/developer/rotations/rotation-authoring/course/16-combat-priority",
+      "status": 500,
+      "body_bytes": 21
+    },
+    {
+      "url": "https://docs.nexor.app/en/developer/rotations/rotation-authoring/course/19-pet-specific-policy",
+      "status": 500,
+      "body_bytes": 21
+    }
+  ],
+  "component_regression_red": {
+    "complete_source": "ENOENT",
+    "line_slice": "ENOENT",
+    "invalid_paths": "PASS"
+  },
+  "component_regression_green": {
+    "complete_source": "PASS without runtime fs",
+    "line_slice": "PASS without runtime fs",
+    "invalid_paths": "PASS"
+  },
+  "embedded_lua_sources": 12,
+  "checks": {
+    "typecheck": "PASS",
+    "lint": "PASS:0 errors/17 existing warnings",
+    "build": "PASS:84 generated pages",
+    "generated_freshness": "PASS"
+  },
+  "scope": "Actual source component in an isolated VM with build-machine public filesystem unavailable; deployed fix not yet measured."
+}
