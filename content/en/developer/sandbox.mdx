@@ -1,0 +1,483 @@
+# Sandbox rules
+
+Several products can run on one customer's PC at the same time, next to the bot
+itself. Each one runs in its own **sandbox**, so one product's mistake cannot change
+what another product, the bot, or your next rotation sees.
+
+A sandbox belongs to one product, and all of that product's files share it: code
+files, rotations, profiles and the Lua steps inside a routine. A loose script
+(a single file that is not part of a product) gets a sandbox of its own. The bot
+has one too.
+
+Most code you would write anyway works unchanged. This page lists the rules. Each
+rule shows code that fails and what to write instead.
+
+Every example starts the way a product file starts:
+
+```lua
+local NX, Product = ...
+```
+
+`NX` is the public API. `Product` is your product namespace (see
+[rule 3](#3-keep-your-state-in-your-product-namespace)). A loose script gets
+`NX` only.
+
+## 1. Your NX is read-only
+
+Your sandbox gets its own view of `NX`. Reading and calling work as before.
+Writing to `NX`, to a Nexor class or to a unit object stops your script at once
+with an error that names your product, the file and the line.
+
+This fails:
+
+{/* check: fails */}
+```lua
+local NX, Product = ...
+
+NX.IsMyTank = function(unit) return unit:GetHealth() > 30 end
+```
+
+```text
+demo (disk: Docs) - Rotations/Demo.lua:3: NX is read-only (tried to set 'IsMyTank'). Keep notes in your product table.
+```
+
+Put your own helpers in your product namespace instead:
+
+{/* check: works */}
+```lua
+local NX, Product = ...
+
+Product.IsMyTank = function(unit) return unit:GetHealth() > 30 end
+```
+
+The same rule covers unit objects. This fails:
+
+{/* check: fails */}
+```lua
+local NX, Product = ...
+
+local player = NX.UnitManager.Get("player")
+player.lastChecked = GetTime()
+```
+
+```text
+demo (disk: Docs) - Rotations/Demo.lua:4: NX is read-only (tried to set 'lastChecked'). Keep notes in your product table.
+```
+
+Keep per-unit notes in your product namespace, keyed by the unit's GUID:
+
+{/* check: works */}
+```lua
+local NX, Product = ...
+
+Product.lastChecked = Product.lastChecked or {}
+local player = NX.UnitManager.Get("player")
+Product.lastChecked[player:GetGUID()] = GetTime()
+```
+
+There is no listing of `NX`: `pairs(NX)` does not show its contents. Look names up
+in the [API reference](./api).
+
+## 2. Lists are your own copies
+
+Plain lists that Nexor gives you, such as enemies or item tables, are a fresh copy
+on every call. You can sort, filter or change them freely. Your change does not
+reach the next call or any other product.
+
+This does not do what it looks like. It changes only your copy, so the bot and the
+next call still see the original list:
+
+{/* check: works */}
+```lua
+local NX, Product = ...
+
+local healthstones = NX.Tables.Items.Healthstones
+healthstones[1] = nil -- only your copy loses its first entry
+```
+
+Instead, keep the result you want in a local or in your product namespace:
+
+{/* check: works */}
+```lua
+local NX, Product = ...
+
+local enemies = NX.UnitManager.GetActiveEnemiesInRange(30)
+table.sort(enemies, function(left, right)
+    return left:GetHealth() < right:GetHealth()
+end)
+local lowest = enemies[1]
+```
+
+## 3. Keep your state in your product namespace
+
+Every file of your product receives the same `Product` table as its second value.
+It starts empty, and Nexor never writes to it. It is the one place for helpers,
+data and notes that your files share. Two products never see each other's
+namespace, even when one developer made both.
+
+A loose script gets no product namespace. To share code between files, make them
+one product.
+
+This fails, because `NX` is read-only:
+
+{/* check: fails */}
+```lua
+local NX, Product = ...
+
+NX.Shared = { pullCount = 0 }
+```
+
+```text
+demo (disk: Docs) - Rotations/Demo.lua:3: NX is read-only (tried to set 'Shared'). Keep notes in your product table.
+```
+
+Do this instead:
+
+{/* check: works */}
+```lua
+local NX, Product = ...
+
+Product.pullCount = (Product.pullCount or 0) + 1
+```
+
+## 4. Spell rules come in layers
+
+A spell rule, such as a `CastableIf` predicate or a named `Behavior`, applies only
+inside your sandbox. Nexor looks each rule up in three layers, nearest first:
+
+1. the running rotation's rules,
+2. your product's rules (set from a code file of your product),
+3. the spell template (the bot's own rules).
+
+Game facts stay shared, because there is one character: cooldown, rank and the last
+cast time are the same in every sandbox. The bot's own casts use only the template,
+so your rules never change how the bot itself casts.
+
+A rotation's rules end when it unloads. Your second rotation does not inherit the
+first rotation's rules. If a rotation fails to load, the running rotation keeps its
+rules.
+
+This does not do what it looks like. A rule set in one rotation is gone in the next
+rotation:
+
+{/* check: compiles */}
+```lua
+-- Rotations/Single.lua
+local NX, Product = ...
+
+local spells = NX.SpellBook:GetGlobal()
+spells.Corruption:CastableIf(function()
+    return NX.Toggles["Damage"] ~= false
+end)
+```
+
+Set a rule that all your rotations share in a code file of your product. A rotation
+can still set its own rule for one spell on top:
+
+{/* check: compiles */}
+```lua
+-- a code file of your product, listed in its config
+local NX, Product = ...
+
+local spells = NX.SpellBook:GetGlobal()
+spells.Corruption:CastableIf(function()
+    return NX.Toggles["Damage"] ~= false
+end)
+```
+
+## 5. Commands do what they say
+
+There is no referee between sandboxes. A command does exactly what its name says,
+whoever sent it:
+
+- `NX.Rotation.Resume()` ends **every** pause, not only yours.
+- The last destination counts. `NX.Movement.MoveTo(...)` from any sandbox replaces
+  the current destination. Nothing restores the old one.
+
+Do not expect your pause to survive another product's resume:
+
+{/* check: compiles */}
+```lua
+local NX, Product = ...
+
+NX.Rotation.Pause() -- another product's Resume() ends this pause too
+```
+
+Pause for a short, known time, and pause again if you still need it:
+
+{/* check: compiles */}
+```lua
+local NX, Product = ...
+
+NX.Rotation.Pause(1.5) -- ends by itself after 1.5 seconds
+```
+
+Some commands belong to the running rotation alone. Only the running rotation may
+take over movement during a fight with `SetRotationMovementOverride`,
+`PauseNavigation` or `CircleBehind`. A plugin, or a rotation that is still loading,
+gets a rule error. This fails in a plugin:
+
+{/* check: fails file=Plugins/Demo.lua */}
+```lua
+local NX, Product = ...
+
+NX.Movement.SetRotationMovementOverride(true)
+```
+
+```text
+demo (disk: Docs) - Plugins/Demo.lua:3: only the running rotation may take over combat movement
+```
+
+Call it from the running rotation's pulse instead:
+
+{/* check: compiles */}
+```lua
+local NX, Product = ...
+
+return {
+    Toggles = {}, Options = {},
+    OutOfCombatPulse = function() end,
+    EngagementPulse = function() end,
+    CombatPulse = function()
+        NX.Movement.SetRotationMovementOverride(true)
+    end,
+}
+```
+
+Bot safety always goes first: death and corpse runs, the unstuck sequence and the
+test-run safety guard. While one of them runs, public movement commands return
+`false, "bot-safety"` and wait their turn.
+
+## 6. Closing a sandbox cleans up after you
+
+A sandbox closes when its rotation unloads, its profile is cleared or a new load of
+the same file takes over. Nexor ends exactly what that sandbox started:
+
+- its pause,
+- its destination,
+- its held movement keys,
+- its event listeners,
+- its chat commands,
+- its custom unit names.
+
+Something another sandbox started after yours stays. You do not need an unload
+handler that stops these yourself.
+
+Plugins are not unloaded during a session. Turning a plugin off takes effect after
+`/reload`.
+
+Game timers and frames are your job. Nexor cannot see a `C_Timer` callback or a
+frame script that you set up. After your sandbox closes, calls through its `NX`
+fail, and the first failure is logged. This ticker fails once the rotation has
+unloaded:
+
+{/* check: fails-after-close */}
+```lua
+local NX, Product = ...
+
+C_Timer.NewTicker(1, function()
+    NX.Rotation.Pause(0.5) -- fails after this rotation unloads
+end)
+```
+
+```text
+demo (disk: Docs) - Rotations/Demo.lua:4: sandbox is closed; its NX no longer works
+```
+
+Keep the handle and stop the ticker when you no longer need it:
+
+{/* check: compiles */}
+```lua
+local NX, Product = ...
+
+Product.ticker = C_Timer.NewTicker(1, function()
+    NX.Rotation.Pause(0.5)
+end)
+
+-- later, when you are done:
+Product.ticker:Cancel()
+```
+
+## 7. Your `_G` is your own
+
+Inside a sandbox, `_G` is the sandbox itself. Reading falls through to the game's
+globals, so `GetTime()`, `UnitName("player")` and `C_Timer` work as before. Writing
+a global, with or without `_G.`, stays inside your sandbox. The game and other
+products never see it.
+
+This does not do what it looks like. The game never sees the slash name, so
+`/demo` does nothing:
+
+{/* check: works */}
+```lua
+local NX, Product = ...
+
+SLASH_DEMO1 = "/demo"
+_G.DemoCount = 0
+```
+
+Use `NX.ChatCommand.Register` for chat commands ([rule 8](#8-chat-commands-use-nxchatcommandregister)),
+and keep shared values in your product namespace.
+
+## 8. Chat commands use `NX.ChatCommand.Register`
+
+`NX.ChatCommand.Register(name, handler)` gives your sandbox a chat command. Write the
+name without the slash. The handler receives the text after the command.
+
+{/* check: works */}
+```lua
+local NX, Product = ...
+
+NX.ChatCommand.Register("demo", function(text)
+    print("demo got: " .. text)
+end)
+```
+
+- Registering the same name again from your own product replaces your old command,
+  so a reload of your code just works.
+- A name that another sandbox already owns is a rule error.
+- Your commands are removed when your sandbox closes.
+
+This fails when another product already owns `/demo`:
+
+{/* check: fails setup=other-owns-demo */}
+```lua
+local NX, Product = ...
+
+NX.ChatCommand.Register("demo", function() end)
+```
+
+```text
+demo (disk: Docs) - Rotations/Demo.lua:3: /demo already belongs to other
+```
+
+Pick a name that starts with your product's name, such as `demo_status`.
+
+## 9. The closed doors
+
+A script cannot leave its sandbox. These doors are closed:
+
+| Door | In a sandbox |
+| --- | --- |
+| `hooksecurefunc`, `RunScript` | Absent (`nil`). |
+| `debug`, `loadfile`, `dofile` | Absent (`nil`). |
+| `getfenv`, `setfenv` | Work on your own functions. A Nexor function shows an empty environment, and `setfenv` on it is a rule error. |
+| `CreateFrame` | Works for a new frame name. A name that already exists in the game is refused. |
+| `string`, `table`, `math`, `bit`, `os`, `coroutine`, `C_*` | Read and call as before. Writing to them is a rule error. |
+| `getmetatable` | Returns `nil` for a string and `false` for a Nexor object. |
+| `loadstring`, `load` | Work. The new code runs in your sandbox. |
+
+Hooking a game function fails, because `hooksecurefunc` is absent:
+
+{/* check: fails */}
+```lua
+local NX, Product = ...
+
+hooksecurefunc("CastSpellByName", function() end)
+```
+
+```text
+demo (disk: Docs) - Rotations/Demo.lua:3: attempt to call global 'hooksecurefunc' (a nil value)
+```
+
+Listen for the game event instead:
+
+{/* check: works */}
+```lua
+local NX, Product = ...
+
+NX.Events.RegisterWoWEvent("UNIT_SPELLCAST_SUCCEEDED", function(...)
+    -- react to the cast
+end)
+```
+
+Adding a helper to a shared library fails:
+
+{/* check: fails */}
+```lua
+local NX, Product = ...
+
+function string.trim(text) return (text:gsub("^%s+", ""):gsub("%s+$", "")) end
+```
+
+```text
+demo (disk: Docs) - Rotations/Demo.lua:3: shared library is read-only
+```
+
+Keep the helper in your product namespace:
+
+{/* check: works */}
+```lua
+local NX, Product = ...
+
+function Product.Trim(text) return (text:gsub("^%s+", ""):gsub("%s+$", "")) end
+```
+
+Taking a frame name that the game already uses fails:
+
+{/* check: fails */}
+```lua
+local NX, Product = ...
+
+local frame = CreateFrame("Frame", "UIParent")
+```
+
+```text
+demo (disk: Docs) - Rotations/Demo.lua:3: frame name already exists: UIParent
+```
+
+Give your frame a new name, or none:
+
+{/* check: works */}
+```lua
+local NX, Product = ...
+
+local frame = CreateFrame("Frame", "DemoStatusFrame")
+local unnamed = CreateFrame("Frame")
+```
+
+Changing the environment of a Nexor function fails:
+
+{/* check: fails */}
+```lua
+local NX, Product = ...
+
+setfenv(NX.Rotation.Pause, {})
+```
+
+```text
+demo (disk: Docs) - Rotations/Demo.lua:3: cannot change a foreign function environment
+```
+
+`getfenv` and `setfenv` still work on your own functions:
+
+{/* check: works */}
+```lua
+local NX, Product = ...
+
+local function Answer() return answer end
+setfenv(Answer, { answer = 42 })
+assert(Answer() == 42)
+```
+
+## 10. Reading an error
+
+Every sandbox error has the same shape:
+
+```text
+<product> (<source>) - <file>:<line>: <message>
+```
+
+- **product** is your product's slug, or the file path for a loose script.
+- **source** is where it was loaded from: `server`, `disk: <folder>`, `loose` or
+  `bot`.
+- **file:line** points at the line in your code that broke the rule.
+
+When you start Nexor locally, the full error is printed in chat. A customer sees
+only a short line that names your product, and the full error goes to the log:
+
+```text
+demo stopped because of an error in its code. Please tell the developer.
+```
+
+One broken product does not stop the bot or the customer's other products.
