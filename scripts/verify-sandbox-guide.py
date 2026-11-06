@@ -105,50 +105,10 @@ def first_line(text):
     return text.strip().splitlines()[0]
 
 
-PREFIX = 'demo (disk: Docs) - '
-LOCATION = re.compile(r'^(?P<file>[^\s:]+\.lua):(?P<line>\d+): ')
-
-# Known NexorBot defects in the error text (not in the rules themselves). Each one is
-# reported on every run so it stays visible until the bot fixes it.
-KNOWN_DEFECTS = {
-    'duplicate-prefix': 'the product prefix appears twice: "<product> - <file>:<line>: <product> - ..."',
-    'internal-location': 'the location points into src/systems/SandboxBuilder.lua, not the author line',
-    'location-first': 'the location comes before the product prefix',
-}
-
-
-def parse(text):
-    """Split an error line into (prefixed, location, message, defects)."""
-    defects = []
-    prefixed = text.startswith(PREFIX)
-    if prefixed:
-        text = text[len(PREFIX):]
-    location = None
-    match = LOCATION.match(text)
-    if match:
-        location = f"{match['file']}:{match['line']}"
-        text = text[match.end():]
-    if text.startswith(PREFIX):
-        defects.append('duplicate-prefix' if prefixed else 'location-first')
-        prefixed = True
-        text = text[len(PREFIX):]
-    return prefixed, location, text, defects
-
-
 def compare(actual, expected):
-    """Return (passed, detail, known defects) for an error against its documented line."""
-    got_prefix, got_location, got_message, defects = parse(first_line(actual))
-    _, want_location, want_message, _ = parse(expected)
-    if not got_prefix:
-        return False, f'no product prefix: {actual!r}', defects
-    if got_message != want_message:
-        return False, f'message differs: {got_message!r}', defects
-    if got_location != want_location:
-        if got_location and got_location.startswith('src/systems/SandboxBuilder.lua'):
-            defects.append('internal-location')
-        else:
-            return False, f'location {got_location} instead of {want_location}', defects
-    return True, first_line(actual), defects
+    """An error passes when its first line is exactly the documented line."""
+    line = first_line(actual)
+    return line == expected, line
 
 
 def run(check):
@@ -156,7 +116,7 @@ def run(check):
     attrs = attributes(check['attrs'])
     if mode == 'compiles':
         ok, err = LuaRuntime().eval('function(s) local f, e = loadstring(s); return f ~= nil, e end')(code)
-        return ok, err, []
+        return ok, err
     lua, harness = boot()
     lua.globals().nex = harness.nex
     lua.execute(GAME)
@@ -165,19 +125,19 @@ def run(check):
         lua.execute(SETUPS[attrs['setup']])
     ok, result, box = lua.eval(RUN)(code, attrs.get('file', 'Rotations/Demo.lua'))
     if mode == 'works':
-        return ok, result, []
+        return ok, result
     if mode == 'fails':
         if ok:
-            return False, 'expected an error, the example ran', []
+            return False, 'expected an error, the example ran'
         return compare(result, expected)
     if mode == 'fails-after-close':
         if not ok:
-            return False, result, []
+            return False, result
         passed, err = lua.eval(AFTER_CLOSE)(box)
         if passed:
-            return False, 'expected an error after close, the callback ran', []
+            return False, 'expected an error after close, the callback ran'
         return compare(err, expected)
-    return False, f'unknown check mode {mode!r}', []
+    return False, f'unknown check mode {mode!r}'
 
 
 page = PAGE.read_text(encoding='utf-8')
@@ -185,17 +145,14 @@ checks = [dict(m.groupdict(), line=page.count(chr(10), 0, m.start()) + 3)
           for m in CHECK.finditer(page)]
 marked = page.count('{/* check:')
 assert marked == len(checks), f'{marked} check markers but {len(checks)} parsed examples'
-results, failures, known = [], 0, {}
+results, failures = [], 0
 for index, check in enumerate(checks, 1):
     if check['mode'].startswith('fails') and not check['expected']:
-        ok, detail, defects = False, 'a failing example needs a ```text block with its error', []
+        ok, detail = False, 'a failing example needs a ```text block with its error'
     else:
-        ok, detail, defects = run(check)
-    line = page[:page.find(check['code'])].count('\n') + 1
-    results.append({'line': line, 'mode': check['mode'], 'passed': bool(ok), 'detail': detail,
-                    'known_defects': defects})
-    for defect in defects:
-        known.setdefault(defect, []).append(line)
+        ok, detail = run(check)
+    line = check['line']
+    results.append({'line': line, 'mode': check['mode'], 'passed': bool(ok), 'detail': detail})
     if not ok:
         failures += 1
         print(f'FAIL sandbox.mdx:{line} [{check["mode"]}]\n  expected: {check["expected"]}\n  actual:   {detail}')
@@ -207,10 +164,7 @@ except (subprocess.CalledProcessError, FileNotFoundError):
     checkout = args.bot_ref
 if args.bot_ref and checkout != args.bot_ref:
     sys.exit(f'bot checkout {checkout} is not --bot-ref {args.bot_ref}')
-for defect, lines in sorted(known.items()):
-    print(f'KNOWN DEFECT {defect} ({KNOWN_DEFECTS[defect]}): sandbox.mdx lines {lines}')
-summary = {'bot_checkout': checkout, 'examples': len(results), 'failed': failures,
-           'known_defects': known, 'results': results}
+summary = {'bot_checkout': checkout, 'examples': len(results), 'failed': failures, 'results': results}
 if args.output:
     args.output.write_text(json.dumps(summary, indent=2) + '\n')
 print(f'{len(results) - failures}/{len(results)} sandbox guide examples behave as documented')

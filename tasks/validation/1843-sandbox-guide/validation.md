@@ -6,12 +6,12 @@ Bot reference: NexorSystem/NexorBot `Development` at ec0133a823b59dc1b524dcd8ab9
 - Mutation check: a changed error message, a wrong line number and a `works` example that writes to NX each failed the verifier.
 - git diff --check: PASS. pnpm typecheck: PASS. pnpm lint: 0 errors, 17 existing anonymous-default-export warnings. pnpm test: 3/3 PASS. pnpm build: PASS, 85 static pages; both in-page anchors and the two new links resolve in the generated HTML.
 
-## Known bot defects (not fixed here)
+## Bot error-text defects: fixed in NexorBot#1902
 
-The rules behave as documented. The error text does not yet match the format from spec #1833 (`<product> (<source>) - <file>:<line>: <message>`). The guide documents the spec's format, warns about the current differences in a callout under rule 10, and the verifier names each defect on every run:
+The first version of the guide carried a warning callout, and the verifier tolerated three bot defects: a duplicate prefix, an internal location, and the location before the prefix. NexorSystem/NexorBot PR #1904 fixed all three, merged at `Development@426580f5a988a79ec6a506efcf912510946a87b7`, with live in-game evidence on NexorBot#1902.
 
-- `duplicate-prefix`: rule errors raised with `error(sandbox:FormatError(...), 2)` get Lua's location in front, then `ScriptSandbox:Call` prefixes again: `demo (disk: Docs) - Rotations/Demo.lua:3: demo (disk: Docs) - NX is read-only ...` (7 examples).
-- `internal-location`: errors raised inside an NX call at level 3 (`SetRotationMovementOverride` outside the rotation, `NX.ChatCommand.Register` on a taken name) point at `src/systems/SandboxBuilder.lua:388` instead of the author line (2 examples).
-- `location-first`: a closed sandbox's NX called from a game timer reports `Rotations/Demo.lua:4: demo (disk: Docs) - sandbox is closed ...` (1 example).
+The callout and the verifier's defect tolerance are gone. The verifier now requires the exact documented first line:
+- `--bot-ref 426580f5a988a79ec6a506efcf912510946a87b7`: 27/27 (`examples.json`).
+- The same strict verifier against the old `ec0133a82`: 18/27, failing on exactly the 9 examples whose error text was wrong.
 
 Written in English only: nexdocs is English-only (`CLAUDE.md`, German tree disabled), which supersedes the ticket's "bilingual format". No in-game result is claimed.

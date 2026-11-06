@@ -1,5 +1,3 @@
-import { Callout } from "nextra/components";
-
 # Sandbox rules
 
 Several products can run on one customer's PC at the same time, next to the bot
@@ -483,21 +481,9 @@ Every sandbox error has the same shape:
 - **product** is your product's slug, or the file path for a loose script.
 - **source** is where it was loaded from: `server`, `disk: <folder>`, `loose` or
   `bot`.
-- **file:line** points at the line in your code that broke the rule.
-
-<Callout type="warning">
-The current bot does not print every error in exactly this shape yet:
-
-- A rule error can repeat the product prefix after the line, as in
-  `demo (disk: Docs) - Rotations/Demo.lua:3: demo (disk: Docs) - NX is read-only ...`.
-- An error raised inside an NX call, such as a taken chat command name, can point
-  at `src/systems/SandboxBuilder.lua` instead of your line.
-- A closed sandbox called from a game timer prints the file and line before the
-  product.
-
-The message itself is the same. Read past the extra prefix, and use the stack
-trace under the error to find your line.
-</Callout>
+- **file:line** points at the line in your code that broke the rule. If that line
+  returns the NX call directly (`return NX.ChatCommand.Register(...)`), Lua drops
+  the line, and the error has no file:line.
 
 When you start Nexor locally, the full error is printed in chat. A customer sees
 only a short line that names your product, and the full error goes to the log:
