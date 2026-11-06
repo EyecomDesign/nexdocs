@@ -25,6 +25,7 @@ from lupa.lua51 import LuaRuntime
 
 parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
 parser.add_argument('--bot-repo', type=Path, required=True)
+parser.add_argument('--bot-ref', help='bot commit the checkout was made from (recorded when it is not a git repo)')
 parser.add_argument('--output', type=Path, help='write a JSON result record here')
 args = parser.parse_args()
 BOT = args.bot_repo.resolve()
@@ -180,7 +181,8 @@ def run(check):
 
 
 page = PAGE.read_text(encoding='utf-8')
-checks = [m.groupdict() for m in CHECK.finditer(page)]
+checks = [dict(m.groupdict(), line=page.count(chr(10), 0, m.start()) + 3)
+          for m in CHECK.finditer(page)]
 marked = page.count('{/* check:')
 assert marked == len(checks), f'{marked} check markers but {len(checks)} parsed examples'
 results, failures, known = [], 0, {}
@@ -202,7 +204,9 @@ try:
     checkout = subprocess.check_output(['git', '-C', str(BOT), 'rev-parse', 'HEAD'], text=True,
                                        stderr=subprocess.DEVNULL).strip()
 except (subprocess.CalledProcessError, FileNotFoundError):
-    checkout = None
+    checkout = args.bot_ref
+if args.bot_ref and checkout != args.bot_ref:
+    sys.exit(f'bot checkout {checkout} is not --bot-ref {args.bot_ref}')
 for defect, lines in sorted(known.items()):
     print(f'KNOWN DEFECT {defect} ({KNOWN_DEFECTS[defect]}): sandbox.mdx lines {lines}')
 summary = {'bot_checkout': checkout, 'examples': len(results), 'failed': failures,

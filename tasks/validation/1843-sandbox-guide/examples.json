@@ -1,28 +1,28 @@
 {
-  "bot_checkout": "ec0133a82 (NexorSystem/NexorBot Development, git archive)",
+  "bot_checkout": "ec0133a823b59dc1b524dcd8ab902d4e58f01fbb",
   "examples": 27,
   "failed": 0,
   "known_defects": {
     "duplicate-prefix": [
-      35,
-      57,
-      125,
-      222,
-      398,
-      420,
-      443
+      37,
+      59,
+      127,
+      224,
+      410,
+      432,
+      455
     ],
     "internal-location": [
-      222,
-      345
+      224,
+      357
     ],
     "location-first": [
-      276
+      285
     ]
   },
   "results": [
     {
-      "line": 35,
+      "line": 37,
       "mode": "fails",
       "passed": true,
       "detail": "demo (disk: Docs) - Rotations/Demo.lua:3: demo (disk: Docs) - NX is read-only (tried to set 'IsMyTank'). Keep notes in your product table.",
@@ -31,14 +31,14 @@
       ]
     },
     {
-      "line": 48,
+      "line": 50,
       "mode": "works",
       "passed": true,
       "detail": "nil",
       "known_defects": []
     },
     {
-      "line": 57,
+      "line": 59,
       "mode": "fails",
       "passed": true,
       "detail": "demo (disk: Docs) - Rotations/Demo.lua:4: demo (disk: Docs) - NX is read-only (tried to set 'lastChecked'). Keep notes in your product table.",
@@ -47,28 +47,28 @@
       ]
     },
     {
-      "line": 71,
+      "line": 73,
       "mode": "works",
       "passed": true,
       "detail": "nil",
       "known_defects": []
     },
     {
-      "line": 92,
+      "line": 94,
       "mode": "works",
       "passed": true,
       "detail": "nil",
       "known_defects": []
     },
     {
-      "line": 102,
+      "line": 104,
       "mode": "works",
       "passed": true,
       "detail": "nil",
       "known_defects": []
     },
     {
-      "line": 125,
+      "line": 127,
       "mode": "fails",
       "passed": true,
       "detail": "demo (disk: Docs) - Rotations/Demo.lua:3: demo (disk: Docs) - NX is read-only (tried to set 'Shared'). Keep notes in your product table.",
@@ -77,42 +77,42 @@
       ]
     },
     {
-      "line": 138,
+      "line": 140,
       "mode": "works",
       "passed": true,
       "detail": "nil",
       "known_defects": []
     },
     {
-      "line": 165,
+      "line": 167,
       "mode": "compiles",
       "passed": true,
       "detail": null,
       "known_defects": []
     },
     {
-      "line": 179,
+      "line": 181,
       "mode": "compiles",
       "passed": true,
       "detail": null,
       "known_defects": []
     },
     {
-      "line": 201,
+      "line": 203,
       "mode": "compiles",
       "passed": true,
       "detail": null,
       "known_defects": []
     },
     {
-      "line": 210,
+      "line": 212,
       "mode": "compiles",
       "passed": true,
       "detail": null,
       "known_defects": []
     },
     {
-      "line": 222,
+      "line": 224,
       "mode": "fails",
       "passed": true,
       "detail": "demo (disk: Docs) - src/systems/SandboxBuilder.lua:388: demo (disk: Docs) - only the running rotation may take over combat movement",
@@ -122,14 +122,14 @@
       ]
     },
     {
-      "line": 235,
+      "line": 237,
       "mode": "compiles",
       "passed": true,
       "detail": null,
       "known_defects": []
     },
     {
-      "line": 276,
+      "line": 285,
       "mode": "fails-after-close",
       "passed": true,
       "detail": "Rotations/Demo.lua:4: demo (disk: Docs) - sandbox is closed; its NX no longer works",
@@ -138,28 +138,28 @@
       ]
     },
     {
-      "line": 291,
+      "line": 300,
       "mode": "compiles",
       "passed": true,
       "detail": null,
       "known_defects": []
     },
     {
-      "line": 313,
+      "line": 322,
       "mode": "works",
       "passed": true,
       "detail": "nil",
       "known_defects": []
     },
     {
-      "line": 329,
+      "line": 338,
       "mode": "works",
       "passed": true,
       "detail": "nil",
       "known_defects": []
     },
     {
-      "line": 345,
+      "line": 357,
       "mode": "fails",
       "passed": true,
       "detail": "demo (disk: Docs) - src/systems/SandboxBuilder.lua:388: /demo already belongs to other",
@@ -168,21 +168,21 @@
       ]
     },
     {
-      "line": 374,
+      "line": 386,
       "mode": "fails",
       "passed": true,
       "detail": "demo (disk: Docs) - Rotations/Demo.lua:3: attempt to call global 'hooksecurefunc' (a nil value)",
       "known_defects": []
     },
     {
-      "line": 387,
+      "line": 399,
       "mode": "works",
       "passed": true,
       "detail": "nil",
       "known_defects": []
     },
     {
-      "line": 398,
+      "line": 410,
       "mode": "fails",
       "passed": true,
       "detail": "demo (disk: Docs) - Rotations/Demo.lua:3: demo (disk: Docs) - shared library is read-only",
@@ -191,14 +191,14 @@
       ]
     },
     {
-      "line": 411,
+      "line": 423,
       "mode": "works",
       "passed": true,
       "detail": "nil",
       "known_defects": []
     },
     {
-      "line": 420,
+      "line": 432,
       "mode": "fails",
       "passed": true,
       "detail": "demo (disk: Docs) - Rotations/Demo.lua:3: demo (disk: Docs) - frame name already exists: UIParent",
@@ -207,14 +207,14 @@
       ]
     },
     {
-      "line": 433,
+      "line": 445,
       "mode": "works",
       "passed": true,
       "detail": "nil",
       "known_defects": []
     },
     {
-      "line": 443,
+      "line": 455,
       "mode": "fails",
       "passed": true,
       "detail": "demo (disk: Docs) - Rotations/Demo.lua:3: demo (disk: Docs) - cannot change a foreign function environment",
@@ -223,7 +223,7 @@
       ]
     },
     {
-      "line": 456,
+      "line": 468,
       "mode": "works",
       "passed": true,
       "detail": "nil",

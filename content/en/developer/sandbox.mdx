@@ -1,3 +1,5 @@
+import { Callout } from "nextra/components";
+
 # Sandbox rules
 
 Several products can run on one customer's PC at the same time, next to the bot
@@ -212,10 +214,10 @@ local NX, Product = ...
 NX.Rotation.Pause(1.5) -- ends by itself after 1.5 seconds
 ```
 
-Some commands belong to the running rotation alone. Only the running rotation may
-take over movement during a fight with `SetRotationMovementOverride`,
-`PauseNavigation` or `CircleBehind`. A plugin, or a rotation that is still loading,
-gets a rule error. This fails in a plugin:
+Some commands belong to the running rotation alone: `SetRotationMovementOverride`,
+`PauseNavigation` and `CircleBehind` take over the bot's combat movement. Any other
+sandbox, such as a plugin or a rotation that is still loading, gets a rule error,
+in or out of combat. This fails in a plugin:
 
 {/* check: fails file=Plugins/Demo.lua */}
 ```lua
@@ -250,8 +252,15 @@ test-run safety guard. While one of them runs, public movement commands return
 
 ## 6. Closing a sandbox cleans up after you
 
-A sandbox closes when its rotation unloads, its profile is cleared or a new load of
-the same file takes over. Nexor ends exactly what that sandbox started:
+A sandbox closes when:
+
+- its rotation unloads,
+- its profile is cleared,
+- a new load of the same file takes over,
+- its file fails to load (a compile error or an error while it runs at start),
+- a routine moves on from the step whose Lua code it ran, or that code fails.
+
+Nexor then ends exactly what that sandbox started:
 
 - its pause,
 - its destination,
@@ -333,6 +342,9 @@ NX.ChatCommand.Register("demo", function(text)
 end)
 ```
 
+- A name starts with a letter and holds only letters, digits and underscores, so
+  `demo_status` works and `demo-status` is a rule error. Names are not
+  case-sensitive: `Demo` and `demo` are the same command.
 - Registering the same name again from your own product replaces your old command,
   so a reload of your code just works.
 - A name that another sandbox already owns is a rule error.
@@ -472,6 +484,20 @@ Every sandbox error has the same shape:
 - **source** is where it was loaded from: `server`, `disk: <folder>`, `loose` or
   `bot`.
 - **file:line** points at the line in your code that broke the rule.
+
+<Callout type="warning">
+The current bot does not print every error in exactly this shape yet:
+
+- A rule error can repeat the product prefix after the line, as in
+  `demo (disk: Docs) - Rotations/Demo.lua:3: demo (disk: Docs) - NX is read-only ...`.
+- An error raised inside an NX call, such as a taken chat command name, can point
+  at `src/systems/SandboxBuilder.lua` instead of your line.
+- A closed sandbox called from a game timer prints the file and line before the
+  product.
+
+The message itself is the same. Read past the extra prefix, and use the stack
+trace under the error to find your line.
+</Callout>
 
 When you start Nexor locally, the full error is printed in chat. A customer sees
 only a short line that names your product, and the full error goes to the log:
