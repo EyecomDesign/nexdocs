@@ -493,3 +493,26 @@ demo stopped because of an error in its code. Please tell the developer.
 ```
 
 One broken product does not stop the bot or the customer's other products.
+
+## 11. Closed is not copy protection
+
+When a customer gets your product, Nexor treats its files in two ways:
+
+- **Profiles are closed.** Nexor never shows a delivered profile, never saves it to
+  disk and never offers a copy. The customer can only run it.
+- **Routines are open.** The customer can view a delivered routine in the editor and
+  make their own copy with **Duplicate**. A copy runs its Lua steps in its own
+  sandbox, not in yours, so it cannot read your `Product` table. Put logic that your
+  steps share in a code file or a profile, not in step code, or it breaks in a copy.
+
+"Closed" is not DRM. A closed profile still reaches the customer's PC as plain Lua
+in memory, and the customer owns that PC. Someone who wants to read your code, and
+puts in the effort, can. Closed and scrambled files make copying harder. They do not
+make it impossible.
+
+So:
+
+- Never put a secret in a product file: no API keys, passwords or tokens. Anything
+  your code must use can be read at the moment it is used.
+- Treat "closed" as protection against easy copying, not as a promise that nobody
+  can read your work.
