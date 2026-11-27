@@ -1,3 +1,14 @@
+local Meta = {
+    schema = 1,
+    id = "my-warlock-tbc-tutorial",
+    clients = { "anniversary" },
+    expansions = { "tbc" },
+    classes = { "WARLOCK" },
+    display = {
+        { id = "c-1", category = "level", title = "Warlock - Leveling Tutorial 1-20" },
+    },
+}
+
 ---@type RotationEnv
 local NX = ...
 
@@ -222,11 +233,6 @@ local function ApplyInstantDots(targets)
 end
 
 local Rotation = {
-    Info = {
-        Name = "Warlock TBC Authoring Tutorial",
-        Title = "Warlock TBC — Level 1-20 Authoring Tutorial",
-    },
-
     Toggles = {
         ["Pause"] = { Description = "Pause the rotation", Default = false },
         ["Buffs"] = { Description = "Maintain self buffs", Default = true },

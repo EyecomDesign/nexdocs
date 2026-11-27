@@ -14,9 +14,11 @@ A quest profile can run two ways:
 
 ## File shape
 
-Quest profiles live under `Profiles/` — a common layout is
-`Profiles/{Expansion}/Questing/{Name}.lua`. The filename is free-form; a handy convention is
-`<questid>_<Name>.lua`.
+Quest profiles live under `Profiles/`, in any folder you like. Folder names carry no
+meaning; a quest profile that only a routine loads belongs in a helper folder whose name
+starts with `_` or `@`, and needs no Meta block. A profile players load from the Library
+starts with a Meta block (see [The Library](/en/developer/library)). The filename is
+free-form, but never starts with `_` or `@`; a handy convention is `<questid>_<Name>.lua`.
 
 ```lua
 Profile = {
