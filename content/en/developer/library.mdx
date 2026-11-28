@@ -1,0 +1,283 @@
+# The Library
+
+The **Library** is where players find and load profiles, routines and rotations. It
+shows **cards**, sorted into a fixed list of **categories**. A card comes from the
+**Meta block** at the top of a file. This page explains how to write one, how
+folders work, and how to choose categories and titles.
+
+## The Meta block
+
+Every profile, routine and rotation describes itself in a Meta block. It is the only
+place this information is written. Nothing is listed in a config file or a separate
+catalog.
+
+```lua
+local Meta = {
+    schema = 1,
+    id = "p-7f3a91c2d4e8",
+    clients = { "anniversary", "classic" },
+    expansions = { "tbc" },
+    factions = { "horde" },
+    classes = { "HUNTER", "MAGE", "WARLOCK" },
+    zones = { 3518 },
+    requires = { "flying" },
+    display = {
+        { id = "c-19ab44", category = "level_grind", title = "Nagrand Grind 64-66" },
+        { id = "c-5e02d7", category = "raw_gold", title = "Nagrand Gold Farm",
+          clients = { "anniversary" } },
+    },
+}
+
+local Profile = {
+    -- the profile itself, unchanged
+}
+
+return Profile
+```
+
+The rules for the block:
+
+- It is a table assigned to a local named `Meta`, and it is the **first statement**
+  of the file. Only comments may stand before it.
+- It holds **plain data only**: text, numbers, booleans, lists and nested tables. No
+  function calls, no variables, no calculations, no joined text.
+- It is **never run**. Nexor reads it as text. Do not return it or pass it to a
+  function; the file keeps returning its own table.
+- It is at most 64 KB. A card title is at most 60 characters.
+- `schema` is `1`.
+
+In a rotation, the block stands above `local NX = ...`:
+
+```lua
+local Meta = {
+    schema = 1,
+    id = "my-mage-frost",
+    clients = { "anniversary" },
+    expansions = { "tbc" },
+    classes = { "MAGE" },
+    display = { { id = "c-1", category = "level", title = "Mage - Frost - Leveling" } },
+}
+
+---@type NX
+local NX = ...
+```
+
+### Fields
+
+| Field | Where | Profile | Routine | Rotation |
+| --- | --- | --- | --- | --- |
+| `schema` | file | required | required | required |
+| `id` | file | required | required | required |
+| `clients` | file | required | required | required |
+| `factions` | file | required | required | not used |
+| `expansions` | file | optional | optional | required |
+| `classes` | file | optional | optional | required |
+| `zones` | file | optional | optional | not used |
+| `requires` | file | optional | optional | not used |
+| `display` | file | at least one card | at least one card | at least one card |
+| `id`, `title`, `category` | each card | required | required | required |
+| `clients` | each card | optional | optional | optional |
+
+A field the file type does not use, or any other field, fails the check. A list
+that is present must not be empty.
+
+### IDs
+
+- An ID uses only letters, digits, dots and dashes.
+- The file `id` is unique inside its product. A card `id` only has to be unique
+  inside its file.
+- **Never change an ID after the first release.** Favorites and rotation settings
+  are stored by ID, so they survive a rename or a move of the file.
+- The Creator makes random IDs for you. You may write your own. Never put a
+  character name, character ID or other personal data in an ID: every buyer of the
+  file can read it.
+
+### Clients
+
+`clients` lists the game versions that may load the file. A card's own `clients`
+can only narrow the file's list.
+
+| Value | Game version | Its expansion today |
+| --- | --- | --- |
+| `forever` | Forever | `classic` |
+| `classicera` | Classic Era | `classic` |
+| `classicera_hardcore` | Classic Era Hardcore | `classic` |
+| `sod` | Season of Discovery | `classic` |
+| `anniversary` | Anniversary TBC | `tbc` |
+| `classic` | Classic (Mists of Pandaria) | `mop` |
+| `retail` | Retail | `midnight` |
+
+List a Hardcore client only when you checked the content for hardcore play. A
+Hardcore player sees only content that lists it.
+
+### Expansions
+
+`expansions` says which expansion the content belongs to: `classic`, `tbc`,
+`wotlk`, `cataclysm`, `mop`, `wod`, `legion`, `bfa`, `shadowlands`,
+`dragonflight`, `tww`, `midnight`.
+
+- For a **profile or routine** it says where the content is. An old-world zone is
+  `classic`, even on a TBC client; Outland is `tbc`. Players use it as a filter.
+- For a **rotation** it names the game rules the rotation is written for. A
+  rotation shows only when the player's client is listed **and** the expansion
+  that client is on is listed.
+
+### Factions, classes, zones and requirements
+
+- `factions`: `horde`, `alliance`, or both.
+- `classes`: class tokens such as `HUNTER` or `DEATHKNIGHT`. For a profile or
+  routine, list them only when the content is truly class-specific. A rotation
+  always lists its class.
+- `zones`: zone numbers from the game's own zone table, the same on every client
+  (Durotar is `14`, Mulgore `215`, Nagrand in Outland `3518`). The Library shows the
+  zone names. In the Creator pick a zone from the list or use your current zone;
+  never guess a number. Leave `zones` out when you are not sure.
+- `requires`: only `{ "flying" }`. A character that cannot fly sees the card with
+  Load switched off and the reason.
+
+### What players see
+
+- The Library opens filtered for the player's client, faction and class. A card
+  that does not fit is hidden. **Show all** reveals it, with Load switched off and
+  the reason.
+- A tab, category or subcategory shows only when it holds at least one card.
+- Search finds cards by their titles. File names are never shown or searched.
+- A card with a category the player's bot does not know yet is hidden.
+
+## One file, several cards
+
+Each entry in `display` is one **display place**: its own card with its own title
+and category. Use several when one file serves several purposes. The same Nagrand
+route can be a leveling card and a gold-farm card:
+
+```lua
+display = {
+    { id = "c-19ab44", category = "level_grind", title = "Nagrand Grind 64-66" },
+    { id = "c-5e02d7", category = "raw_gold", title = "Nagrand Gold Farm" },
+},
+```
+
+There is no common title for the file. Write each title for the player who looks in
+that category.
+
+## Folders
+
+Folder names carry no meaning. Game version, faction and class come from the Meta
+block, never from a folder named after an expansion, a faction or a class. Every Lua
+file below a content folder (`Profiles`, `Routines`, `Rotations`) is delivered with
+the next release. Only three folder rules exist, decided by the folder's name at any
+depth:
+
+| Folder | Rule |
+| --- | --- |
+| `Drafts`, or a name starting with `.` | Never delivered. Keep unfinished work here. |
+| A name starting with `_` | **Internal helper folder.** Its files are delivered and loaded by other files, for example by a routine step. They never get a card, and a card in such a file fails the check. |
+| A name starting with `@` | **Shared helper folder.** Its files are delivered and get a card only when their Meta block has a display place. |
+
+No Lua file name below a content folder may start with `_` or `@`. A file in a
+helper folder may have a Meta block, but never needs one.
+
+A file without a valid Meta block is still delivered and still loads from a routine
+step. It gets no card. Your own files without one can still be started from **Local
+Folders**.
+
+## Categories
+
+One list serves profiles, routines and rotations. Every subcategory has exactly one
+parent. A card stores one key: a subcategory key, or a category key for a card that
+fits the whole category. The list is fixed: an unknown key costs the card and
+produces a warning. Nexor adds missing categories for everyone.
+
+| Category | Subcategory | Key |
+| --- | --- | --- |
+| Leveling | (the category itself) | `level` |
+| | Mob grinding | `level_grind` |
+| | Leveling by questing | `level_questing` |
+| Questing | (the category itself) | `quest` |
+| | Quest chains | `quest_chains` |
+| | Intros & unlocks | `quest_unlocks` |
+| | Daily, weekly & world quests | `quest_repeatable` |
+| Farming | (the category itself) | `farm` |
+| | Raw gold | `raw_gold` |
+| | Loot to sell | `sale_loot` |
+| | Herbalism & Mining | `herbs_ore` |
+| | Skinning | `leather` |
+| | Fishing | `farm_fishing` |
+| | Other crafting materials | `farm_mats` |
+| Reputation | (the category itself) | `rep` |
+| | From kills | `reputation_mobs` |
+| | Items & turn-ins | `reputation_turnins` |
+| | Faction quests & events | `rep_activities` |
+| Collectibles | (the category itself) | `collect` |
+| | Mounts | `mounts` |
+| | Pets | `pets` |
+| | Transmog | `collect_transmog` |
+| | Toys | `collect_toys` |
+| | Achievements & exploration | `achievements` |
+| Dungeons & raids | (the category itself) | `dungeons` |
+| | Full runs | `dungeon_runs` |
+| | Bosses & segments | `dungeon_bosses` |
+| PvP (reserved) | (the category itself) | `pvp` |
+
+Clicking a category in the Library shows every card in it, including the cards of
+its subcategories. The class of a rotation is not a category; it comes from
+`classes`.
+
+## Author guidelines
+
+Choose the category by what the file does, and write a title that says it.
+
+**Starting zones.** Put the zone and the levels in the title, for example "Durotar
+1-10". List the profile under what it does: Mob grinding (`level_grind`) or Leveling
+by questing (`level_questing`). A quest route with a storyline can also appear under
+Quest chains (`quest_chains`). For an old starting-zone profile, check what the route
+really does before giving it a leveling subcategory.
+
+**Questing.** Quest packs that level a character go under Leveling by questing
+(`level_questing`). One-off chains go under Quest chains (`quest_chains`), intros and
+unlocks under Intros & unlocks (`quest_unlocks`). A routine that quests and grinds
+across many levels can use Leveling (`level`) with one card.
+
+**Rare mobs.** Sort by the reward. A rare that drops a mount goes under Mounts
+(`mounts`). A rare with valuable drops goes under Loot to sell (`sale_loot`). Put the
+rare's name in the title.
+
+**Materials.** Herbalism & Mining (`herbs_ore`) covers routes for one resource and
+mixed routes, for gathering and for raising the skill. Put the herb, the ore or the
+profession in the title. Other crafting materials (`farm_mats`) covers cloth,
+elemental drops and cooking ingredients. A fishing route for cooking ingredients can
+appear under Fishing (`farm_fishing`) too.
+
+**Reputation.** Use the one entry for items and turn-ins (`reputation_turnins`). Say
+in the title what the route does, for example "Lower City: Farm feathers", "Turn in
+feathers" or "Farm and turn in feathers". A dungeon run for reputation can also be
+listed under Full runs (`dungeon_runs`) or Bosses & segments (`dungeon_bosses`).
+
+**Dungeons & raids.** List only instance routes that work today. Nexor's own dungeon
+and raid modes do not work yet; a working route built with another supported profile
+type can still go here.
+
+**Rotations.** A leveling rotation uses `level`; a raid rotation uses `dungeons`.
+Rotation titles follow the form "Class - Spec - Purpose", for example "Mage - Frost -
+Leveling".
+
+Titles are in English.
+
+## Checking a file
+
+The check runs in three places, with the same rules:
+
+- **In the game**, when you save in the Creator and with its **Check** button. Edit
+  on a problem jumps to the field. The Check button also fills in missing IDs in a
+  hand-written file.
+- **On pull requests** in the Nexor repository: a broken Meta block fails the check.
+- **On the server**, when a product is released. A broken Meta block never stops a
+  release: the file is still delivered, it gets no card, and the developer gets a
+  warning that names the file and the reason.
+
+## Editing in the game
+
+- **Profiles:** the Creator's META tab writes the block for you. The category picker
+  shows the guidelines above next to each category.
+- **Rotations:** choose **Edit metadata** on a local rotation in the Library.
+- **Routines:** open the routine in the Organizer and use **Edit catalog details**.

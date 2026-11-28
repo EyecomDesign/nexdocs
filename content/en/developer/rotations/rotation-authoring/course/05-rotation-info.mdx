@@ -1,18 +1,32 @@
 # 5. Add rotation information
 
-Add human-readable metadata to the returned table. It identifies the file in
-the rotation list without changing runtime behavior:
+Give the rotation a **Meta block**. The Library uses it to show the rotation's card.
+When a saved local rotation moves, the bot can find it again by its Meta ID. Put the
+block first in the file, above `local NX = ...`.
 
 ```lua
-local Rotation = {
-    Info = {
-        Name = "Warlock TBC Authoring Tutorial",
-        Title = "Warlock TBC — Level 1-20 Authoring Tutorial",
+local Meta = {
+    schema = 1,
+    id = "my-warlock-tbc-tutorial",
+    clients = { "anniversary" },
+    expansions = { "tbc" },
+    classes = { "WARLOCK" },
+    display = {
+        { id = "c-1", category = "level", title = "Warlock - Leveling Tutorial 1-20" },
     },
 }
+
+---@type RotationEnv
+local NX = ...
 ```
 
-Keep metadata descriptive and stable. Behavior belongs in callbacks and helper
-functions, not in `Info`.
+A rotation needs `clients`, `expansions`, `classes` and at least one card. The
+Rotations tab shows the card only when the player's client is listed, the expansion
+that client is on is listed, and the character's class is listed.
+
+Keep the block plain data. Choose the `id` once and never change it: your rotation
+settings are stored under it, so they survive a rename or a move of the file. A
+rotation without a Meta block still loads from **Local Folders**; it just has no
+card. Every field and rule is on [The Library](/en/developer/library) page.
 
 Next: [declare user toggles](./06-toggles).

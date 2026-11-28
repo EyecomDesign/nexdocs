@@ -10,25 +10,30 @@ the **Tasks → Library** tab, titled **Routines Library**. On startup, the bot 
 files from the old `Nexor_User/Tasks/Routines/` folder into `Nexor_User/Routines/`.
 If both folders contain the same filename, it keeps both files and warns you.
 
-Bot defaults live under `Routines/<Flavor>/` in the repository. The flavor folder
-is one of `ClassicEra`, `TBC`, `Wrath`, `Cataclysm`, `MoP`, `Retail` or `Forever`.
-Only files listed with type `routine` in the bot product's `nexor-config.json`
-are defaults; a file merely present in the folder is not loaded. Use `routine`
-in new configs. The bot still accepts the old `task` type for compatibility,
-but the website requires `routine` for new configs.
+Folder names carry no meaning: the game version, faction and class a routine is for
+come from its Meta block (see below). A folder named `Drafts` is never delivered, a
+folder starting with `_` holds internal helper routines that never get a card, and a
+folder starting with `@` holds shared helpers. See [The Library](/en/developer/library).
 
 ## File shape
 
-A routine file `return`s a table with optional metadata and a `Tasks` list:
+A routine file starts with its **Meta block**, the routine's card in the Library, and
+then `return`s a table with a `Tasks` list:
 
 ```lua
+local Meta = {
+    schema = 1,
+    id = "r-3f9c21a07b5e",
+    clients = { "retail" },
+    factions = { "horde" },
+    zones = { 14 },
+    display = {
+        { id = "c-5e02d7", category = "quest_unlocks", title = "Valley of Trials intro 1-4" },
+    },
+}
+
 return {
-    Name        = "VoT Intro (25152 + 25126)",
-    Author      = "Nexor",
-    Description = "Valley of Trials intro chain.",
-    Faction     = "Horde",
-    Expansion   = "Retail",
-    LevelRange  = "1-4",
+    Name = "VoT Intro (25152 + 25126)",
 
     Tasks = {
         {
@@ -47,8 +52,13 @@ return {
 }
 ```
 
-The metadata fields (`Author`, `Description`, `Faction`, `Expansion`, `LevelRange`) are
-optional and only shown in the Library browser.
+The Meta block is plain data and is never run. It needs `schema`, `id`, `clients`,
+`factions` and at least one card in `display`; `expansions`, `classes`, `zones` and
+`requires` are optional. The routine table itself holds no catalog fields. Edit the
+block in the Organizer with **Edit catalog details**. A routine without a Meta block
+still loads from a routine step and from **Local Folders**; it just has no card. A
+change to the Meta block keeps a character's saved progress: progress depends only on
+the steps. Fields, categories and author guidelines are on [The Library](/en/developer/library).
 
 ## Task fields
 
@@ -136,9 +146,18 @@ re-running a routine **smart-skips** anything already completed.
 `scripts/Nexor_User/Routines/Test_Cutting_Teeth.lua` — two quests, with a grind in the middle:
 
 ```lua
+local Meta = {
+    schema = 1,
+    id = "r-3f9c21a07b5e",
+    clients = { "retail" },
+    factions = { "horde" },
+    display = {
+        { id = "c-5e02d7", category = "quest_unlocks", title = "Valley of Trials intro 1-4" },
+    },
+}
+
 return {
-    Name        = "VoT Intro (25152 + 25126)",
-    Faction     = "Horde", Expansion = "Retail", LevelRange = "1-4",
+    Name = "VoT Intro (25152 + 25126)",
     Tasks = {
         -- Quest 25152: Your Place in the World (pickup -> turn in)
         { Name = "Pick Up 25152", Enabled = true,
