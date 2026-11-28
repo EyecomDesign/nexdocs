@@ -1,8 +1,8 @@
 # 5. Add rotation information
 
-Give the rotation a **Meta block**. It is the rotation's card in the Library's
-Rotations tab and changes nothing at runtime. It is the first statement of the file,
-above `local NX = ...`:
+Give the rotation a **Meta block**. The Library uses it to show the rotation's card.
+When a saved local rotation moves, the bot can find it again by its Meta ID. Put the
+block first in the file, above `local NX = ...`.
 
 ```lua
 local Meta = {
